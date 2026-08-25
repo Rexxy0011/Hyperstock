@@ -1,0 +1,7 @@
+{
+  "watch": ["src"],
+  "ext": "js,json",
+  "ignore": ["src/seed/**/*.spec.js", "**/*.test.js"],
+  "exec": "node --env-file-if-exists=.env src/index.js",
+  "delay": "300"
+}
