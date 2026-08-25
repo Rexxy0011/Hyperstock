@@ -1,0 +1,20 @@
+:root{
+/* 8px grid */
+--space-1:4px;
+--space-2:8px;
+--space-3:16px;
+--space-4:24px;
+--space-5:32px;
+--space-6:40px;
+--space-7:48px;
+--space-8:64px;
+--space-9:96px;
+/* One radius */
+--radius:8px;
+/* One shadow level, cards only */
+--shadow-card:0 1px 3px rgba(12,18,16,.06),0 1px 2px rgba(12,18,16,.04);
+/* Motion */
+--transition:150ms ease;
+/* Chart discipline */
+--chart-stroke:1.5px;
+}

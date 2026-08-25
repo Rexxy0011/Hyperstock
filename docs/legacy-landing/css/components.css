@@ -1,0 +1,162 @@
+/* HyperStocks Growth design system — components used by the landing page.
+   Ported 1:1 from the bundle's JSX:
+     components/core/Button.jsx
+     components/market/PriceChange.jsx
+     components/market/TickerPill.jsx */
+
+/* ---------------------------------------------------------------- Button */
+
+.btn {
+  font-family: var(--font-body);
+  font-weight: var(--weight-semibold);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background var(--transition);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  /* size: md */
+  padding: 10px 20px;
+  font-size: var(--text-base);
+  /* variant: primary */
+  background: var(--market-green);
+  color: var(--white);
+  border: 1px solid transparent;
+}
+
+.btn--sm { padding: 6px 12px; font-size: var(--text-sm); }
+.btn--lg { padding: 14px 28px; font-size: 15px; }
+
+.btn:not(:disabled):hover  { background: var(--green-hover); }
+.btn:not(:disabled):active { background: var(--green-press); }
+
+.btn--secondary {
+  background: var(--white);
+  color: var(--void);
+  border: 1px solid var(--cool-grey);
+}
+.btn--secondary:not(:disabled):hover,
+.btn--secondary:not(:disabled):active { background: var(--mist); }
+
+.btn--ghost {
+  background: transparent;
+  color: var(--void);
+  border: 1px solid transparent;
+}
+.btn--ghost:not(:disabled):hover,
+.btn--ghost:not(:disabled):active { background: var(--mist); }
+
+.btn--outline-green {
+  background: transparent;
+  color: var(--market-green);
+  border: 1px solid var(--market-green);
+}
+.btn--outline-green:not(:disabled):hover,
+.btn--outline-green:not(:disabled):active { background: var(--green-tint); }
+
+.btn--outline-red {
+  background: transparent;
+  color: var(--loss-red);
+  border: 1px solid var(--loss-red);
+}
+.btn--outline-red:not(:disabled):hover,
+.btn--outline-red:not(:disabled):active { background: var(--red-tint); }
+
+.btn:disabled { opacity: .45; cursor: default; }
+
+/* Anchors rendered as buttons: keep the variant colour through the
+   global `a:hover { color: var(--market-green) }` rule in typography.css. */
+a.btn, a.btn:hover { color: var(--white); }
+a.btn--secondary,     a.btn--secondary:hover,
+a.btn--ghost,         a.btn--ghost:hover     { color: var(--void); }
+a.btn--outline-green, a.btn--outline-green:hover { color: var(--market-green); }
+a.btn--outline-red,   a.btn--outline-red:hover   { color: var(--loss-red); }
+
+/* ----------------------------------------------------------- PriceChange */
+
+.pc {
+  --pc-size: var(--text-sm); /* default size = 13 */
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--pc-size);
+  font-weight: var(--weight-medium);
+}
+
+.pc--12 { --pc-size: var(--text-xs); }
+
+.pc__arrow {
+  /* the component renders the glyph at (size - 3) square */
+  width: calc(var(--pc-size) - 3px);
+  height: calc(var(--pc-size) - 3px);
+  flex-shrink: 0;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  fill: none;
+}
+
+.pc--up   { color: var(--market-green); }
+.pc--down { color: var(--loss-red); }
+
+.pc--pill { padding: 2px var(--space-2); border-radius: var(--radius); }
+.pc--pill.pc--up   { background: var(--green-tint); }
+.pc--pill.pc--down { background: var(--red-tint); }
+
+/* ------------------------------------------------------------ TickerPill */
+
+.ticker-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--white);
+  border: 1px solid var(--cool-grey);
+  border-radius: var(--radius);
+  padding: var(--space-2) 12px;
+  cursor: default;
+  transition: background var(--transition);
+}
+
+a.ticker-pill, button.ticker-pill { cursor: pointer; }
+a.ticker-pill:hover, button.ticker-pill:hover { background: var(--mist); }
+
+.ticker-pill__logo {
+  width: var(--space-4);
+  height: var(--space-4);
+  border-radius: var(--radius);
+  background: var(--ink);
+  color: var(--white);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: var(--weight-semibold);
+  font-family: var(--font-mono);
+}
+
+.ticker-pill__id {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.ticker-pill__symbol {
+  font-family: var(--font-mono);
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-sm);
+}
+
+.ticker-pill__name {
+  font-size: 11px;
+  color: var(--slate);
+}
+
+.ticker-pill__price {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  margin-left: var(--space-1);
+}

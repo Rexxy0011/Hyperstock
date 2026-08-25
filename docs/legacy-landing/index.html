@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HyperStocks — Trade the world's markets. Risk nothing.</title>
+<meta name="description" content="Real-time data, virtual capital, real skills. Practice on live prices across eight exchanges without risking a cent.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="css/tokens/fonts.css">
+<link rel="stylesheet" href="css/tokens/colors.css">
+<link rel="stylesheet" href="css/tokens/typography.css">
+<link rel="stylesheet" href="css/tokens/spacing.css">
+<link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/landing.css">
+</head>
+<body>
+
+<!-- PriceChange arrow glyphs (components/market/PriceChange.jsx) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="pc-up" viewBox="0 0 12 12"><path d="M2 10 L10 2 M10 2 H4.5 M10 2 V7.5"/></symbol>
+  <symbol id="pc-down" viewBox="0 0 12 12"><path d="M2 2 L10 10 M10 10 H4.5 M10 10 V4.5"/></symbol>
+</svg>
+
+<header>
+  <nav class="shell site-nav">
+    <div class="site-nav__group">
+      <span class="wordmark">HYPERSTOCKS</span>
+      <div class="nav-links">
+        <a class="nav-link" href="stock-detail.html">Markets</a>
+        <a class="nav-link" href="leaderboard.html">Leaderboard</a>
+        <a class="nav-link">About</a>
+      </div>
+    </div>
+    <div class="site-nav__actions">
+      <a class="btn btn--ghost btn--sm" href="auth.html">Login</a>
+      <a class="btn btn--sm" href="auth.html">Get Started</a>
+    </div>
+  </nav>
+</header>
+
+<main>
+
+  <section class="shell hero">
+    <div class="hero__copy">
+      <h1 class="hero__title">Trade the world's markets. Risk nothing.</h1>
+      <p class="hero__lede">Real-time data, virtual capital, real skills. Practice on live prices across eight exchanges without risking a cent.</p>
+      <div class="hero__actions">
+        <a class="btn btn--lg" href="auth.html">Start Trading Free</a>
+        <a class="btn btn--secondary btn--lg" href="stock-detail.html">View Markets</a>
+      </div>
+    </div>
+
+    <div class="showcase">
+      <div class="card">
+        <div class="card__label">Portfolio — $12,220.64</div>
+        <div class="hero__value-row">
+          <span class="hero__value">$12,220.64</span>
+          <span class="pc pc--up pc--pill"><svg class="pc__arrow" aria-hidden="true" focusable="false"><use href="#pc-up"/></svg>+2.20%</span>
+        </div>
+
+        <svg class="chart" height="180" viewBox="0 0 520 180" preserveAspectRatio="none" role="img" aria-label="Portfolio value trending up over the last month">
+          <line class="chart__grid" x1="0" x2="520" y1="45" y2="45"></line>
+          <line class="chart__grid" x1="0" x2="520" y1="90" y2="90"></line>
+          <line class="chart__grid" x1="0" x2="520" y1="135" y2="135"></line>
+          <polyline class="chart__line" points="0,150 40,138 80,144 120,120 160,128 200,104 240,112 280,88 320,96 360,72 400,80 440,58 480,66 520,40"></polyline>
+        </svg>
+
+        <div class="hero__tickers">
+          <div class="ticker-pill">
+            <span class="ticker-pill__logo">AA</span>
+            <span class="ticker-pill__id"><span class="ticker-pill__symbol">AAPL</span></span>
+            <span class="ticker-pill__price">$232.14</span>
+            <span class="pc pc--12 pc--up"><svg class="pc__arrow" aria-hidden="true" focusable="false"><use href="#pc-up"/></svg>+1.83%</span>
+          </div>
+          <div class="ticker-pill">
+            <span class="ticker-pill__logo">TS</span>
+            <span class="ticker-pill__id"><span class="ticker-pill__symbol">TSLA</span></span>
+            <span class="ticker-pill__price">$248.50</span>
+            <span class="pc pc--12 pc--down"><svg class="pc__arrow" aria-hidden="true" focusable="false"><use href="#pc-down"/></svg>−2.17%</span>
+          </div>
+          <div class="ticker-pill">
+            <span class="ticker-pill__logo">NV</span>
+            <span class="ticker-pill__id"><span class="ticker-pill__symbol">NVDA</span></span>
+            <span class="ticker-pill__price">$131.26</span>
+            <span class="pc pc--12 pc--up"><svg class="pc__arrow" aria-hidden="true" focusable="false"><use href="#pc-up"/></svg>+3.05%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="tape">
+    <div class="shell tape__inner">
+      <span class="tape__item"><b>AAPL</b><span>$232.14</span><span class="pc pc--12 pc--up"><svg class="pc__arrow" aria-hidden="true" focusable="false"><use href="#pc-up"/></svg>+1.83%</span></span>
+      <span class="tape__item"><b>TSLA</b><span>$248.50</span><span class="pc pc--12 pc--down"><svg class="pc__arrow" aria-hidden="true" focusable="false"><use href="#pc-down"/></svg>−2.17%</span></span>
+      <span class="tape__item"><b>NVDA</b><span>$131.26</span><span class="pc pc--12 pc--up"><svg class="pc__arrow" aria-hidden="true" focusable="false"><use href="#pc-up"/></svg>+3.05%</span></span>
+      <span class="tape__item"><b>ASML</b><span>$712.90</span><span class="pc pc--12 pc--up"><svg class="pc__arrow" aria-hidden="true" focusable="false"><use href="#pc-up"/></svg>+0.64%</span></span>
+      <span class="tape__item"><b>TSM</b><span>$184.33</span><span class="pc pc--12 pc--down"><svg class="pc__arrow" aria-hidden="true" focusable="false"><use href="#pc-down"/></svg>−0.42%</span></span>
+      <span class="tape__item"><b>MSFT</b><span>$428.11</span><span class="pc pc--12 pc--up"><svg class="pc__arrow" aria-hidden="true" focusable="false"><use href="#pc-up"/></svg>+0.97%</span></span>
+      <span class="tape__item"><b>AMZN</b><span>$186.40</span><span class="pc pc--12 pc--up"><svg class="pc__arrow" aria-hidden="true" focusable="false"><use href="#pc-up"/></svg>+1.12%</span></span>
+    </div>
+  </div>
+
+  <div class="shell stats">
+    <div class="stat"><div class="stat__value">50,000+</div><div class="stat__label">traders</div></div>
+    <div class="stat"><div class="stat__value">8</div><div class="stat__label">exchanges</div></div>
+    <div class="stat"><div class="stat__value">Real-time</div><div class="stat__label">data</div></div>
+    <div class="stat"><div class="stat__value">$0</div><div class="stat__label">risk</div></div>
+  </div>
+
+  <div class="shell features">
+
+    <section class="feature">
+      <div class="feature__copy">
+        <h2 class="feature__title">Real markets, virtual money</h2>
+        <p class="feature__body">Execute market and limit orders against live prices. Your capital is virtual; the fills are real-time.</p>
+      </div>
+      <div class="feature__visual showcase">
+        <div class="card">
+          <div class="card__label">Buy AAPL — Market order</div>
+          <div class="order">
+            <div class="order__row"><span class="order__key">Shares</span><span>5</span></div>
+            <div class="order__row"><span class="order__key">Price</span><span>$232.14</span></div>
+            <div class="order__row"><span class="order__key">Total</span><b>$1,160.70</b></div>
+            <button class="btn order__submit" type="button">Execute buy order</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="feature feature--reversed">
+      <div class="feature__copy">
+        <h2 class="feature__title">Track every move</h2>
+        <p class="feature__body">Portfolio value, returns, and allocation update on every trade. No spreadsheets.</p>
+      </div>
+      <div class="feature__visual showcase">
+        <div class="card">
+          <div class="card__label">Performance — 1M</div>
+          <svg class="chart" height="150" viewBox="0 0 440 150" preserveAspectRatio="none" role="img" aria-label="One-month performance trending up">
+            <line class="chart__grid" x1="0" x2="440" y1="38" y2="38"></line>
+            <line class="chart__grid" x1="0" x2="440" y1="76" y2="76"></line>
+            <line class="chart__grid" x1="0" x2="440" y1="114" y2="114"></line>
+            <polyline class="chart__line" points="0,125 34,115 68,120 102,100 136,107 170,87 204,93 238,73 272,80 306,60 340,67 374,48 408,55 440,33"></polyline>
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <section class="feature">
+      <div class="feature__copy">
+        <h2 class="feature__title">Climb the leaderboard</h2>
+        <p class="feature__body">Weekly, monthly, and all-time rankings against every trader on the platform.</p>
+      </div>
+      <div class="feature__visual showcase">
+        <div class="card">
+          <div class="card__label">Leaderboard — Monthly</div>
+          <div class="mini-board">
+            <div class="mini-board__row">
+              <span class="mini-board__rank">1</span>
+              <span class="mini-board__user">marketmaven</span>
+              <span class="mini-board__value">$48,213.90</span>
+              <span class="pc pc--12 pc--up"><svg class="pc__arrow" aria-hidden="true" focusable="false"><use href="#pc-up"/></svg>+34.20%</span>
+            </div>
+            <div class="mini-board__row">
+              <span class="mini-board__rank">2</span>
+              <span class="mini-board__user">quietcompounder</span>
+              <span class="mini-board__value">$41,077.35</span>
+              <span class="pc pc--12 pc--up"><svg class="pc__arrow" aria-hidden="true" focusable="false"><use href="#pc-up"/></svg>+28.60%</span>
+            </div>
+            <div class="mini-board__row">
+              <span class="mini-board__rank">3</span>
+              <span class="mini-board__user">tsm_believer</span>
+              <span class="mini-board__value">$38,940.12</span>
+              <span class="pc pc--12 pc--up"><svg class="pc__arrow" aria-hidden="true" focusable="false"><use href="#pc-up"/></svg>+24.10%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <section class="shell markets">
+    <h2 class="markets__title">Markets covered</h2>
+    <div class="markets__wrap table-card">
+      <table class="markets-table">
+        <thead>
+          <tr>
+            <th class="col-exchange">Exchange</th>
+            <th class="col-region">Region</th>
+            <th class="col-hours">Trading hours</th>
+            <th class="col-count">Stocks</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="col-exchange">NYSE</td><td class="col-region">United States</td><td class="col-hours">09:30–16:00 EST</td><td class="col-count">2,272</td></tr>
+          <tr><td class="col-exchange">NASDAQ</td><td class="col-region">United States</td><td class="col-hours">09:30–16:00 EST</td><td class="col-count">3,432</td></tr>
+          <tr><td class="col-exchange">LSE</td><td class="col-region">United Kingdom</td><td class="col-hours">08:00–16:30 GMT</td><td class="col-count">1,142</td></tr>
+          <tr><td class="col-exchange">Euronext</td><td class="col-region">Europe</td><td class="col-hours">09:00–17:30 CET</td><td class="col-count">1,462</td></tr>
+          <tr><td class="col-exchange">XETRA</td><td class="col-region">Germany</td><td class="col-hours">09:00–17:30 CET</td><td class="col-count">921</td></tr>
+          <tr><td class="col-exchange">TSE</td><td class="col-region">Japan</td><td class="col-hours">09:00–15:00 JST</td><td class="col-count">3,754</td></tr>
+          <tr><td class="col-exchange">HKEX</td><td class="col-region">Hong Kong</td><td class="col-hours">09:30–16:00 HKT</td><td class="col-count">2,381</td></tr>
+          <tr><td class="col-exchange">SSE</td><td class="col-region">China</td><td class="col-hours">09:30–15:00 CST</td><td class="col-count">1,678</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="traders">
+    <div class="shell traders__inner">
+      <div class="traders__head">
+        <h2 class="traders__title">Top traders this month</h2>
+        <a class="btn btn--secondary btn--sm" href="leaderboard.html">See Full Rankings</a>
+      </div>
+      <div class="leaderboard">
+        <div class="leader leader--podium">
+          <span class="leader__rank">1</span>
+          <span class="leader__avatar">M</span>
+          <span class="leader__user">marketmaven</span>
+          <span class="leader__value">$48,213.90</span>
+          <span class="pc pc--12 pc--up pc--pill"><svg class="pc__arrow" aria-hidden="true" focusable="false"><use href="#pc-up"/></svg>+34.20%</span>
+        </div>
+        <div class="leader leader--podium">
+          <span class="leader__rank">2</span>
+          <span class="leader__avatar">Q</span>
+          <span class="leader__user">quietcompounder</span>
+          <span class="leader__value">$41,077.35</span>
+          <span class="pc pc--12 pc--up pc--pill"><svg class="pc__arrow" aria-hidden="true" focusable="false"><use href="#pc-up"/></svg>+28.60%</span>
+        </div>
+        <div class="leader leader--podium">
+          <span class="leader__rank">3</span>
+          <span class="leader__avatar">T</span>
+          <span class="leader__user">tsm_believer</span>
+          <span class="leader__value">$38,940.12</span>
+          <span class="pc pc--12 pc--up pc--pill"><svg class="pc__arrow" aria-hidden="true" focusable="false"><use href="#pc-up"/></svg>+24.10%</span>
+        </div>
+        <div class="leader">
+          <span class="leader__rank">4</span>
+          <span class="leader__avatar">I</span>
+          <span class="leader__user">indexandchill</span>
+          <span class="leader__value">$33,215.48</span>
+          <span class="pc pc--12 pc--up pc--pill"><svg class="pc__arrow" aria-hidden="true" focusable="false"><use href="#pc-up"/></svg>+19.70%</span>
+        </div>
+        <div class="leader">
+          <span class="leader__rank">5</span>
+          <span class="leader__avatar">V</span>
+          <span class="leader__user">volhunter</span>
+          <span class="leader__value">$31,882.03</span>
+          <span class="pc pc--12 pc--down pc--pill"><svg class="pc__arrow" aria-hidden="true" focusable="false"><use href="#pc-down"/></svg>−4.30%</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta">
+    <div class="shell cta__inner">
+      <h2 class="cta__title">Your first $10,000 is on us. Virtually.</h2>
+      <div class="cta__action">
+        <a class="btn btn--lg" href="auth.html">Start Trading Free</a>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="shell footer-grid">
+    <div><span class="wordmark wordmark--sm">HYPERSTOCKS</span></div>
+    <div class="footer-col">
+      <span class="footer-col__title">Product</span>
+      <a class="footer__link" href="stock-detail.html">Markets</a>
+      <a class="footer__link" href="leaderboard.html">Leaderboard</a>
+      <a class="footer__link" href="wallet.html">Wallet</a>
+    </div>
+    <div class="footer-col">
+      <span class="footer-col__title">Company</span>
+      <a class="footer__link">About</a>
+      <a class="footer__link">Contact</a>
+    </div>
+    <div class="footer-col">
+      <span class="footer-col__title">Legal</span>
+      <a class="footer__link">Terms</a>
+      <a class="footer__link">Privacy</a>
+    </div>
+  </div>
+  <div class="shell footer__disclaimer">HyperStocks is a simulation platform. No real money is invested. Market data provided for educational purposes.</div>
+</footer>
+
+</body>
+</html>

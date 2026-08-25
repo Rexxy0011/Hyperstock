@@ -1,0 +1,28 @@
+:root{
+--font-display:"Inter Tight",system-ui,sans-serif;
+--font-body:"Inter",system-ui,sans-serif;
+--font-mono:"Geist Mono","SF Mono",ui-monospace,monospace;
+/* Type scale */
+--text-xs:12px;
+--text-sm:13px;
+--text-base:14px;
+--text-md:16px;
+--text-lg:20px;
+--text-xl:24px;
+--text-2xl:32px;
+--text-3xl:44px;
+--text-4xl:56px;
+/* Weights */
+--weight-body:400;
+--weight-medium:500;
+--weight-semibold:600;
+--weight-display:700;
+/* Leading */
+--leading-tight:1.1;
+--leading-normal:1.5;
+}
+body{font-family:var(--font-body);color:var(--text-body);font-size:var(--text-base);line-height:var(--leading-normal);-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:var(--font-display);font-weight:var(--weight-display);line-height:var(--leading-tight);letter-spacing:-0.02em}
+.num,.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+a{color:var(--text-body);text-decoration:none}
+a:hover{color:var(--market-green)}

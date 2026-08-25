@@ -1,0 +1,31 @@
+:root{
+/* Base palette — Growth */
+--white:#ffffff;
+--mist:#f6f8f7;
+--ink:#0c1210;
+--market-green:#00c853;
+--loss-red:#e53935;
+--slate:#6b7280;
+--cool-grey:#e5e7eb;
+--void:#111111;
+/* Tints (10% / 8%) — pills and highlighted rows only */
+--green-tint:rgba(0,200,83,.10);
+--red-tint:rgba(229,57,53,.10);
+--mist-row:#f6f8f7;
+/* Darker green for hover on primary CTAs */
+--green-hover:#00b34a;
+--green-press:#00a041;
+/* Semantic aliases */
+--surface-page:var(--white);
+--surface-card:var(--white);
+--surface-muted:var(--mist);
+--surface-deep:var(--ink);
+--text-body:var(--void);
+--text-muted:var(--slate);
+--text-on-deep:#ffffff;
+--text-on-deep-muted:#9ca3af;
+--gain:var(--market-green);
+--loss:var(--loss-red);
+--border-default:var(--cool-grey);
+--accent-cta:var(--market-green);
+}
