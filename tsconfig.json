@@ -1,0 +1,28 @@
+{
+  // Type-checks the JavaScript without converting it to TypeScript. `checkJs`
+  // catches the mistakes that matter in a JS codebase — misspelt properties,
+  // wrong argument counts, calls on possibly-undefined — while `noImplicitAny`
+  // stays off so no annotations are required.
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+
+    "strict": false,
+    "noImplicitAny": false,
+    "strictNullChecks": false,
+
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true
+  },
+  "include": ["client/src/**/*", "server/src/**/*", "server/test/**/*", "types/**/*"],
+  "exclude": ["node_modules", "**/dist", "docs"]
+}

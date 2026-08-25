@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+.vite/
+coverage/
+
+# SECRETS — never commit.
+# `server/.env` holds JWT signing secrets, the Finnhub and Twelve Data API keys,
+# and DEPOSIT_DESTINATIONS, which carries real treasury wallet addresses. A bare
+# `.env` pattern matches at any depth in git, but the variants are listed
+# explicitly so a `.env.production` cannot slip through on the day someone adds
+# one. `.env.example` is the committed template and is negated below.
+.env
+.env.*
+*.env
+!.env.example
+
+# Local MongoDB. `scripts/mongo.sh` writes the persistent development database
+# here — 69MB of BSON, the mongod log and its pidfile. It is a local instance
+# with no auth, and its contents are seed data plus whatever has been traded
+# against it since.
+.data/
+*.pid
+.mongodb-binaries/
+
+# Claude Code local state. Both settings files are accumulated tool-permission
+# grants carrying absolute paths from this machine; they are of no use to anyone
+# cloning this and would leak the local directory layout.
+.claude/
+
+# Editors and OS
+.DS_Store
+.vscode/
+.idea/
+*.swp
+
+# Logs
+*.log
+npm-debug.log*

@@ -1,0 +1,45 @@
+{
+  "name": "hyperstocks",
+  "private": true,
+  "type": "module",
+  "version": "0.1.0",
+  "description": "HyperStocks — trade the world's markets with virtual capital and live prices.",
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "dev": "concurrently -n api,web -c green,cyan \"npm:dev:server\" \"npm:dev:client\"",
+    "dev:server": "npm run dev -w server",
+    "dev:client": "npm run dev -w client",
+    "seed": "npm run seed -w server",
+    "seed:fresh": "npm run seed:fresh -w server",
+    "market:probe": "npm run market:probe -w server",
+    "test": "npm run test -w server",
+    "build": "npm run build -w client",
+    "start": "npm run start -w server",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "check": "npm run lint && npm run typecheck && npm test",
+    "db": "./scripts/mongo.sh start",
+    "db:stop": "./scripts/mongo.sh stop",
+    "db:status": "./scripts/mongo.sh status",
+    "db:logs": "./scripts/mongo.sh logs"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "@types/node": "^26.2.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "concurrently": "^9.1.2",
+    "eslint": "^9.39.5",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.11.0",
+    "typescript": "^7.0.2"
+  },
+  "engines": {
+    "node": ">=20.19"
+  }
+}
