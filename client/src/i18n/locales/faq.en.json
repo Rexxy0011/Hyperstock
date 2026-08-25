@@ -1,0 +1,185 @@
+{
+  "gettingStarted": {
+    "label": "Getting Started",
+    "items": {
+      "whatIs": {
+        "q": "What is Hyperstock?",
+        "body": [
+          "Hyperstock is a multi-asset investment platform that gives individuals access to a range of financial markets through a single account. Depending on availability and eligibility, investors can access assets including stocks, cryptocurrencies, gold, and mutual funds.",
+          "Our platform combines market access, portfolio management, account funding, and investment tools in one streamlined experience."
+        ]
+      },
+      "whoCanOpen": {
+        "q": "Who can open a Hyperstock account?",
+        "body": [
+          "Hyperstock accounts are available to eligible individuals who meet our account-opening and verification requirements.",
+          "Eligibility may depend on factors such as your country or state of residence, age, identity verification, and the specific investment products you wish to access. Additional requirements may apply to certain products or services."
+        ]
+      },
+      "howToOpen": {
+        "q": "How do I open an account?",
+        "cta": "Create an account",
+        "body": [
+          "Opening an account is designed to be straightforward.",
+          "Create your Hyperstock account, provide the required personal information, complete identity verification, and submit any additional documentation requested. Once your application has been approved, you can fund your account and begin using the platform."
+        ]
+      }
+    }
+  },
+
+  "accounts": {
+    "label": "Accounts & Verification",
+    "items": {
+      "whyVerify": {
+        "q": "Why does Hyperstock need to verify my identity?",
+        "body": [
+          "Identity verification helps us protect your account and comply with applicable financial regulations.",
+          "As part of the onboarding process, we may request information such as your legal name, date of birth, residential address, and government-issued identification. Verification requirements may vary depending on your location and the products or services you use."
+        ]
+      },
+      "documents": {
+        "q": "What documents may I need to provide?",
+        "body": [
+          "Depending on your circumstances, you may be asked to provide a valid government-issued identification document and information that helps verify your identity and address.",
+          "Additional documentation may occasionally be required to complete regulatory or account verification checks."
+        ]
+      },
+      "howLong": {
+        "q": "How long does account verification take?",
+        "body": [
+          "Many verification checks are completed quickly, but processing times can vary.",
+          "If additional information or documentation is required, verification may take longer. We recommend ensuring that the information submitted during registration is accurate and matches your supporting documents."
+        ]
+      }
+    }
+  },
+
+  "funding": {
+    "label": "Funding & Withdrawals",
+    "items": {
+      "howToFund": {
+        "q": "How can I fund my Hyperstock account?",
+        "body": [
+          "Available funding methods depend on your location and account eligibility.",
+          "Once your account is verified, available deposit methods will be displayed within your Hyperstock account. Processing times and applicable limits may vary depending on the funding method."
+        ]
+      },
+      "depositTime": {
+        "q": "How long does it take for my deposit to arrive?",
+        "body": [
+          "Deposit times depend on the payment method used.",
+          "Some funding methods may be reflected in your available balance quickly, while others may require additional processing time. Hyperstock will display applicable processing information before you complete a deposit."
+        ]
+      },
+      "howToWithdraw": {
+        "q": "How do I withdraw money from my account?",
+        "body": [
+          "You can request a withdrawal from your Hyperstock account using an available withdrawal method.",
+          "For security and compliance purposes, withdrawals may be subject to verification, processing times, account restrictions, and other applicable requirements. Funds must generally be withdrawn according to the procedures available for your account."
+        ]
+      },
+      "limits": {
+        "q": "Are there limits on deposits or withdrawals?",
+        "body": [
+          "Certain accounts, payment methods, assets, or transactions may be subject to minimums, maximums, or other limits.",
+          "Any applicable limits will be communicated through the platform and may vary based on factors including account status, verification level, payment method, and regulatory requirements."
+        ]
+      }
+    }
+  },
+
+  "trading": {
+    "label": "Trading & Investments",
+    "items": {
+      "whatCanInvest": {
+        "q": "What can I invest in through Hyperstock?",
+        "body": [
+          "Hyperstock provides access to multiple asset classes through one platform.",
+          "Depending on availability and eligibility, these may include:",
+          {
+            "list": [
+              "Stocks — shares of publicly traded companies",
+              "Cryptocurrencies — supported digital assets",
+              "Gold — exposure to the gold market",
+              "Mutual Funds — diversified professionally managed investment funds"
+            ]
+          },
+          "The availability of specific assets and products may vary by jurisdiction and account type."
+        ]
+      },
+      "sameAccount": {
+        "q": "Can I trade stocks and cryptocurrencies from the same account?",
+        "body": [
+          "Yes, where both products are available to your account, Hyperstock is designed to let you manage multiple asset classes through one connected platform.",
+          "You can monitor your portfolio and manage eligible investments without maintaining separate Hyperstock accounts for each supported asset class."
+        ]
+      },
+      "fractional": {
+        "q": "Does Hyperstock offer fractional shares?",
+        "body": [
+          "Fractional share availability depends on the specific security and product offering.",
+          "Where fractional investing is supported, investors may be able to purchase a portion of an eligible share rather than purchasing a whole share. Availability, minimum investment amounts, and applicable restrictions may vary."
+        ]
+      },
+      "anyTime": {
+        "q": "Can I buy and sell investments at any time?",
+        "body": [
+          "Trading availability depends on the asset and the applicable market hours.",
+          "Stocks generally trade during established exchange hours, while some markets — such as cryptocurrency markets — may operate on different schedules. Orders may also be subject to market conditions, liquidity, exchange rules, and applicable restrictions."
+        ]
+      },
+      "advice": {
+        "q": "Does Hyperstock provide investment advice?",
+        "body": [
+          "Hyperstock provides investment tools, market information, and access to financial products, but information provided through the platform should not automatically be considered personalized investment advice.",
+          "Investing involves risk, and you should consider your financial circumstances, objectives, and risk tolerance before making investment decisions. If you require personalized financial advice, consider consulting a qualified financial professional."
+        ]
+      }
+    }
+  },
+
+  "security": {
+    "label": "Security & Trust",
+    "items": {
+      "howProtected": {
+        "q": "How does Hyperstock protect my account?",
+        "body": [
+          "Security is built into every layer of the Hyperstock experience.",
+          "We use security controls designed to protect your account, personal information, and trading activity. Depending on the service and account configuration, these may include encryption, authentication controls, monitoring systems, and measures designed to detect suspicious activity.",
+          "We also recommend enabling all available account-security features and keeping your login credentials private."
+        ]
+      },
+      "suspicious": {
+        "q": "What should I do if I notice suspicious activity?",
+        "body": [
+          "Contact Hyperstock Support immediately and secure your account.",
+          "If you notice an unfamiliar login, transaction, withdrawal, or other suspicious activity, change your password and follow the security instructions available within your account. Our support team can help you determine the appropriate next steps.",
+          "Never share your password, authentication codes, or private security information with anyone claiming to represent Hyperstock."
+        ]
+      }
+    }
+  },
+
+  "fees": {
+    "label": "Fees & Pricing",
+    "items": {
+      "whatFees": {
+        "q": "What fees does Hyperstock charge?",
+        "body": [
+          "Fees depend on the product, transaction, funding method, and service involved.",
+          "Applicable fees and charges are presented through the platform and relevant disclosures. These may include trading-related charges, fund expenses, spreads, withdrawal or payment-processing fees, or other applicable costs.",
+          "Always review the applicable fee information before completing a transaction."
+        ]
+      },
+      "riskFree": {
+        "q": "Is investing with Hyperstock risk-free?",
+        "body": [
+          "No. Investing always involves risk.",
+          "The value of investments can rise or fall, and you may lose some or all of the money you invest. Different asset classes carry different levels and types of risk. Cryptocurrency, individual stocks, commodities, and other investments can experience significant price fluctuations.",
+          "Past performance does not guarantee future results.",
+          "Before investing, consider your investment objectives, financial circumstances, and tolerance for risk."
+        ]
+      }
+    }
+  }
+}
