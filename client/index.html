@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="theme-color" content="#0c1210" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!--
+      Poppins, headings only (see --font-display in styles/theme.css).
+
+      The weights are enumerated, not a `300..700` range, because Poppins has no
+      variable face on Google Fonts — the range syntax returns an HTML error
+      page rather than CSS. So each weight is its own woff2, and a weight that
+      is not listed here does not exist at runtime.
+
+      All three are load-bearing: 400 body copy under the headings, 500 section
+      h2, 700 hero and panel header. Drop one and CSS font matching substitutes
+      the nearest weight it does have — no error, just text rendering at the
+      wrong thickness.
+
+      400 in particular has to be listed explicitly. An absent 400 does NOT
+      fall back to 300: the CSS font-matching algorithm searches UPWARD from
+      400 first, so `font-normal` would silently render at 500.
+
+      Loaded here rather than via @import in theme.css, which would serialise
+      the font fetch behind the app stylesheet instead of running alongside it.
+
+      GEIST MONO RIDES ALONG in the same request, and moving it here was a fix
+      rather than tidying. It used to load from an @import at the top of
+      index.css — the exact pattern this comment warns about — so it resolved
+      only after the app stylesheet had, and every number in the product painted
+      once in SF Mono and then reflowed into Geist Mono. Invisible on a 13px
+      table cell, obvious on the instrument terminal's headline price. One
+      request now, in parallel with the CSS; the families must stay in
+      alphabetical order or Google returns an error page rather than CSS.
+
+      Its three weights are load-bearing the same way Poppins' are: 400 for
+      table figures, 500 for prices and headline numbers, 600 where a number
+      needs emphasis without changing size.
+    -->
+    <!--
+      MONTSERRAT IS HERE FOR CYRILLIC, and it is not a second brand face.
+
+      Poppins ships NO CYRILLIC SUBSET — verified against the Google Fonts API,
+      which returns zero `cyrillic` @font-face blocks for it against four for
+      Montserrat. With Ukrainian in the product that is not a nicety: every
+      heading on every Ukrainian page would fall straight through to the system
+      stack, silently, exactly the way a missing WEIGHT does (see the note in
+      theme.css). The page would simply be set in a different face and nothing
+      would report it.
+
+      Font matching is PER CHARACTER via unicode-range, so listing Montserrat
+      after Poppins in `--font-display` costs English nothing — Poppins covers
+      Latin and is used for it — while Ukrainian resolves to the nearest
+      geometric sans that actually has the glyphs. Both faces are requested at
+      the same two heading weights so the substitution does not also change
+      weight.
+
+      Geist Mono already covers Cyrillic (six blocks), so the mono face needs
+      nothing. Families must stay in alphabetical order or Google returns an
+      error page rather than CSS.
+    -->
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&family=Montserrat:wght@400;500;700&family=Poppins:wght@400;500;700&display=swap"
+    />
+    <title>HyperStocks — Trade the world's markets. Risk nothing.</title>
+    <meta
+      name="description"
+      content="Real-time data, virtual capital, real skills. Practice on live prices across eight exchanges without risking a cent."
+    />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

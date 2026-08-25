@@ -1,0 +1,435 @@
+/* HyperStocks Growth design system, mapped into Tailwind v4's theme.
+   Source of truth: the Claude Design project's tokens/{colors,typography,spacing}.css
+
+   Three deliberate departures from a naive copy, each load-bearing:
+
+   1. The design system names two COLORS `--text-body` / `--text-muted`, but in
+      Tailwind v4 the `--text-*` namespace means FONT SIZE. Copied verbatim they
+      would generate a nonsense `text-body` font-size utility and silently shadow
+      the real scale. They are renamed to `--color-text-*` here.
+
+   2. `--radius-*` and `--shadow-*` are wiped before being redefined, so the
+      design system's "one radius, one shadow, cards only" rule becomes
+      impossible to violate — `rounded-full` and `shadow-lg` stop existing.
+
+   3. `--spacing: 4px` reaches every value on the design's 8px grid through the
+      standard numeric scale (p-2=8, p-4=16, p-6=24, p-8=32 … p-24=96), so no
+      bespoke spacing tokens are needed. */
+
+@theme {
+  /* ------------------------------------------------------------- colours */
+  --color-white: #ffffff;
+  --color-mist: #f6f8f7;
+  --color-ink: #0c1210;
+  --color-void: #111111;
+  --color-slate: #6b7280;
+  --color-cool-grey: #e5e7eb;
+
+  --color-gain: #00c853;
+  --color-loss: #e53935;
+  --color-green-tint: rgba(0, 200, 83, 0.1);
+  --color-red-tint: rgba(229, 57, 53, 0.1);
+  --color-green-hover: #00b34a;
+  --color-green-press: #00a041;
+
+  /* Loss red for deep surfaces. --color-loss reaches 5.0:1 on white but only
+     4.48:1 on --color-ink, which misses AA for body text; this clears it at
+     5.43:1. Gain needs no counterpart — it already reads 8.46:1 on ink. */
+  --color-loss-deep: #ef5350;
+
+  /* The brand green driven down its own lightness ramp — hue and saturation
+     held at hsl(145 100%), only L stepped, so it reads as one colour deepening
+     rather than two greens meeting. Ends on #004c20, which carries white body
+     text at 10.2:1; the brand green itself only manages 2.24:1. */
+  --color-green-deep: #004c20;
+
+  /* Interaction states for --color-slate, stepped by the same ~10%/~20% the
+     green pair uses, so a slate button darkens at the same rate as a green one. */
+  --color-slate-hover: #5f6672;
+  --color-slate-press: #545b66;
+
+  /* Amber is not in the design system — it exists solely for the degraded
+     market-data pill, which the design never had to represent. */
+  --color-amber: #b45309;
+  --color-amber-tint: rgba(180, 83, 9, 0.1);
+
+  --color-text-body: #111111;
+  --color-text-muted: #6b7280;
+  --color-text-on-deep: #ffffff;
+  --color-text-on-deep-muted: #9ca3af;
+
+  /* --------------------------------------------------- dashboard surfaces
+     Added for the GoStock-style dashboard: a grey canvas with the app floating
+     on it as one large rounded panel. The marketing pages keep --color-white
+     as their page background. */
+  --color-canvas: #ebebeb;
+  --color-panel: #ffffff;
+  --color-hover: #f4f4f4;
+
+  /* ---------------------------------------------------------- typography
+     Poppins carries the HEADINGS ONLY. The geometric letterforms are the brand
+     voice, but it is a display face — wide, with a large x-height and near
+     circular bowls — and it turns dense 13px table UI mushy. So --font-body
+     stays on the system stack (SF Pro on Apple, Segoe UI on Windows, Roboto on
+     Android), which downloads nothing and paints on the first frame. Mono stays
+     a distinct face — it is doing real work holding price columns aligned via
+     tabular figures, not decoration.
+
+     Poppins has NO variable face on Google Fonts, so the weights are fetched
+     individually and only 400/500/700 exist at runtime. Using a fourth weight
+     means adding it to the <link> in index.html first, or CSS font matching
+     quietly substitutes the nearest one it does have — and note the search runs
+     UPWARD from 400 before it runs down, so a missing 400 lands on 500, not 300.
+
+     Landing's copy, its nav links and its "Markets covered" table opt in to
+     this face explicitly with `font-display`, because the base rule below only
+     reaches h1/h2/h3. That is Landing and the shell only. It must not spread
+     to the dashboard: eight roomy marketing rows carry Poppins at 13px, forty
+     dense holdings rows do not.
+
+     Numeric columns take --font-numeric, and `font-display` goes on labels and
+     never on a number. That rule is now measurable rather than a matter of
+     taste: POPPINS HAS NO TABULAR FIGURE SET AT ALL. Measured at 32px, "111111"
+     against "000000" differs by 59px in Poppins and `font-variant-numeric:
+     tabular-nums` does not close it, because the face has no `tnum` feature for
+     it to switch on. A price column in Poppins would visibly shift on every
+     tick.
+
+     Poppins is listed first but the system stack is still behind it — with
+     `display=swap` that fallback is what renders for the first few hundred ms,
+     so it has to stay a real sans, not a bare `sans-serif`. */
+  /* Montserrat sits between Poppins and the system stack to carry CYRILLIC —
+     Poppins has no Cyrillic subset at all, so without it every Ukrainian
+     heading silently falls through to the system face. Matching is per
+     character, so English still renders in Poppins throughout. */
+  --font-display:
+    'Poppins', 'Montserrat', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue',
+    Arial, sans-serif;
+  --font-body:
+    system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+  /* ------------------------------------------------------------- figures
+     EVERY NUMBER IN THE PRODUCT, and it is NOT the mono face.
+
+     Prices, percentages, quantities and ranks used to render in Geist Mono,
+     which reads as a code listing rather than as money — a balance is a figure,
+     not a token. They are the body face now, so `$1,000.00` looks like the rest
+     of the interface.
+
+     THE ALIGNMENT IS NOT GIVEN UP TO GET THAT. Column alignment needs tabular
+     figures, which is a font FEATURE, not a property of monospace — a
+     proportional face with a `tnum` set holds a column exactly as well.
+     Measured at 32px across six digits, system-ui spans 31px between "111111"
+     and "000000" normally and **exactly 0** with tabular figures on. So the
+     feature is baked into the token below rather than left to each call site to
+     remember, which is how a jittering column gets shipped.
+
+     Codes keep --font-mono, and the split is real: a ticker, a deposit
+     reference, a transaction hash, a wallet address and an env var name all
+     want per-character distinction and none of them are figures. The rule at a
+     call site is simply whether the thing is a number. */
+  --font-numeric:
+    system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-numeric--font-feature-settings: 'tnum';
+
+  --font-mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  --text-*: initial;
+  /* The micro step: badge text, table column heads, avatar monograms.
+     29 arbitrary text-[10px] / text-[11px] values were reaching for a
+     rung the scale did not have. 10px was below the readable floor, so
+     they consolidate up to 11. */
+  --text-2xs: 11px;
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-base: 14px;
+  --text-md: 16px;
+  --text-lg: 20px;
+  --text-xl: 24px;
+  --text-2xl: 32px;
+  --text-3xl: 44px;
+  --text-4xl: 56px;
+
+  --leading-tight: 1.1;
+  --leading-normal: 1.5;
+
+  /* ------------------------------------------------------- space, radius */
+  --spacing: 4px;
+
+  /* The original system permitted exactly one radius (8px). The dashboard
+     reference is built on a softer, more generous curve, so the scale is
+     widened — deliberately, and only upward. `rounded-full` stays unavailable. */
+  --radius-*: initial;
+  --radius-sm: 8px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+  --radius-3xl: 28px;
+
+  --shadow-*: initial;
+  --shadow-card: 0 1px 3px rgba(12, 18, 16, 0.06), 0 1px 2px rgba(12, 18, 16, 0.04);
+  /* The large soft lift that floats the dashboard panel off the canvas. */
+  --shadow-panel: 0 24px 60px -20px rgba(16, 20, 24, 0.16), 0 4px 16px rgba(16, 20, 24, 0.04);
+
+  /* ------------------------------------------------------------- motion
+     The ticker tape's continuous scroll. It shifts exactly -50%, which is one
+     full copy of the list, so TickerTape must render the row precisely twice
+     for the wrap to be seamless. 90s is deliberate: a price tape is ambient,
+     and anything quicker reads as an advert and makes the figures unreadable. */
+  --animate-marquee: marquee 90s linear infinite;
+
+  /* The partner strip reuses the same keyframes and needs its own DURATION.
+     90s is tuned to the price tape's long list; ten short wordmarks travelling
+     at that speed barely appear to move, which reads as a rendering fault
+     rather than as a slow scroll. 40s covers the shorter track in about the
+     same perceived pace. */
+  --animate-marquee-partners: marquee 40s linear infinite;
+
+  @keyframes marquee {
+    to {
+      transform: translateX(-50%);
+    }
+  }
+
+  /* The deposit progress hourglass. It HOLDS, flips, holds, flips — a
+     continuous spin reads as a generic loader, whereas the pause is what makes
+     it read as time passing, which is what the deposit is actually waiting on.
+     3.2s per half turn so it is noticeable without being busy. */
+  --animate-hourglass: hourglass 6.4s ease-in-out infinite;
+
+  @keyframes hourglass {
+    0%,
+    38% {
+      transform: rotate(0deg);
+    }
+    50%,
+    88% {
+      transform: rotate(180deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
+  /* Entrance for a panel that replaces another in place. Small on purpose:
+     8px and 240ms reads as the content settling, not as a slide. */
+  --animate-rise: rise 240ms cubic-bezier(0.16, 1, 0.3, 1) both;
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
+
+@layer base {
+  /**
+   * SMOOTH SCROLL, AND THE ONE THING THAT MUST NOT GET IT.
+   *
+   * `scroll-behavior: smooth` affects programmatic and fragment scrolls only —
+   * it does nothing to wheel or trackpad scrolling, which stays native (and
+   * should: the libraries that "smooth" the wheel hijack it away from the
+   * compositor and fight trackpad inertia).
+   *
+   * The problem is that React Router's ScrollRestoration jumps to the top with
+   * `window.scrollTo(0, 0)` — the two-argument form, which OBEYS this property.
+   * Left alone, every navigation would animate a scroll up the length of the
+   * page you just left, on top of the page you just opened.
+   *
+   * So `html[data-navigating]` pins it back to auto. The attribute is set in a
+   * layout effect that runs before the router's scroll and cleared on the next
+   * frame — see ScrollBehaviour in router.jsx.
+   */
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
+  }
+
+  html[data-navigating] {
+    scroll-behavior: auto;
+  }
+
+  /**
+   * The route-change crossfade, via the browser's native View Transitions.
+   *
+   * No animation library: React Router 7 takes a `viewTransition` prop on Link
+   * and hands the DOM swap to `document.startViewTransition`, so the whole
+   * effect is these few rules. Browsers without the API navigate instantly,
+   * which is what the site did before — the degradation costs nothing.
+   *
+   * A crossfade and NOT a slide. The pages here do not have a spatial
+   * relationship — /markets is not to the left of /news — so a directional
+   * transition would be inventing one. 180ms is deliberately short: this runs
+   * on every navigation, and anything slower starts to read as latency.
+   *
+   * The old snapshot is positioned absolutely by the UA, so a tall outgoing
+   * page cannot push the layout during the fade.
+   */
+  @media (prefers-reduced-motion: no-preference) {
+    ::view-transition-old(root),
+    ::view-transition-new(root) {
+      animation-duration: 180ms;
+      animation-timing-function: ease;
+    }
+  }
+
+  /* The API's default is a crossfade already, so reduced motion only needs the
+     animation switched off rather than a separate treatment. */
+  @media (prefers-reduced-motion: reduce) {
+    ::view-transition-group(*),
+    ::view-transition-old(*),
+    ::view-transition-new(*) {
+      animation: none !important;
+    }
+
+    /* The hourglass and the panel entrances go with them. The hourglass still
+       communicates without turning — it is an hourglass — and `rise` is pure
+       decoration, so removing it costs nothing. */
+    .animate-hourglass,
+    .animate-rise {
+      animation: none !important;
+    }
+
+    /* Dialogs appear and leave instantly. The transition below is the only
+       thing removed — the dialog still opens, still traps focus, still closes. */
+    dialog,
+    dialog::backdrop {
+      transition: none !important;
+    }
+  }
+
+  /**
+   * DIALOGS FADE IN AND OUT, and until now they did neither.
+   *
+   * Every modal in the product — the order ticket, the top-up, the receipt —
+   * appeared and vanished on a single frame. On the ticket that is the worst
+   * place for it: the panel it replaces is the thing the user was just looking
+   * at, and a hard cut reads as the page having navigated rather than as a
+   * layer opening over it.
+   *
+   * `allow-discrete` is what makes this possible without JavaScript. `display`
+   * and `overlay` are discrete properties, so ordinarily a dialog snaps from
+   * `display:none` and out of the top layer the instant it closes, cutting any
+   * exit animation off at the first frame. Listing both here holds the old
+   * value until the transition finishes, which is the only way a native
+   * `<dialog>` animates OUT rather than only in.
+   *
+   * `@starting-style` supplies the "before open" state — without it there is no
+   * value to transition FROM, and the entrance is silently skipped while the
+   * exit still works, which looks like a bug rather than a choice.
+   *
+   * The backdrop transitions OPACITY, not colour: `Modal` sets its
+   * `background-color` with a Tailwind `backdrop:` utility, and that lives in
+   * the utilities layer where it would win over anything set here.
+   */
+  dialog {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+    transition:
+      opacity 160ms ease,
+      transform 200ms cubic-bezier(0.16, 1, 0.3, 1),
+      display 200ms allow-discrete,
+      overlay 200ms allow-discrete;
+  }
+
+  dialog[open] {
+    opacity: 1;
+    transform: none;
+  }
+
+  dialog::backdrop {
+    opacity: 0;
+    transition:
+      opacity 160ms ease,
+      display 160ms allow-discrete,
+      overlay 160ms allow-discrete;
+  }
+
+  dialog[open]::backdrop {
+    opacity: 1;
+  }
+
+  /* Must come after the [open] rules it seeds. */
+  @starting-style {
+    dialog[open] {
+      opacity: 0;
+      transform: translateY(10px) scale(0.985);
+    }
+
+    dialog[open]::backdrop {
+      opacity: 0;
+    }
+  }
+
+  body {
+    font-family: var(--font-body);
+    font-size: var(--text-base);
+    line-height: var(--leading-normal);
+    color: var(--color-text-body);
+    background: var(--color-white);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /**
+   * Headings carry family, leading and tracking only — never size or weight.
+   * Preflight resets those to `inherit`, so every heading MUST declare them
+   * with utilities, and the tag itself has no visual effect. Pick the tag for
+   * document structure and the step below for appearance; they are separate
+   * decisions and conflating them is what let an h1 render at 16px.
+   *
+   * THE SCALE. Five steps, each a clear jump from the last:
+   *
+   *   display   clamp(28px,4vw,42px)   / 700   Landing hero. One per site.
+   *   title     text-2xl  32px / 500           marketing section h2, Auth
+   *   screen    text-xl   24px / 700           app page h1
+   *   section   text-lg   20px / 600           sub-heads within a section
+   *   panel     text-md   16px / 700           card and table headers
+   *   body      text-base 14px / 400           prose; text-sm 13 for dense UI
+   *
+   * The jumps are ~1.45x, wide enough to read as rank at a glance. Landing's
+   * h1 and h2 were 46 and 44 — two pixels apart, which is why the page felt
+   * flat no matter what else moved.
+   *
+   * `screen` EXISTS BECAUSE THE MARKETING RUNG DOES NOT SURVIVE THE DASHBOARD.
+   * Page titles used `title`, and 32px/500 is right over a wide marketing
+   * column and wrong over dense app chrome — measured on /portfolio it rendered
+   * the largest thing on the screen, half again the headline figure it was
+   * introducing (32px against the value's 24px), so the label outranked the
+   * number the page exists to show. The weight was the other half of it: at 500
+   * it was the only Poppins on the page not at 700, and a display face one step
+   * lighter than everything around it reads as a different font rather than as
+   * the same font at a lower rank.
+   *
+   * So app titles drop to 24px and take the heading weight the rest of the
+   * screen already uses. That keeps a 1.5x jump down to the panel headers and
+   * puts the title under the headline number, which is the correct order.
+   * About's section h2s and Auth keep `title` — marketing is where it works.
+   */
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    line-height: var(--leading-tight);
+    letter-spacing: -0.02em;
+  }
+
+  /* Every number in this product is tabular — prices, percentages, ranks.
+     Kept as an alias of the `font-numeric` utility so the two can never drift
+     into disagreeing about what a figure looks like. */
+  .tnum {
+    font-family: var(--font-numeric);
+    font-variant-numeric: tabular-nums;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-gain);
+    outline-offset: 2px;
+  }
+}

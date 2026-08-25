@@ -1,0 +1,5 @@
+/* Both webfonts load from a <link> in index.html, not from an @import here —
+   an @import resolves only after this stylesheet does, which made every number
+   in the product paint in SF Mono first and then reflow into Geist Mono. */
+@import 'tailwindcss';
+@import './theme.css';
