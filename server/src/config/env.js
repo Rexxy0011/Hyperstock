@@ -1,6 +1,4 @@
 import { z } from 'zod';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
 
 /**
  * Env is validated once, at import time, and fails fast with a readable list of
@@ -133,19 +131,6 @@ const schema = z.object({
    */
   DEPOSIT_DESTINATIONS: z.string().default('[]'),
 
-  /**
-   * A readable alternative to the JSON blob above.
-   *
-   * DEPOSIT_DESTINATIONS is a single line of JSON holding twelve objects — over
-   * 1,700 characters — and hand-editing that is where a misplaced brace turns
-   * into a boot failure, or worse, a wrong character in a treasury address. A
-   * path here loads the same array from a pretty-printed file instead.
-   *
-   * It takes PRECEDENCE over the inline value when set. The file must be
-   * gitignored for the same reason the inline value lives in env: an address in
-   * source cannot be rotated without a deploy and leaks into every clone.
-   */
-  DEPOSIT_DESTINATIONS_FILE: z.string().default(''),
   /** Confirmations before a detected payment is put in front of a reviewer. */
   DEPOSIT_MIN_CONFIRMATIONS: z.coerce.number().int().nonnegative().default(1),
   /** An unpaid deposit stops being quotable after this long. */
@@ -201,27 +186,10 @@ export const MAX_WITHDRAWAL_CENTS = Math.round(env.MAX_WITHDRAWAL_AMOUNT * 100);
  */
 export const DEPOSIT_DESTINATIONS = (() => {
   let raw;
-  let source = 'DEPOSIT_DESTINATIONS';
-  let text = env.DEPOSIT_DESTINATIONS;
-
-  if (env.DEPOSIT_DESTINATIONS_FILE) {
-    source = env.DEPOSIT_DESTINATIONS_FILE;
-    try {
-      text = readFileSync(resolve(env.DEPOSIT_DESTINATIONS_FILE), 'utf8');
-    } catch (err) {
-      // A path that was set and cannot be read is a misconfiguration, never a
-      // reason to silently fall back to the inline value — that would serve
-      // whatever addresses happened to be in env while the operator believes
-      // the file is live.
-      console.error(`Refusing to start: cannot read ${source} — ${err?.message ?? err}`);
-      process.exit(1);
-    }
-  }
-
   try {
-    raw = JSON.parse(text);
+    raw = JSON.parse(env.DEPOSIT_DESTINATIONS);
   } catch {
-    console.error(`Refusing to start: ${source} is not valid JSON.`);
+    console.error('Refusing to start: DEPOSIT_DESTINATIONS is not valid JSON.');
     process.exit(1);
   }
   if (!Array.isArray(raw)) {

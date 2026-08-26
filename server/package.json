@@ -10,7 +10,7 @@
     "seed": "node --env-file-if-exists=.env src/seed/seed.js",
     "seed:fresh": "node --env-file-if-exists=.env src/seed/seed.js --fresh",
     "market:probe": "node --env-file-if-exists=.env src/market/probe.js",
-    "test": "MONGODB_URI= DEPOSIT_DESTINATIONS=[] DEPOSIT_DESTINATIONS_FILE= WITHDRAWALS_ENABLED=false RESEND_API_KEY= GOOGLE_CLIENT_ID= GOOGLE_CLIENT_SECRET= node --test --env-file-if-exists=.env test/**/*.test.js"
+    "test": "MONGODB_URI= DEPOSIT_DESTINATIONS=[] WITHDRAWALS_ENABLED=false RESEND_API_KEY= GOOGLE_CLIENT_ID= GOOGLE_CLIENT_SECRET= node --test --env-file-if-exists=.env test/**/*.test.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",

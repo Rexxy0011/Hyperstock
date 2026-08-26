@@ -18,13 +18,6 @@ coverage/
 *.env
 !.env.example
 
-# TREASURY ADDRESSES. `deposit-destinations.json` is the readable form of
-# DEPOSIT_DESTINATIONS — real wallet addresses for receiving deposits. It is
-# config, not source: an address committed here cannot be rotated without a
-# deploy and leaks into every clone. The `.example` template IS committed.
-deposit-destinations.json
-!deposit-destinations.example.json
-
 # Local MongoDB. `scripts/mongo.sh` writes the persistent development database
 # here — 69MB of BSON, the mongod log and its pidfile. It is a local instance
 # with no auth, and its contents are seed data plus whatever has been traded
