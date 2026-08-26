@@ -50,7 +50,7 @@ test('withdrawals', async (t) => {
     'refusing to run: this suite drops all collections and is not connected to an ephemeral database',
   );
 
-  const { env, DEPOSIT_DESTINATIONS } = await import('../src/config/env.js');
+  const { env, DEPOSIT_DESTINATIONS, WITHDRAWAL_NETWORKS } = await import('../src/config/env.js');
 
   /**
    * Both are forced here rather than assumed, the same trap `npm test` already
@@ -64,6 +64,12 @@ test('withdrawals', async (t) => {
     'refusing to run: DEPOSIT_DESTINATIONS leaked in from the environment',
   );
 
+
+  assert.equal(
+    WITHDRAWAL_NETWORKS.length,
+    0,
+    'refusing to run: WITHDRAWAL_NETWORKS leaked in from the environment',
+  );
   await runSeed({ fresh: true });
 
   const trader = await User.findOne({ username: 'jd_trader' }).lean();

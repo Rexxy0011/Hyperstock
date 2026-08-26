@@ -9,6 +9,7 @@ import Input from '../components/ui/Input';
 import Badge, { statusVariant } from '../components/ui/Badge';
 import Modal from '../components/ui/Modal';
 import Money from '../components/market/Money';
+import CopyField from '../components/ui/CopyField';
 
 /**
  * The approvals dashboard — deposits, withdrawals and top-ups in one queue.
@@ -294,7 +295,7 @@ function Detail({ row, tab }) {
           rather than one click away. Broken to fit without forcing the table
           wider than the viewport. */}
       {tab === 'withdrawals' && row.destinationAddress && (
-        <span className="font-mono break-all text-text-body">{row.destinationAddress}</span>
+        <CopyField value={row.destinationAddress} label={t('admin.approvals.sendTo')} />
       )}
       {tab === 'deposits' && row.txHash && (
         <span className="font-mono break-all">{row.txHash}</span>
@@ -456,7 +457,14 @@ function ReviewModal({ open, action, onClose, onDone }) {
             {row.destinationAddress && (
               <>
                 <dt className="text-text-muted">{t('admin.approvals.sendTo')}</dt>
-                <dd className="m-0 font-mono text-xs break-all">{row.destinationAddress}</dd>
+                {/* COPYABLE, because this is the string that has to reach a
+                    wallet by hand. Re-typing 42 characters of base58, or
+                    dragging a selection across a `break-all` wrap and hoping it
+                    took the whole thing, are both how money goes to the wrong
+                    address. */}
+                <dd className="m-0">
+                  <CopyField value={row.destinationAddress} label={t('admin.approvals.sendTo')} />
+                </dd>
               </>
             )}
           </dl>

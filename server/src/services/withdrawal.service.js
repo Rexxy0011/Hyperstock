@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import {
   DEPOSIT_DESTINATIONS,
+  WITHDRAWAL_NETWORKS,
   MAX_WITHDRAWAL_CENTS,
   MIN_WITHDRAWAL_CENTS,
   env,
@@ -80,10 +81,25 @@ const NETWORK_LABEL = {
  * exist. What is NOT carried over is the address — a payout goes to the user's
  * wallet, and ours has no business being on this screen.
  */
+/**
+ * The {asset, network} pairs payouts are offered on.
+ *
+ * `WITHDRAWAL_NETWORKS` when set, otherwise derived from the deposit
+ * destinations — which keeps the old behaviour for any deployment that has not
+ * configured payouts separately, and is a sensible default besides: if we can
+ * receive on a chain we hold funds there.
+ *
+ * The DESTINATION ADDRESS IS STRIPPED either way. Ours is a receiving address
+ * and has no business on a payout screen; a test asserts it never appears.
+ */
+export function payoutNetworks() {
+  return WITHDRAWAL_NETWORKS.length ? WITHDRAWAL_NETWORKS : DEPOSIT_DESTINATIONS;
+}
+
 export async function withdrawalMethods() {
   const groups = new Map();
 
-  for (const d of DEPOSIT_DESTINATIONS) {
+  for (const d of payoutNetworks()) {
     const group = (d.assetGroup ?? d.asset).toUpperCase();
     if (!groups.has(group)) {
       groups.set(group, { symbol: group, name: ASSET_NAME[group] ?? group, networks: [] });
@@ -124,7 +140,7 @@ export async function withdrawalMethods() {
        * out on. Collapsing them into one "unavailable" leaves whoever has to
        * fix it guessing.
        */
-      available: env.WITHDRAWALS_ENABLED && DEPOSIT_DESTINATIONS.length > 0,
+      available: env.WITHDRAWALS_ENABLED && payoutNetworks().length > 0,
       enabled: env.WITHDRAWALS_ENABLED,
       assets: [...groups.values()],
     },
@@ -153,27 +169,37 @@ export async function withdrawalMethods() {
  * when copying by hand — so a transposition tends to fail the pattern rather
  * than silently address a different wallet.
  */
+/**
+ * EVERY EVM CHAIN SHARES ONE ADDRESS FORMAT, so it is defined once. The three
+ * hand-copied `0x` rules this replaces were identical apart from the hint, and
+ * a rule duplicated per chain is a rule that drifts the moment one is edited.
+ *
+ * The chain name goes in the hint because that is the sentence somebody reads
+ * when their paste is rejected: "an Ethereum address" is unhelpful when they
+ * are trying to withdraw on Polygon.
+ */
+const evm = (chain) => ({
+  test: (a) => /^0x[a-fA-F0-9]{40}$/.test(a),
+  hint: `A ${chain} address starts with 0x and is 42 characters.`,
+});
+
 const ADDRESS_RULES = {
   BITCOIN: {
     // P2PKH/P2SH base58, or bech32 (including the longer taproot forms).
     test: (a) => /^(bc1[02-9ac-hj-np-z]{11,71}|[13][1-9A-HJ-NP-Za-km-z]{25,39})$/.test(a),
     hint: 'A Bitcoin address starts with 1, 3 or bc1.',
   },
+  LITECOIN: {
+    test: (a) => /^(ltc1[02-9ac-hj-np-z]{11,71}|[LM3][1-9A-HJ-NP-Za-km-z]{25,39})$/.test(a),
+    hint: 'A Litecoin address starts with L, M or ltc1.',
+  },
+  DOGECOIN: {
+    test: (a) => /^[DA9][1-9A-HJ-NP-Za-km-z]{25,39}$/.test(a),
+    hint: 'A Dogecoin address starts with D, A or 9.',
+  },
   TRC20: {
     test: (a) => /^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(a),
     hint: 'A Tron address starts with T and is 34 characters.',
-  },
-  ERC20: {
-    test: (a) => /^0x[a-fA-F0-9]{40}$/.test(a),
-    hint: 'An Ethereum address starts with 0x and is 42 characters.',
-  },
-  ETHEREUM: {
-    test: (a) => /^0x[a-fA-F0-9]{40}$/.test(a),
-    hint: 'An Ethereum address starts with 0x and is 42 characters.',
-  },
-  BEP20: {
-    test: (a) => /^0x[a-fA-F0-9]{40}$/.test(a),
-    hint: 'A BNB Smart Chain address starts with 0x and is 42 characters.',
   },
   SPL: {
     test: (a) => /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(a),
@@ -183,12 +209,23 @@ const ADDRESS_RULES = {
     test: (a) => /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(a),
     hint: 'A Solana address is 32–44 base58 characters.',
   },
-  DOGECOIN: {
-    test: (a) => /^[DA9][1-9A-HJ-NP-Za-km-z]{25,39}$/.test(a),
-    hint: 'A Dogecoin address starts with D, A or 9.',
-  },
-};
 
+  /**
+   * The EVM family. They are listed separately rather than collapsed to one
+   * entry because `network` is what the user PICKS and what the operator reads
+   * on the payout — sending Polygon USDC to an address the user meant for
+   * Arbitrum is a real loss, and the label is the only thing that distinguishes
+   * them. The format check cannot tell them apart; the name is what carries it.
+   */
+  ETHEREUM: evm('Ethereum'),
+  ERC20: evm('Ethereum'),
+  BEP20: evm('BNB Smart Chain'),
+  POLYGON: evm('Polygon'),
+  ARBITRUM: evm('Arbitrum'),
+  OPTIMISM: evm('Optimism'),
+  BASE: evm('Base'),
+  AVALANCHE: evm('Avalanche C-Chain'),
+};
 /** Returns a problem string, or null when the address is well-formed. */
 export function checkAddress(address, network) {
   if (!address) return 'Enter the wallet address to send to';
@@ -286,7 +323,11 @@ export async function createWithdrawal(input) {
   const asset = String(input.asset ?? '').toUpperCase();
   const network = String(input.network ?? '').toUpperCase();
 
-  const destination = DEPOSIT_DESTINATIONS.find(
+  // `payoutNetworks()`, NOT the deposit list — otherwise a chain configured in
+  // WITHDRAWAL_NETWORKS is offered by the picker and then refused here with
+  // NO_NETWORK, which reads to the user as the product breaking rather than as
+  // a config mismatch.
+  const destination = payoutNetworks().find(
     (d) => d.asset.toUpperCase() === asset && d.network.toUpperCase() === network,
   );
   if (!destination) {

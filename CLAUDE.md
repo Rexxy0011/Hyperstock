@@ -280,6 +280,14 @@ statuses counted are the ones **waiting on an operator**, which is not the same 
 withdrawal is counted, because a row someone started and abandoned is still outstanding work — and the
 trader's cash is already debited while it sits there.
 
+**THE PAYOUT ADDRESS IS COPYABLE, via `ui/CopyField`.** An operator approving a withdrawal has to move that
+string into a wallet by hand, and the two ways to do that without a button are both bad: re-typing 42
+characters of base58, or dragging a selection across a `break-all` wrap and hoping it took the whole thing
+and no whitespace. Either mistake sends money somewhere unrecoverable. `navigator.clipboard` needs a secure
+context, so the fallback SELECTS the text rather than silently failing — a button that appears to work and
+does not is how the wrong thing reaches the clipboard. Verified in-browser: the clipboard holds the exact
+address, "Copied" is announced to a screen reader, and the confirmation resets after 2s.
+
 **Claim before confirm is enforced twice.** `requested` offers only Claim in the UI, and the server refuses
 an unclaimed approval independently — measured live: `422 BAD_TRANSITION`. Approving without a `txHash` is
 `400`, rejecting without a reason is `400`, an unknown reference is `404`. The UI hiding a button is a
@@ -883,11 +891,32 @@ they catch the class that actually happens: truncations, typos, and an `0x…` a
 payout. Base58 excludes `0/O/I/l` precisely so a mis-copy fails the pattern instead of silently addressing
 a different wallet.
 
-**The payout networks are DERIVED from `DEPOSIT_DESTINATIONS`**, which is a real coupling rather than
-reuse: if we can receive USDT on TRC20 then we hold USDT on TRC20 and can send it back, and one list means
-the two screens cannot disagree about which chains exist. What is not carried over is the address — ours is
-a receiving address and has no business on a payout screen, and a test asserts it never appears in the
-methods response.
+**Payout networks are `WITHDRAWAL_NETWORKS`, falling back to `DEPOSIT_DESTINATIONS` when unset.** The
+derivation was the original design and is still the default, on the reasoning that if we can receive USDT on
+TRC20 we hold it there and can send it back. But it CAPPED PAYOUTS AT THE RECEIVING LIST, and there is no
+reason the two must match — a treasury can pay out on a chain nobody deposits to. Unlike a deposit
+destination there is no address in this config: the user supplies theirs, so an entry is only `{asset,
+network, decimals}`.
+
+`payoutNetworks()` is the single reader. **`requestWithdrawal` uses it too**, not the deposit list — miss
+that and a chain the picker offers is refused at submit with `NO_NETWORK`, which reads as the product
+breaking rather than as a config mismatch.
+
+What is still not carried over is the address — ours is a receiving address and has no business on a payout
+screen. Verified on the live response with 20 payout networks configured: **0 treasury addresses in the
+payload**.
+
+**`ADDRESS_RULES` COVERS 14 NETWORKS AND THE EVM RULE IS DEFINED ONCE.** `ETHEREUM`, `ERC20` and `BEP20`
+were three hand-copied `0x` rules differing only in their hint, which is a rule that drifts the moment one
+is edited; `evm(chain)` builds them, and Polygon, Arbitrum, Optimism, Base and Avalanche cost one line each.
+They stay listed SEPARATELY rather than collapsed to one entry because `network` is what the user picks and
+what the operator reads on the payout — the format check cannot tell an Arbitrum address from a Polygon
+one, so the name is the only thing that does. The hint names the chain for the same reason: *"an Ethereum
+address"* is unhelpful to somebody withdrawing on Polygon.
+
+`test/payoutNetworks.test.js` pins every chain's format, that an address for the wrong chain is refused, and
+that `gdghsdhjsdhdjsdksjdhdjsjdujdu` — the string that got through a live $3,937 request before per-chain
+rules existed — is refused on all of them.
 
 **The screen is two stages because a withdrawal can only pay out CASH.** On this product most of an account
 is usually positions, so asking for an amount first would refuse most requests with "not enough buying

@@ -131,6 +131,25 @@ const schema = z.object({
    */
   DEPOSIT_DESTINATIONS: z.string().default('[]'),
 
+  /**
+   * Which chains payouts may be SENT on, as JSON.
+   *
+   * DECOUPLED FROM DEPOSITS ON PURPOSE. Payout networks used to be derived from
+   * `DEPOSIT_DESTINATIONS`, on the reasoning that if we can receive USDT on
+   * TRC20 then we hold it there and can send it back. That coupling is true for
+   * the assets we custody, but it caps payouts at the receiving list — and
+   * there is no reason the two must match: an operator holding BTC can pay it
+   * out on Lightning, or hold a treasury on a chain nobody deposits to.
+   *
+   * Unlike a deposit destination, THERE IS NO ADDRESS HERE. The user supplies
+   * theirs; this only says which {asset, network} pairs are offered.
+   *
+   * Empty means "derive from DEPOSIT_DESTINATIONS", which is the previous
+   * behaviour and stays the default so nothing changes for a deployment that
+   * does not set it.
+   */
+  WITHDRAWAL_NETWORKS: z.string().default('[]'),
+
   /** Confirmations before a detected payment is put in front of a reviewer. */
   DEPOSIT_MIN_CONFIRMATIONS: z.coerce.number().int().nonnegative().default(1),
   /** An unpaid deposit stops being quotable after this long. */
@@ -184,6 +203,37 @@ export const MAX_WITHDRAWAL_CENTS = Math.round(env.MAX_WITHDRAWAL_AMOUNT * 100);
  * Parsed once at boot and validated, so a malformed value fails loudly here
  * rather than at the moment a user is being told where to send money.
  */
+/**
+ * The chains payouts may be sent on.
+ *
+ * REFUSES TO BOOT ON A NETWORK WITH NO ADDRESS RULE. `checkAddress()` falls back
+ * to a length check for an unknown network, and that is not a check — this
+ * project already shipped a $3,937 payout request to
+ * `gdghsdhjsdhdjsdksjdhdjsjdujdu` because of it. Offering a chain the validator
+ * does not know is therefore a configuration error, caught here rather than at
+ * the moment somebody pastes an address nothing will verify.
+ */
+export const WITHDRAWAL_NETWORKS = (() => {
+  let raw;
+  try {
+    raw = JSON.parse(env.WITHDRAWAL_NETWORKS);
+  } catch {
+    console.error('Refusing to start: WITHDRAWAL_NETWORKS is not valid JSON.');
+    process.exit(1);
+  }
+  if (!Array.isArray(raw)) {
+    console.error('Refusing to start: WITHDRAWAL_NETWORKS must be a JSON array.');
+    process.exit(1);
+  }
+  for (const n of raw) {
+    if (!n?.asset || !n?.network) {
+      console.error('Refusing to start: every WITHDRAWAL_NETWORKS entry needs asset and network.');
+      process.exit(1);
+    }
+  }
+  return raw;
+})();
+
 export const DEPOSIT_DESTINATIONS = (() => {
   let raw;
   try {
