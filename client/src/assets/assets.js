@@ -46,6 +46,15 @@ import iconShield from "./icons/shield.webp";
 // build actually shipped, ~5.8KB against 16KB, same alpha.
 import iconHourglass from "./icons/hourglass.webp";
 
+// The footer's social row. Sources are 512px PNGs in ./brand; these are the
+// webp builds actually shipped — 68KB of source down to 6.3KB, built at 96px
+// because they render at 22 and never need more than 3x. They replaced Feather
+// glyph outlines: these are the platforms' own marks, so they are recognised
+// at a glance rather than read.
+import iconFacebook from "./icons/facebook.webp";
+import iconInstagram from "./icons/instagram.webp";
+import iconYoutube from "./icons/youtube.webp";
+
 import deniseCoates from "./investors/denise_coates.webp";
 import elonMusk from "./investors/elon_musk.webp";
 import emmaGrede from "./investors/emma_grede.webp";
@@ -72,6 +81,10 @@ export const assets = {
   },
 
   icons: {
+    facebook: iconFacebook,
+    instagram: iconInstagram,
+    youtube: iconYoutube,
+
     wallet: iconWallet,
     money: iconMoney,
     lock: iconLock,

@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Outlet, useLocation } from 'react-router-dom';
 import Link from '../components/ui/Link';
-import { FiFacebook, FiInstagram, FiYoutube } from 'react-icons/fi';
 import TopNav from '../components/nav/TopNav';
 import MobileDrawer from '../components/nav/MobileDrawer';
 import Logo from '../components/ui/Logo';
+import { assets } from '../assets/assets';
 
 /**
  * The marketing shell. It shares the app's navbar rather than carrying a
@@ -38,11 +38,21 @@ export default function PublicLayout() {
  * grouping are structure. Keys rather than English strings so a reworded
  * label cannot silently orphan every other language's translation of it.
  *
- * LEGAL COMES FIRST AND IS THE ONLY COLUMN WHERE EVERY LINK RESOLVES. All six
- * documents are real pages. The Product and Resources columns this replaced
- * were twelve links to routes that do not exist — on a site that now publishes
- * risk disclosures, a dead link sitting beside a real one teaches the reader
- * that these are decoration.
+ * EVERY LINK IN THESE COLUMNS RESOLVES. The Product and Resources columns this
+ * replaced were twelve links to routes that do not exist — on a site that now
+ * publishes risk disclosures, a dead link sitting beside a real one teaches the
+ * reader that these are decoration.
+ *
+ * THE LEGAL COLUMN AND THE BOTTOM BAR NO LONGER REPEAT EACH OTHER. Terms, Cookie
+ * Policy and Disclosures live in the bar; the column carries the other two plus
+ * the Risk Disclosure. A link in both places reads as two different
+ * destinations, which is what the split avoids.
+ *
+ * The one deliberate exception is the PRIVACY POLICY, which appears in both —
+ * it is the document people go looking for, and it is the only one worth the
+ * cost of being in two places. "Account Security" in the Security column also
+ * resolves to `/disclosures`, but under its own label and pointing at the
+ * section that covers it, so it does not read as a repeat.
  *
  * `external: true` marks a `mailto:`, which is NOT a route: Security and
  * Support are mostly places to reach a person, and an address is a working
@@ -58,10 +68,7 @@ const FOOTER_COLUMNS = [
     links: [
       { label: 'privacy', to: '/privacy' },
       { label: 'financialPrivacy', to: '/financial-privacy' },
-      { label: 'terms', to: '/terms' },
-      { label: 'cookies', to: '/cookies' },
       { label: 'riskDisclosure', to: '/risk-disclosure' },
-      { label: 'disclosures', to: '/disclosures' },
     ],
   },
   {
@@ -87,14 +94,24 @@ const FOOTER_COLUMNS = [
 ];
 
 /**
- * The bottom bar keeps the three documents people look for by reflex. The full
- * set lives in the Legal column above; this is a shortcut, not the index — and
- * `DashboardLayout` renders the same row, where there is no column to fall back
- * on.
+ * The bottom bar. No longer a shortcut duplicating the column above it — these
+ * four are the only place Terms, the Cookie Policy and Disclosures appear in
+ * this shell.
+ *
+ * COOKIE POLICY IS HERE RATHER THAN NOWHERE. It came out of the Legal column
+ * with Terms and Disclosures, but unlike those two it was not already in this
+ * row — dropping it would have left the document reachable only through an
+ * inline cross-reference inside the Privacy Policy, which is not a place anyone
+ * looks for a cookie policy.
+ *
+ * `DashboardLayout` renders this same row, and there is no Legal column there
+ * at all, so anything missing from this list is missing entirely for a
+ * signed-in user.
  */
 export const BOTTOM_LINKS = [
   ['privacy', '/privacy'],
   ['terms', '/terms'],
+  ['cookies', '/cookies'],
   ['disclosures', '/disclosures'],
 ];
 
@@ -111,16 +128,26 @@ export const BOTTOM_LINKS = [
  * an external page — dropped, since it navigates to exactly the same place and
  * only survives copy-paste.
  *
- * Objects rather than tuples: a mixed [string, IconType, string] tuple widens
- * to `string | IconType` under checkJs, which then fails on both `key` and
- * `href`.
+ * THE MARKS ARE IMAGES NOW, NOT FEATHER GLYPHS. They are the platforms' own
+ * logos, so they are recognised rather than read — which is the entire job of a
+ * social row. It does mean the row is three colour chips instead of three
+ * monochrome outlines, so the note below about boxed icons competing with the
+ * links no longer applies: they carry their own colour and sit apart from the
+ * text by that alone.
+ *
+ * `src` rather than `Icon`: a component and a URL are not interchangeable, and
+ * the old prop name would have quietly rendered `<Icon>` as an unknown element.
  */
 const SOCIALS = [
-  { label: 'Facebook', Icon: FiFacebook, href: 'https://www.facebook.com/hyperstocks' },
-  { label: 'Instagram', Icon: FiInstagram, href: 'https://www.instagram.com/hyperstocks/' },
+  { label: 'Facebook', src: assets.icons.facebook, href: 'https://www.facebook.com/hyperstocks' },
+  {
+    label: 'Instagram',
+    src: assets.icons.instagram,
+    href: 'https://www.instagram.com/hyperstocks/',
+  },
   {
     label: 'YouTube',
-    Icon: FiYoutube,
+    src: assets.icons.youtube,
     href: 'https://www.youtube.com/channel/UCFGgrokJj_MkRwKDwbywGGg',
   },
 ];
@@ -149,10 +176,12 @@ export function SiteFooter() {
               {t('footer.blurb')}
             </p>
 
-            {/* Bare glyphs, no chrome — as in the reference. Boxed icons read
-                as more buttons competing with the links beside them. */}
-            <div className="mt-8 flex gap-5">
-              {SOCIALS.map(({ label, Icon, href }) => (
+            {/* 22px rather than the glyphs' 19: these are filled marks inside
+                their own rounded shape, so the artwork sits further from the
+                edge of the box than an outline does and the same nominal size
+                reads smaller. Gap tightened to match. */}
+            <div className="mt-8 flex gap-4">
+              {SOCIALS.map(({ label, src, href }) => (
                 <a
                   key={label}
                   href={href}
@@ -164,9 +193,21 @@ export function SiteFooter() {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={label}
-                  className="text-text-on-deep-muted transition-colors hover:text-text-on-deep"
+                  // Full colour at rest — muting a brand mark to grey defeats
+                  // the reason for using the real one. The hover is a small
+                  // opacity lift rather than a colour change, which an image
+                  // cannot do.
+                  className="opacity-90 transition-opacity hover:opacity-100"
                 >
-                  <Icon size={19} aria-hidden="true" />
+                  <img
+                    src={src}
+                    alt=""
+                    aria-hidden="true"
+                    width={22}
+                    height={22}
+                    loading="lazy"
+                    className="size-5.5 object-contain"
+                  />
                 </a>
               ))}
             </div>
