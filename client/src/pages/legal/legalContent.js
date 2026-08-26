@@ -1,3 +1,4 @@
+import { SUPPORT_EMAIL } from '../../lib/contact';
 /**
  * The legal documents, as data.
  *
@@ -258,7 +259,7 @@ export const PRIVACY = {
       heading: 'Contact Us',
       blocks: [
         'If you have questions about this Privacy Policy or your personal information, contact:',
-        { contact: { name: 'HyperStocks Privacy Team', email: 'privacy@hyperstock.com' } },
+        { contact: { name: 'HyperStocks Privacy Team', email: SUPPORT_EMAIL } },
       ],
     },
   ],
@@ -469,7 +470,7 @@ export const TERMS = {
     },
     {
       heading: 'Contact',
-      blocks: [{ contact: { name: 'HyperStocks Legal Department', email: 'legal@hyperstock.com' } }],
+      blocks: [{ contact: { name: 'HyperStocks Legal Department', email: SUPPORT_EMAIL } }],
     },
   ],
 };
@@ -724,7 +725,7 @@ export const FINANCIAL_PRIVACY = {
       heading: 'Questions About Financial Privacy',
       blocks: [
         'For questions regarding this notice or the privacy of your financial information:',
-        { contact: { name: 'HyperStocks Privacy Team', email: 'privacy@hyperstock.com' } },
+        { contact: { name: 'HyperStocks Privacy Team', email: SUPPORT_EMAIL } },
       ],
     },
   ],
@@ -1210,7 +1211,7 @@ export const DISCLOSURES = {
       heading: 'Contact HyperStocks',
       blocks: [
         'Questions regarding these disclosures can be directed to:',
-        { contact: { name: 'HyperStocks Legal & Compliance', email: 'legal@hyperstock.com' } },
+        { contact: { name: 'HyperStocks Legal & Compliance', email: SUPPORT_EMAIL } },
       ],
     },
   ],

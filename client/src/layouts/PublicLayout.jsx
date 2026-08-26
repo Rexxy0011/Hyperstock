@@ -6,6 +6,7 @@ import TopNav from '../components/nav/TopNav';
 import MobileDrawer from '../components/nav/MobileDrawer';
 import Logo from '../components/ui/Logo';
 import { assets } from '../assets/assets';
+import { SUPPORT_EMAIL } from '../lib/contact';
 
 /**
  * The marketing shell. It shares the app's navbar rather than carrying a
@@ -80,14 +81,18 @@ const FOOTER_COLUMNS = [
       // A security report is an ADDRESS, not a screen. Shipping this one as a
       // dead link is the worst of the set: somebody with a vulnerability to
       // report is exactly who must not hit "Not found".
-      { label: 'reportIssue', to: 'mailto:security@hyperstocks.app', external: true },
+      //
+      // It is `support@` rather than a separate `security@`: one inbox that is
+      // actually read beats a second that merely implies somebody is watching
+      // it. `lib/contact.js` is the single owner.
+      { label: 'reportIssue', to: `mailto:${SUPPORT_EMAIL}`, external: true },
     ],
   },
   {
     key: 'support',
     links: [
       { label: 'faq', to: '/faqs' },
-      { label: 'contactSupport', to: 'mailto:support@hyperstocks.app', external: true },
+      { label: 'contactSupport', to: `mailto:${SUPPORT_EMAIL}`, external: true },
       { label: 'about', to: '/about' },
     ],
   },

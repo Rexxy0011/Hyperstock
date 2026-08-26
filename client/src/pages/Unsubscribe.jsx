@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { post } from '../lib/api';
 import Button from '../components/ui/Button';
+import { SUPPORT_EMAIL } from '../lib/contact';
 import { FiCheck } from 'react-icons/fi';
 
 /**
@@ -80,8 +81,8 @@ export default function Unsubscribe() {
                 least acceptable. */}
             <p className="mx-auto mt-3 mb-0 max-w-80 text-sm text-text-muted">
               {t('unsubscribe.failedBody')}{' '}
-              <a href="mailto:support@hyperstocks.app" className="text-gain underline">
-                support@hyperstocks.app
+              <a href={`mailto:${SUPPORT_EMAIL}`} className="text-gain underline">
+                {SUPPORT_EMAIL}
               </a>
             </p>
           </>

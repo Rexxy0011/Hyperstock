@@ -1759,9 +1759,31 @@ one teaches the reader that these are decoration. Every Legal link resolves.
 
 **Two footer entries are `mailto:` rather than routes**, and that is not a shortcut. "Report a Security
 Issue" is the worst possible dead link — somebody with a vulnerability to report is exactly who must not
-hit "Not found" — so it goes to an address, which works today where a Security Center page does not.
-"Account Security" points at the Disclosures section that covers it, for the same reason. A `mailto` must
-render as a plain `<a>`, never through `Link`: the router would try to navigate to it.
+hit "Not found". "Account Security" points at the Disclosures section that covers it, for the same reason.
+A `mailto` must render as a plain `<a>`, never through `Link`: the router would try to navigate to it.
+
+**`lib/contact.js` IS THE SINGLE OWNER OF THE CONTACT ADDRESS.** There were seven hardcoded literals across
+three files and they had drifted onto **two different domains** — the footer offered `security@` and
+`support@hyperstocks.app` while the legal documents printed `privacy@` and `legal@hyperstock.com`, a name
+that is not even the one the rest of the product uses. All seven now read one constant; verified across all
+eight pages that publish an address, every rendered `mailto:` is `support@hyperstocks.app`.
+
+**Unified to `support@` rather than a routed set, deliberately.** Four inboxes are four things to monitor,
+and an unmonitored `security@` is worse than none: somebody reporting a vulnerability believes they have
+reached someone. One address that is actually read beats four implying a department structure this product
+does not have.
+
+The server keeps `env.SUPPORT_EMAIL` and that is not duplication — it is what the deposit and withdrawal
+services stamp onto responses, so a deployment can change it without a rebuild, and `Fund.jsx` uses THAT
+value rather than the constant. `lib/contact.js` covers the surfaces the server never touches.
+
+**THE DOMAIN IS NOT CONTROLLED BY THIS PROJECT.** `hyperstocks.app` resolves to a third party's site behind
+Cloudflare and has **no MX record**, so mail to this address bounces today and the footer's promise of
+somewhere to report a security issue is not yet true. Nothing is being misdirected while there is no MX —
+but if the owner ever adds one, a vulnerability report intended for this product lands in a stranger's
+inbox. The address is unified and correct in shape; pointing it at a domain the project owns is the
+outstanding step, and it also blocks Resend domain verification, which is why sending is still restricted
+to the Resend account owner's own address.
 
 `footer.cookies` still read **"Cookies Settings"** from the original design after the preference centre was
 removed, so the Legal column labelled the Cookie Policy as a settings screen. It is "Cookie Policy" now.
