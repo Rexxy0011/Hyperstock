@@ -1,0 +1,94 @@
+[
+  {
+    "asset": "USDT",
+    "network": "TRC20",
+    "address": "REPLACE-WITH-YOUR-TRC20-USDT-ADDRESS",
+    "minAmount": 10,
+    "decimals": 6
+  },
+  {
+    "asset": "USDT",
+    "network": "ERC20",
+    "address": "REPLACE-WITH-YOUR-ERC20-USDT-ADDRESS",
+    "minAmount": 25,
+    "decimals": 6
+  },
+  {
+    "asset": "USDT",
+    "network": "BEP20",
+    "address": "REPLACE-WITH-YOUR-BEP20-USDT-ADDRESS",
+    "minAmount": 10,
+    "decimals": 18,
+    "note": "Please make sure your wallet is set to BNB Smart Chain (BEP20). We can only receive on this network, and transfers sent on another one cannot be recovered."
+  },
+  {
+    "asset": "USDT",
+    "network": "SPL",
+    "address": "REPLACE-WITH-YOUR-SPL-USDT-ADDRESS",
+    "minAmount": 10,
+    "decimals": 6
+  },
+  {
+    "asset": "BTC",
+    "network": "BITCOIN",
+    "address": "REPLACE-WITH-YOUR-BITCOIN-BTC-ADDRESS",
+    "minAmount": 50,
+    "decimals": 8
+  },
+  {
+    "asset": "BTCB",
+    "network": "BEP20",
+    "assetGroup": "BTC",
+    "address": "REPLACE-WITH-YOUR-BEP20-BTCB-ADDRESS",
+    "minAmount": 50,
+    "decimals": 18,
+    "priceSymbol": "BTC",
+    "label": "BEP20 · BNB Smart Chain (BTCB)",
+    "note": "On this network you will be sending BTCB - Binance's token backed 1:1 by Bitcoin, rather than native Bitcoin itself. If you are sending BTC, choose the Bitcoin network instead."
+  },
+  {
+    "asset": "ETH",
+    "network": "ERC20",
+    "address": "REPLACE-WITH-YOUR-ERC20-ETH-ADDRESS",
+    "minAmount": 25,
+    "decimals": 18
+  },
+  {
+    "asset": "ETH",
+    "network": "BEP20",
+    "address": "REPLACE-WITH-YOUR-BEP20-ETH-ADDRESS",
+    "minAmount": 25,
+    "decimals": 18,
+    "note": "On this network you will be sending Binance-pegged ETH rather than native Ether. If you are sending from Ethereum, choose the ERC20 network instead."
+  },
+  {
+    "asset": "SOL",
+    "network": "SOLANA",
+    "address": "REPLACE-WITH-YOUR-SOLANA-SOL-ADDRESS",
+    "minAmount": 10,
+    "decimals": 9
+  },
+  {
+    "asset": "DOGE",
+    "network": "DOGECOIN",
+    "address": "REPLACE-WITH-YOUR-DOGECOIN-DOGE-ADDRESS",
+    "minAmount": 10,
+    "decimals": 8
+  },
+  {
+    "asset": "DOGE",
+    "network": "BEP20",
+    "address": "REPLACE-WITH-YOUR-BEP20-DOGE-ADDRESS",
+    "minAmount": 10,
+    "decimals": 18,
+    "note": "Please make sure your wallet is set to BNB Smart Chain (BEP20). We can only receive on this network, and transfers sent on another one cannot be recovered."
+  },
+  {
+    "asset": "BNB",
+    "network": "BEP20",
+    "address": "REPLACE-WITH-YOUR-BEP20-BNB-ADDRESS",
+    "minAmount": 25,
+    "decimals": 18,
+    "note": "Please make sure your wallet is set to BNB Smart Chain (BEP20). We can only receive on this network, and transfers sent on another one cannot be recovered."
+  }
+]

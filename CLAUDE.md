@@ -705,6 +705,23 @@ sentence carries the weight; the colour does not need to.
 `icons/hourglass.webp` (5.8KB against 16KB) following the same PNG-source/webp-build convention as the
 Security marks. An icon-font glyph read as belonging to a different app next to them.
 
+**Destinations can come from a FILE as well as the env var**, and the file wins.
+`DEPOSIT_DESTINATIONS` is a single line holding twelve objects — over 1,700 characters — and hand-editing
+that is where a misplaced brace becomes a boot failure or, worse, a wrong character becomes a treasury
+address nobody can recover funds from. `DEPOSIT_DESTINATIONS_FILE=./deposit-destinations.json` loads the
+same array pretty-printed. The file is gitignored; `deposit-destinations.example.json` is the committed
+template. **A path that is set and unreadable REFUSES to boot rather than falling back to the inline
+value** — silently serving whatever was in env while the operator believes the file is live is the worst
+available outcome.
+
+**ADDING THAT VARIABLE IMMEDIATELY BROKE TWO TEST SUITES, WHICH IS THE POINT.** `deposit.test.js` and
+`withdrawal.test.js` assert that no destination leaked in from the environment — *"these cases would not
+mean what they say"* — and the test script forced `DEPOSIT_DESTINATIONS=[]` but knew nothing about the new
+file variable, so the suites started loading twelve real destinations. It is the same trap this file
+already documents for `MONGODB_URI` and `DEPOSIT_DESTINATIONS`: **anything the tests need to control must
+be forced in the test script, not assumed absent.** `DEPOSIT_DESTINATIONS_FILE=` is forced there now, and
+the guard is what turned a silent wrong-reason pass into a loud failure.
+
 **No destination configured means no deposit.** `DEPOSIT_DESTINATIONS` is JSON config, empty by default,
 validated at boot — a treasury address in source cannot be rotated without a deploy, leaks into every
 clone, and a typo in it sends real funds somewhere unrecoverable. `createDeposit` refuses with
