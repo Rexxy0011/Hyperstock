@@ -65,6 +65,7 @@ export async function connectDb() {
   // field existed.
   await backfillAssetClass();
   await backfillUnsubscribeTokens();
+  await migrateLegacyCredentials();
   await dropSupersededIndexes();
 
   if (supportsTransactions) {
@@ -133,6 +134,122 @@ export async function backfillUnsubscribeTokens() {
   );
 
   console.log(`  Backfilled unsubscribe tokens: ${legacy.length}`);
+}
+
+/**
+ * Moves legacy credentials onto Better Auth's `accounts` collection.
+ *
+ * The hand-rolled auth kept a bcrypt hash in `users.passwordHash`; Better Auth
+ * keeps one row per sign-in method in `accounts` and never looks at the user
+ * document. So a database seeded before this migration has 209 accounts that
+ * all LOOK signed-up and cannot sign in — the password is right there and the
+ * auth layer has no reason to read it.
+ *
+ * ONLY THE DEMO ACCOUNTS ARE MIGRATED, deliberately. The other 207 are
+ * leaderboard fixtures that exist to populate a board and were never meant to
+ * authenticate; giving them credentials would be re-creating dead password
+ * material for accounts nobody signs into. They keep their user row, their
+ * holdings and their rank, and simply have no `accounts` document.
+ *
+ * The bcrypt hash is carried across UNCHANGED rather than re-hashed, which is
+ * the whole reason `auth/betterAuth.js` keeps bcrypt instead of Better Auth's
+ * scrypt default: there is no mail sender in this repo, so an account that
+ * cannot verify its old password has no route back in.
+ *
+ * Idempotent — the upsert is keyed on `{ userId, providerId }`, so a second boot
+ * matches the row it wrote the first time.
+ */
+/**
+ * Creates Better Auth's collections up front, empty.
+ *
+ * MONGODB CANNOT IMPLICITLY CREATE A COLLECTION INSIDE A MULTI-DOCUMENT
+ * TRANSACTION, and Better Auth wraps a signup in one — it writes `users` and
+ * `accounts` together, which is correct, since a user with no credential is
+ * exactly what a half-finished signup would leave behind. On a database where
+ * `accounts` does not exist yet, that first write fails with
+ *
+ *   Unable to write to collection '…accounts' due to catalog changes;
+ *   please retry the operation
+ *
+ * so THE VERY FIRST SIGNUP ON A FRESH DEPLOYMENT FAILS, and the second one
+ * succeeds because the failed attempt is what created the collection. That is
+ * the worst shape for a bug: it never reproduces for whoever is testing, only
+ * for the first real person through the door.
+ *
+ * Creating them at boot, outside any transaction, removes the case entirely.
+ * `createCollection` on an existing collection throws NamespaceExists (48),
+ * which is the no-op path on every boot after the first.
+ */
+async function ensureAuthCollections() {
+  const db = mongoose.connection.db;
+  const existing = new Set((await db.listCollections().toArray()).map((c) => c.name));
+
+  for (const name of ['sessions', 'accounts', 'verifications']) {
+    if (existing.has(name)) continue;
+    try {
+      await db.createCollection(name);
+    } catch (err) {
+      // 48 = NamespaceExists. Another process won the race; that is fine.
+      if (err?.code !== 48) throw err;
+    }
+  }
+
+  /**
+   * AND THE INDEX, which is the same trap a second time. Creating the
+   * collections is not enough: the adapter also builds this unique index
+   * lazily, on its first write to `accounts` — and an index build is a catalog
+   * change too, so it fails inside the signup transaction exactly like the
+   * implicit collection creation did.
+   *
+   * The name and key are Better Auth's own, read off a collection it had
+   * already built rather than guessed. Creating it here is idempotent, and if a
+   * future version wants a different shape it simply builds that one lazily and
+   * this becomes a harmless extra index — the failure mode degrades to the
+   * situation before this line, rather than to something worse.
+   */
+  try {
+    await db
+      .collection('accounts')
+      .createIndex({ issuer: 1, accountId: 1 }, { unique: true, name: 'accounts_issuer_accountId_uidx' });
+  } catch (err) {
+    // 85/86 = IndexOptionsConflict / IndexKeySpecsConflict — an equivalent
+    // index is already there under different options. Nothing to do.
+    if (![85, 86].includes(err?.code)) throw err;
+  }
+}
+
+export async function migrateLegacyCredentials() {
+  await ensureAuthCollections();
+
+  const users = mongoose.connection.collection('users');
+  const accounts = mongoose.connection.collection('accounts');
+
+  const legacy = await users
+    .find({
+      passwordHash: { $exists: true, $ne: null },
+      email: { $in: ['jd@hyperstocks.app', 'admin@hyperstocks.app'] },
+    })
+    .project({ _id: 1, passwordHash: 1 })
+    .toArray();
+  if (legacy.length === 0) return;
+
+  let migrated = 0;
+  for (const user of legacy) {
+    if (await accounts.findOne({ userId: user._id, providerId: 'credential' })) continue;
+    const now = new Date();
+    await accounts.insertOne({
+      issuer: 'local:credential',
+      accountId: String(user._id),
+      providerId: 'credential',
+      userId: user._id,
+      password: user.passwordHash,
+      createdAt: now,
+      updatedAt: now,
+    });
+    migrated += 1;
+  }
+
+  if (migrated > 0) console.log(`  Migrated credentials to Better Auth: ${migrated}`);
 }
 
 export async function backfillAssetClass() {

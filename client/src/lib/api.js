@@ -3,9 +3,9 @@ import axios from 'axios';
 /**
  * The one HTTP client.
  *
- * `withCredentials` matters: the refresh token lives in an httpOnly cookie, and
- * in dev the Vite proxy makes /api same-origin so it travels without any CORS
- * credential dance.
+ * `withCredentials` matters: the session lives in an httpOnly cookie, and in dev
+ * the Vite proxy is `changeOrigin: false`, so /api is same-origin and the cookie
+ * travels without any CORS credential dance.
  */
 export const api = axios.create({
   baseURL: '/api',
@@ -13,63 +13,29 @@ export const api = axios.create({
   timeout: 15_000,
 });
 
-/* ------------------------------------------------------------------ tokens */
-
-// Held in memory only, never localStorage — an XSS then cannot exfiltrate it.
-let accessToken = null;
-
-export const setAccessToken = (token) => {
-  accessToken = token;
-};
-export const getAccessToken = () => accessToken;
-
-api.interceptors.request.use((config) => {
-  if (accessToken) config.headers.Authorization = `Bearer ${accessToken}`;
-  return config;
-});
-
-/* ------------------------------------------------- single-flight refresh */
+/* --------------------------------------------------------------- sessions */
 
 /**
- * The Portfolio screen fires several queries on mount. Without single-flight,
- * simultaneous 401s would each POST /auth/refresh, and because refresh tokens
- * rotate on use, the later ones would present an already-consumed token and
- * log the user out. All concurrent 401s share one refresh promise instead.
+ * THERE IS NO ACCESS TOKEN ANY MORE, AND NO REFRESH DANCE. Better Auth keeps
+ * the session in an httpOnly cookie the browser attaches on its own, so the
+ * request interceptor that carried a Bearer header and the single-flight
+ * refresh that guarded against concurrent rotation are both gone.
+ *
+ * That single-flight existed for a real problem: the Portfolio screen fires
+ * several queries on mount, refresh tokens rotated on use, and simultaneous
+ * 401s would each spend the same token — the later ones presenting one already
+ * consumed and signing the user out. A cookie the browser manages cannot race
+ * with itself that way, so the whole mechanism has nothing left to protect.
+ *
+ * One consequence worth stating: the token used to live in memory only, so an
+ * XSS could not exfiltrate it. An httpOnly cookie is stronger on exactly that
+ * axis — script cannot read it at all — but it is sent automatically, so CSRF
+ * becomes the exposure the memory token did not have. Better Auth's cookie is
+ * SameSite=Lax, which is what covers it for the cross-site form-post case.
  */
-let refreshPromise = null;
-
-function refreshOnce() {
-  refreshPromise ??= api
-    .post('/auth/refresh')
-    .then((res) => {
-      setAccessToken(res.data.accessToken);
-      return res.data.accessToken;
-    })
-    .finally(() => {
-      refreshPromise = null;
-    });
-  return refreshPromise;
-}
-
 api.interceptors.response.use(
   (res) => res,
-  async (error) => {
-    const { response, config } = error;
-
-    const isAuthCall = config?.url?.includes('/auth/refresh') || config?.url?.includes('/auth/login');
-    if (response?.status !== 401 || config?._retried || isAuthCall) {
-      return Promise.reject(normalizeError(error));
-    }
-
-    try {
-      await refreshOnce();
-      config._retried = true;
-      return api(config);
-    } catch {
-      setAccessToken(null);
-      return Promise.reject(normalizeError(error));
-    }
-  },
+  (error) => Promise.reject(normalizeError(error)),
 );
 
 /**
@@ -97,7 +63,18 @@ export class ApiError extends Error {
 
 /** Flattens the server's `{error:{code,message}}` envelope into an ApiError. */
 function normalizeError(error) {
-  const payload = error.response?.data?.error;
+  const data = error.response?.data;
+  /**
+   * TWO ENVELOPES REACH THIS NOW. The app's own routes return
+   * `{ error: { code, message } }` via `ApiError`; Better Auth returns a FLAT
+   * `{ code, message }` from `/api/auth/*` and knows nothing about ours.
+   *
+   * Both are accepted here rather than translated at the boundary, because the
+   * client contract is that `code` IS the translation key — so an unwrapped
+   * `INVALID_EMAIL_OR_PASSWORD` lands in `errors.*` exactly like a wrapped
+   * `BAD_CREDENTIALS` does, and neither leaks a raw code to the reader.
+   */
+  const payload = data?.error ?? (data?.code || data?.message ? data : null);
 
   if (!payload) {
     /**

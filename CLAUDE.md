@@ -1884,16 +1884,82 @@ heading 10.9:1, `white/85` body 7.8:1. `--color-text-on-deep-muted` — the toke
 here uses — fails AA over this video at any scrim weak enough to leave the footage visible, which is why
 this one section's body copy is a different colour from the ink section above it.
 
-### Auth
+### Auth — Better Auth owns it
 
-Access token (15min JWT) lives in **memory only** inside `lib/api.js`, never `localStorage`. Refresh token
-is an httpOnly cookie scoped to `/api/auth`, **rotated on every use**, stored hashed; reuse revokes the
-whole family. Two details that are easy to break:
+`server/src/auth/betterAuth.js`, mounted in `app.js`. The hand-rolled JWT layer is gone:
+`routes/auth.routes.js`, `lib/jwt.js` and `models/RefreshToken.js` are deleted, and the client's
+memory-held access token and single-flight refresh went with them.
 
-- `AuthProvider` exposes `authReady` and calls `/auth/refresh` on mount. `ProtectedRoute` must wait on it,
-  or a hard refresh bounces a signed-in user to `/auth`.
-- The 401 interceptor does **single-flight** refresh. The dashboard fires several queries on mount; without
-  it, concurrent 401s each rotate the token and log the user out.
+**IT WRITES THE SAME `users` COLLECTION THE REST OF THE APP READS, which is the whole reason this was
+cheap.** Two facts carry it:
+
+- **`usePlural: true`** maps Better Auth's singular defaults onto `users`, `sessions`, `accounts` and
+  `verifications`. Without it the adapter builds a second, empty `user` collection beside the populated one
+  and the leaderboard ranks nobody.
+- **The Mongo adapter stores ids as real `ObjectId`s.** It coerces `_id` and any field referencing `id` on
+  write and converts back to a hex string on read. So the **eleven Mongoose models holding `ObjectId` refs
+  to `User`** — Deposit, Holding, LedgerEntry, Order, PortfolioSnapshot, TopUpRequest, Transaction,
+  WatchlistItem, Withdrawal, FeaturedTrader — and the leaderboard's `$lookup` all keep working untouched. A
+  string-id adapter would have meant re-keying every one of them.
+
+**CREDENTIALS LIVE IN `accounts`, NOT ON THE USER, and that is what makes the seed coherent.** A `users`
+row with no `accounts` row beside it cannot sign in but still ranks, still holds positions and still
+carries a `tradeCount` — which is exactly what the **207 leaderboard fixtures** are. Only `jd_trader` and
+`admin` get a credential. `test/auth.test.js` pins both directions: a fixture trader's sign-in is 401, and
+no fixture ever gains an `accounts` row.
+
+**bcrypt is kept rather than Better Auth's scrypt default.** `config/db.js`'s `migrateLegacyCredentials()`
+copies the existing `users.passwordHash` straight into `accounts.password` for the two demo accounts, so
+jd_trader keeps working — there is no mail sender in this repo, so an account that cannot verify its old
+password has no route back in. Legacy hashes are cost 10, new signups cost 12; bcrypt encodes cost in the
+hash, so the two coexist without invalidating anything.
+
+**`input: false` ON EVERY ADDITIONAL FIELD IS A PRIVILEGE-ESCALATION GUARD, not tidiness.** Sign-up is a
+public endpoint that would otherwise accept arbitrary user columns — `{"role":"admin"}` makes an
+administrator and `{"cashBalanceCents":999999999}` mints money, both unauthenticated. A test posts exactly
+that payload and asserts none of it lands.
+
+**THE HANDLER MOUNTS BEFORE `express.json()`.** `toNodeHandler` reads the raw request stream itself; a body
+parser in front of it has already consumed that stream, so every sign-in arrives with an empty body and
+fails as **bad credentials** — which reads as a wrong password rather than a middleware ordering bug. It
+also sits ahead of `mongoSanitize`, which rewrites `$` and `.` keys. `/api/auth/*` is the Express 4
+wildcard; on Express 5 it must become `/api/auth/*splat`.
+
+**MONGODB CANNOT CREATE A COLLECTION *OR AN INDEX* INSIDE A TRANSACTION, and this bit twice.** Better Auth
+wraps signup in one (user and account are written together, correctly). On a fresh database the implicit
+creation of `accounts` fails with *"Unable to write … due to catalog changes"* — so **the very first signup
+on a new deployment fails and the second succeeds**, because the failed attempt is what created the
+collection. Observed live: the first signup 500'd, the next worked. Fixing the collection exposed the same
+trap again in the index the adapter builds lazily (`accounts_issuer_accountId_uidx`).
+`ensureAuthCollections()` creates both at boot, outside any transaction. It is the worst shape of bug —
+it never reproduces for whoever is testing, only for the first real person through the door.
+
+Two client details, one carried over and one retired:
+
+- `AuthProvider` still exposes **`authReady`** and `ProtectedRoute` must still wait on it. The cookie is
+  present immediately but whether it is a valid session is a round trip, so without this a hard refresh
+  bounces a signed-in user to `/auth`. Verified: reloading `/portfolio` stays signed in.
+- **The single-flight refresh is gone and nothing replaces it.** It existed because refresh tokens rotated
+  on use and the dashboard's concurrent 401s would each spend the same one. A cookie the browser manages
+  cannot race with itself. The trade is real and worth naming: the old access token lived in memory where
+  an XSS could not reach it, while an httpOnly cookie is unreadable by script but sent automatically — so
+  CSRF becomes the exposure instead, which `SameSite=Lax` plus Better Auth's `Origin` check covers.
+  Measured: a state-changing POST carrying the session cookie but no trusted `Origin` is **403**.
+
+**`BETTER_AUTH_SECRET` has a `min(32)` floor** because that is Better Auth's own — below it the library
+logs a low-entropy warning at every boot, and a warning nobody can act on is one everybody learns to
+ignore. `JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET` remain in the env schema, unread, only because deployed
+`.env` files still carry them.
+
+**`driverInfoList` — the two `mongodb` copies.** mongoose nests its own driver (6.20.0) beside the one the
+adapter resolves (6.21.0). Same object at runtime, nominally distinct to `checkJs`, so the adapter call
+carries two narrow `/** @type {any} */` casts. Narrower than a dedupe that would pin mongoose's driver to
+the adapter's.
+
+**Still not built: Google OAuth.** The provider slot is what Better Auth was adopted for and nothing is
+configured in it yet. Email verification, password reset and magic links are all equally inert until
+something can send mail — `requireEmailVerification` is explicitly `false` for that reason, named rather
+than defaulted into.
 
 ### Tailwind v4 theme
 
@@ -1943,7 +2009,8 @@ handlers into `middleware/validate.js`, and a 300ms debounce on search.
 
 **Knowingly still outstanding**, deferred by an explicit decision rather than overlooked:
 
-- Auth is hand-rolled JWT, not **Better Auth** — no Google OAuth
+- ~~Auth is hand-rolled JWT, not Better Auth~~ — **done**, see the Auth section. Google OAuth is still
+  unconfigured, which is now a provider slot rather than a missing library.
 - No `/controllers` or `/utils` on the server; no `/context` or `/components/features` on the client
 - Twelve files exceed the 150-line limit (`seed.js` 872, `Landing.jsx` 589, `About.jsx` 577,
   `Portfolio.jsx` 431), and several hold multiple components in one file against one-per-file. The

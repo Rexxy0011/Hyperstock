@@ -12,10 +12,26 @@ const schema = z.object({
   // Blank means "start an in-memory replica set" — see config/db.js
   MONGODB_URI: z.string().default(''),
 
+  /**
+   * Better Auth signs session tokens with this. `min(32)` is its own floor, not
+   * an arbitrary one — below it the library logs a low-entropy warning at every
+   * boot, and a warning nobody can act on is a warning everybody learns to
+   * ignore. The development default is deliberately long enough to clear the
+   * check and obviously fake enough that `isProd` below refuses it.
+   */
+  BETTER_AUTH_SECRET: z
+    .string()
+    .min(32)
+    .default('dev-better-auth-secret-change-me-0123456789'),
+
+  /**
+   * SUPERSEDED BY BETTER AUTH and kept only because a deployed `.env` still
+   * carries them. Nothing reads these now: sessions are rows in `sessions`, not
+   * self-contained JWTs, so there is no access token to sign and no refresh
+   * token to rotate. Delete them once no environment sets them.
+   */
   JWT_ACCESS_SECRET: z.string().min(8).default('dev-access-secret-change-me'),
   JWT_REFRESH_SECRET: z.string().min(8).default('dev-refresh-secret-change-me'),
-  ACCESS_TOKEN_TTL: z.string().default('15m'),
-  REFRESH_TOKEN_TTL: z.string().default('7d'),
 
   MARKET_DATA_PROVIDER: z.enum(['yahoo', 'finnhub', 'mock']).default('yahoo'),
   MARKET_DATA_API_KEY: z.string().default(''),
@@ -151,7 +167,7 @@ export const DEPOSIT_DESTINATIONS = (() => {
 export const isProd = env.NODE_ENV === 'production';
 
 if (isProd) {
-  for (const key of ['JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET']) {
+  for (const key of ['BETTER_AUTH_SECRET']) {
     if (env[key].startsWith('dev-')) {
       console.error(`Refusing to start: ${key} is still the development default.`);
       process.exit(1);

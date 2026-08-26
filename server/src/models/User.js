@@ -26,8 +26,33 @@ const userSchema = new mongoose.Schema(
      */
     displayName: { type: String, trim: true, maxlength: 60 },
 
-    // Never returned by default — every read must opt in explicitly.
-    passwordHash: { type: String, required: true, select: false },
+    /**
+     * BETTER AUTH'S OWN THREE FIELDS, declared here so the two writers of this
+     * collection agree on its shape. Better Auth goes through the native driver
+     * and would write them regardless; a Mongoose schema that does not know
+     * them simply drops them from every document it hydrates, so `emailVerified`
+     * would read as undefined on the exact path that checks it.
+     *
+     * `name` is Better Auth's required display field. It is NOT `username` —
+     * that is the handle, owned by the username plugin — and it is not
+     * `displayName` either, which this product had first and still uses.
+     */
+    name: { type: String, trim: true, maxlength: 120 },
+    emailVerified: { type: Boolean, default: false },
+    image: { type: String },
+
+    /**
+     * CREDENTIALS ARE NOT HERE ANY MORE. Better Auth keeps them in `accounts`,
+     * one row per sign-in method, which is what makes a user row with no
+     * credential a coherent thing — and that is exactly what the 207 seeded
+     * leaderboard traders are. They rank, they hold positions, and there is no
+     * password to present because no `accounts` row exists.
+     *
+     * The field is kept, optional and still `select: false`, only so documents
+     * written before the migration do not lose data on their next save. Nothing
+     * reads it; `auth/betterAuth.js` verifies against `accounts.password`.
+     */
+    passwordHash: { type: String, select: false },
 
     role: { type: String, enum: ['user', 'admin'], default: 'user', index: true },
     status: { type: String, enum: ['Active', 'Flagged', 'Suspended'], default: 'Active' },

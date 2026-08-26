@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import marketRoutes from './market.routes.js';
 import leaderboardRoutes from './leaderboard.routes.js';
-import authRoutes from './auth.routes.js';
 import portfolioRoutes from './portfolio.routes.js';
 import watchlistRoutes from './watchlist.routes.js';
 import orderRoutes from './orders.routes.js';
@@ -19,7 +18,9 @@ router.get('/health', (req, res) => {
   res.json({ ok: true, service: 'hyperstocks-api', time: new Date().toISOString() });
 });
 
-router.use('/auth', authRoutes);
+/* `/auth` is NOT mounted here. Better Auth owns it, and its handler is mounted
+   in app.js AHEAD of `express.json()` — a body parser in front of it consumes
+   the request stream and every sign-in arrives empty. See the note there. */
 router.use('/market', marketRoutes);
 router.use('/portfolio', portfolioRoutes);
 // Its own resource rather than /portfolio/watchlist: it now spans all three

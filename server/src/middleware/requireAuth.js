@@ -1,31 +1,43 @@
+import { fromNodeHeaders } from 'better-auth/node';
 import { User } from '../models/User.js';
 import { ApiError } from '../lib/ApiError.js';
-import { verifyAccessToken } from '../lib/jwt.js';
+import { getAuth } from '../auth/betterAuth.js';
 
-function readToken(req) {
-  const header = req.headers.authorization;
-  if (!header?.startsWith('Bearer ')) return null;
-  return header.slice(7);
-}
+/**
+ * Session checking, now backed by Better Auth.
+ *
+ * WHAT CHANGED IS THE VALIDATION, NOT THE SHAPE. `req.user` is still the full
+ * Mongoose document with `_id` as an ObjectId, because twenty-five call sites
+ * across the routes pass `req.user._id` straight into a Mongoose query. Better
+ * Auth hands back `user.id` as a hex STRING — its adapter converts on read —
+ * so returning its object directly would have turned every one of those into a
+ * silent no-match rather than an error.
+ *
+ * The extra lookup is not extra: the old code did `User.findById` on every
+ * request too, to check `tokenVersion`. This spends the same query and gets the
+ * Mongoose validators, virtuals and the `toJSON` transform that strips
+ * `passwordHash` along with it.
+ *
+ * `tokenVersion` is gone and nothing replaces it. It existed to invalidate
+ * access tokens that had already been handed out, which is only a problem when
+ * the token is self-contained. Better Auth's sessions are rows: revoking one is
+ * a delete, and it takes effect on the next request rather than at the end of a
+ * fifteen-minute window.
+ */
+async function sessionUser(req) {
+  const result = await getAuth().api.getSession({ headers: fromNodeHeaders(req.headers) });
+  if (!result?.user?.id) return null;
 
-async function resolveUser(token) {
-  const payload = verifyAccessToken(token);
-  const user = await User.findById(payload.sub).lean();
+  const user = await User.findById(result.user.id).lean();
   if (!user) throw ApiError.unauthorized('Account no longer exists');
-
-  // A bumped tokenVersion revokes every access token already in the wild.
-  if ((user.tokenVersion ?? 0) !== (payload.tv ?? 0)) {
-    throw ApiError.unauthorized('Session expired', 'TOKEN_REVOKED');
-  }
   return user;
 }
 
 export async function requireAuth(req, res, next) {
   try {
-    const token = readToken(req);
-    if (!token) throw ApiError.unauthorized();
+    const user = await sessionUser(req);
+    if (!user) throw ApiError.unauthorized();
 
-    const user = await resolveUser(token);
     if (user.status === 'Suspended') {
       throw ApiError.forbidden('This account is suspended', 'ACCOUNT_SUSPENDED');
     }
@@ -33,25 +45,16 @@ export async function requireAuth(req, res, next) {
     req.user = { ...user, id: String(user._id) };
     next();
   } catch (err) {
-    if (err?.name === 'TokenExpiredError') {
-      return next(ApiError.unauthorized('Access token expired', 'TOKEN_EXPIRED'));
-    }
-    if (err?.name === 'JsonWebTokenError') {
-      return next(ApiError.unauthorized('Invalid access token'));
-    }
     next(err);
   }
 }
 
-/** Attaches req.user when a valid token is present, but never rejects.
+/** Attaches req.user when a valid session is present, but never rejects.
  *  Used by the leaderboard so anonymous callers still get the public board. */
 export async function optionalAuth(req, res, next) {
   try {
-    const token = readToken(req);
-    if (token) {
-      const user = await resolveUser(token);
-      req.user = { ...user, id: String(user._id) };
-    }
+    const user = await sessionUser(req);
+    if (user) req.user = { ...user, id: String(user._id) };
   } catch {
     // Ignore — the caller is simply treated as anonymous.
   }

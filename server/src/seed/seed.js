@@ -34,7 +34,6 @@ import { TopUpRequest } from "../models/TopUpRequest.js";
 import { Announcement } from "../models/Announcement.js";
 import { PortfolioSnapshot } from "../models/PortfolioSnapshot.js";
 import { Candle } from "../models/Candle.js";
-import { RefreshToken } from "../models/RefreshToken.js";
 
 import { exchanges } from "./data/exchanges.js";
 import { stocks as stockData } from "./data/stocks.js";
@@ -168,7 +167,6 @@ async function wipe() {
     Announcement,
     PortfolioSnapshot,
     Candle,
-    RefreshToken,
   ];
 
   await Promise.all(collections.map((M) => M.deleteMany({})));
@@ -246,10 +244,46 @@ async function seedStocks() {
 }
 
 /**
- * Hashed once and shared by every fixture user — 200+ bcrypt rounds is slow
- * and pointless when they all share the same demo password.
+ * Hashed once and shared by the accounts that actually get a credential —
+ * which, since the migration to Better Auth, is two of them rather than 209.
  */
 let sharedPasswordHash = null;
+
+/**
+ * MOST SEEDED TRADERS GET NO CREDENTIAL AT ALL, and that is the point.
+ *
+ * Better Auth keeps credentials in `accounts`, one row per sign-in method, so a
+ * `users` document with no `accounts` document beside it is a coherent thing: it
+ * ranks on the leaderboard, holds positions and carries a `tradeCount`, and
+ * there is simply no password to present. The 207 fixture traders exist to
+ * populate a board, never to sign in, so writing them 207 bcrypt hashes of the
+ * same demo password was only ever dead credential material sitting in the
+ * database.
+ *
+ * `issuer`, `accountId` and the ObjectId `userId` mirror exactly what Better
+ * Auth writes on a real signup — captured from one rather than guessed, because
+ * a row that is close but not identical fails at sign-in, which reads as a
+ * wrong password.
+ */
+async function giveCredential(user) {
+  const password = (sharedPasswordHash ??= await bcrypt.hash(PASSWORD, 12));
+  const now = new Date();
+  await mongoose.connection.collection("accounts").updateOne(
+    { userId: user._id, providerId: "credential" },
+    {
+      $set: {
+        issuer: "local:credential",
+        accountId: String(user._id),
+        providerId: "credential",
+        userId: user._id,
+        password,
+        updatedAt: now,
+      },
+      $setOnInsert: { createdAt: now },
+    },
+    { upsert: true },
+  );
+}
 
 async function makeUser({
   username,
@@ -260,20 +294,27 @@ async function makeUser({
   role = "user",
   status = "Active",
   createdAt = null,
+  credentials = false,
 }) {
-  const passwordHash = (sharedPasswordHash ??= await bcrypt.hash(PASSWORD, 10));
-
-  return User.findOneAndUpdate(
+  const user = await User.findOneAndUpdate(
     { username },
     {
       $set: {
         email,
-        passwordHash,
         cashBalanceCents: Math.round(cashBalanceCents),
         displayName: displayName ?? undefined,
         tradeCount,
         role,
         status,
+        /**
+         * Better Auth's own two fields, written here so a seeded row is the
+         * same shape as a registered one. `name` is its required display
+         * field and falls back to the handle; `emailVerified` is true because
+         * there is no mail sender in this repo to verify through, and a
+         * fixture account stuck behind an unverifiable gate is unusable.
+         */
+        name: displayName ?? username,
+        emailVerified: true,
       },
       $setOnInsert: {
         createdAt: createdAt ?? new Date(),
@@ -285,6 +326,9 @@ async function makeUser({
       setDefaultsOnInsert: true,
     }
   );
+
+  if (credentials) await giveCredential(user);
+  return user;
 }
 
 /**
@@ -354,6 +398,8 @@ async function seedJdTrader(stockBySymbol) {
     cashBalanceCents: 0,
     tradeCount: 38,
     createdAt: new Date(Date.now() - 200 * 86_400_000),
+    // One of the only two seeded accounts that can actually sign in.
+    credentials: true,
   });
 
   await Holding.deleteMany({
@@ -674,6 +720,7 @@ export async function runSeed({ fresh = false } = {}) {
     email: "admin@hyperstocks.app",
     cashBalanceCents: SEED_CASH_CENTS,
     role: "admin",
+    credentials: true,
   });
 
   log("admin", "admin@hyperstocks.app");
