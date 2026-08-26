@@ -9,6 +9,23 @@ const schema = z.object({
   PORT: z.coerce.number().int().positive().default(4000),
   CLIENT_ORIGIN: z.string().default('http://localhost:5173'),
 
+  /**
+   * Where THIS API is reachable from the public internet.
+   *
+   * Better Auth derives absolute URLs from it, and the one that matters is the
+   * OAuth callback: `{API_ORIGIN}/api/auth/callback/google` is what gets sent
+   * to Google and what must be registered in the Cloud Console. Left at the
+   * localhost default in production, consent succeeds and Google redirects the
+   * user to a machine that is not there.
+   *
+   * NOT the client's URL and NOT a mail subdomain. If the API is deployed
+   * separately from the front end these are three different hosts.
+   *
+   * Empty means "derive from PORT", which is right in development and refused
+   * in production below.
+   */
+  API_ORIGIN: z.string().default(''),
+
   // Blank means "start an in-memory replica set" — see config/db.js
   MONGODB_URI: z.string().default(''),
 
@@ -191,11 +208,33 @@ export const DEPOSIT_DESTINATIONS = (() => {
 
 export const isProd = env.NODE_ENV === 'production';
 
+/**
+ * The API's own origin, with the development fallback applied.
+ *
+ * A getter rather than a literal in `betterAuth.js`, so exactly one place
+ * decides it and the production guard below has something to check.
+ */
+export const apiOrigin = env.API_ORIGIN || `http://localhost:${env.PORT}`;
+
 if (isProd) {
   for (const key of ['BETTER_AUTH_SECRET']) {
     if (env[key].startsWith('dev-')) {
       console.error(`Refusing to start: ${key} is still the development default.`);
       process.exit(1);
     }
+  }
+
+  /**
+   * A PRODUCTION DEPLOY POINTING AT LOCALHOST IS BROKEN IN A WAY THAT ONLY
+   * SHOWS WHEN SOMEBODY TRIES TO SIGN IN WITH GOOGLE — consent succeeds, and
+   * the redirect goes to a machine that is not on the internet. Refusing at
+   * boot turns a confusing user-facing failure into an obvious startup one.
+   */
+  if (apiOrigin.includes('localhost') || apiOrigin.includes('127.0.0.1')) {
+    console.error(
+      'Refusing to start: API_ORIGIN is unset or points at localhost. ' +
+        'Set it to this API\'s public URL — the Google callback is derived from it.',
+    );
+    process.exit(1);
   }
 }

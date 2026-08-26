@@ -2007,9 +2007,23 @@ discover a missing environment variable. `GET /api/auth-providers` reports the a
 not render a control that cannot work; with the credentials absent it returns `{ google: false }`, and a
 direct POST to the endpoint is a clean `404 PROVIDER_NOT_FOUND`.
 
-**The redirect URI to register in Google Cloud Console is `{baseURL}/api/auth/callback/google`** —
-`http://localhost:4000/api/auth/callback/google` for this dev setup. It is derived from `baseURL`, so that
-value has to be right in production or consent succeeds and the callback lands nowhere.
+**The redirect URI to register in Google Cloud Console is `{API_ORIGIN}/api/auth/callback/google`** —
+`http://localhost:4000/api/auth/callback/google` for this dev setup.
+
+**THREE ORIGINS, AND CONFUSING THEM IS THE DEPLOY BUG.** They are different hosts the moment anything is
+deployed separately:
+
+| | | |
+|---|---|---|
+| `API_ORIGIN` | `https://api.hyperstocks.app` | where THIS server answers; the Google callback is derived from it |
+| `CLIENT_ORIGIN` | `https://hyperstocks.app` | the site people visit; drives CORS and `trustedOrigins` |
+| `MAIL_FROM` | `no-reply@send.hyperstocks.app` | **never visited in a browser** — a mail-only subdomain carrying SPF and DKIM |
+
+`baseURL` was hardcoded to `http://localhost:${env.PORT}` when Google first landed, which would have shipped
+a production build telling Google to redirect users to a machine that is not on the internet. It reads
+`apiOrigin` now, and **`config/env.js` refuses to boot when `NODE_ENV=production` and that value still points
+at localhost** — turning a confusing user-facing failure (consent succeeds, redirect dies) into an obvious
+startup one.
 
 **GOOGLE RETURNS A NAME, AN EMAIL AND A PICTURE — NEVER A HANDLE**, and this product requires a unique
 `username` matching `^[a-z0-9_]+$` on every user: it is in URLs, it drives `lib/monogram.js` and

@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import { betterAuth } from 'better-auth';
 import { mongodbAdapter } from 'better-auth/adapters/mongodb';
 import { username as usernamePlugin, emailOTP } from 'better-auth/plugins';
-import { env, SEED_CASH_CENTS, isProd } from '../config/env.js';
+import { env, SEED_CASH_CENTS, isProd, apiOrigin } from '../config/env.js';
 import { supportsTransactions } from '../config/db.js';
 import { Transaction } from '../models/Transaction.js';
 import { uniqueHandle } from './handle.js';
@@ -115,7 +115,10 @@ export function createAuth() {
     // Better Auth warn about low entropy on every boot. The env schema pins
     // this at its 32-character floor and production refuses the dev default.
     secret: env.BETTER_AUTH_SECRET,
-    baseURL: `http://localhost:${env.PORT}`,
+    // NOT hardcoded to localhost: the Google callback URL is derived from this,
+    // so a production deploy with the dev value sends users to a machine that
+    // is not on the internet. `config/env.js` refuses to boot on that in prod.
+    baseURL: apiOrigin,
     basePath: '/api/auth',
     // The browser is a different origin in development (Vite on 5173 proxying
     // to 4000), so it has to be trusted explicitly or the cookie is refused.
