@@ -12,6 +12,7 @@ import {
 } from '../services/featuredTrader.service.js';
 import { queueCounts } from '../services/adminQueue.service.js';
 import { listSubscribers, subscriberCounts } from '../services/subscriber.service.js';
+import { listUsers, userCounts, setUserStatus } from '../services/adminUser.service.js';
 
 /**
  * The curated-leaderboard admin.
@@ -62,6 +63,47 @@ router.get(
   '/queues',
   asyncHandler(async (req, res) => {
     res.json(await queueCounts());
+  }),
+);
+
+/**
+ * Every account, with the one thing that stopped being visible when Better Auth
+ * took over credentials: whether the row can actually sign in.
+ *
+ * The counts ride along on the same response rather than a second endpoint —
+ * they are four `countDocuments` against a listing the caller is already
+ * waiting on, and a separate request would render the header a beat after the
+ * table for no benefit.
+ */
+router.get(
+  '/users',
+  validate({
+    query: z.object({
+      q: z.string().trim().max(60).optional(),
+      page: z.coerce.number().int().min(1).default(1),
+      limit: z.coerce.number().int().min(1).max(100).default(25),
+    }),
+  }),
+  asyncHandler(async (req, res) => {
+    const { q, page, limit } = req.validatedQuery;
+    const [listing, counts] = await Promise.all([listUsers({ q, page, limit }), userCounts()]);
+    res.json({ ...listing, counts });
+  }),
+);
+
+/**
+ * The only write this screen offers. Role is not editable — see the note in
+ * `adminUser.service.js` on why granting admin from a table row is not a thing
+ * that should be one misclick wide.
+ */
+router.patch(
+  '/users/:id/status',
+  validate({
+    params: idParam,
+    body: z.object({ status: z.enum(['Active', 'Flagged', 'Suspended']) }),
+  }),
+  asyncHandler(async (req, res) => {
+    res.json(await setUserStatus(req.params.id, req.body.status, req.user.id));
   }),
 );
 

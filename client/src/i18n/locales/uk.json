@@ -21,7 +21,8 @@
     "close": "Закрити",
     "featuredTraders": "Обрані трейдери",
     "approvals": "Підтвердження",
-    "subscribers": "Підписники"
+    "subscribers": "Підписники",
+    "users": "Користувачі"
   },
   "common": {
     "back": "Назад",
@@ -40,7 +41,9 @@
     "saving": "Збереження…",
     "clear": "Очистити",
     "loadFailed": "Не вдалося завантажити.",
-    "retry": "Спробувати ще раз"
+    "retry": "Спробувати ще раз",
+    "previous": "Назад",
+    "next": "Далі"
   },
   "portfolio": {
     "title": "Мій портфель",
@@ -429,6 +432,41 @@
       "subscribed": "Підписані",
       "on": "У списку",
       "off": "Відписався"
+    },
+    "users": {
+      "title": "Користувачі",
+      "intro": "Усі облікові записи платформи. Найважливіший стовпець — «Вхід»: облікові дані зберігаються в `accounts`, тож запис без них потрапляє в рейтинг, але увійти не може.",
+      "total": "Записів",
+      "canSignIn": "Можуть увійти",
+      "fixtures": "Без облікових даних",
+      "admins": "Адміністратори",
+      "suspended": "Призупинені",
+      "searchPlaceholder": "Пошук за іменем або поштою",
+      "empty": "Записів не знайдено.",
+      "you": "(це ви)",
+      "hasCredential": "Так",
+      "noCredential": "Ні",
+      "suspend": "Призупинити",
+      "reactivate": "Відновити",
+      "statusChanged": "Статус оновлено",
+      "suspendedWithSessions_one": "Призупинено — скасовано {{count}} сеанс",
+      "suspendedWithSessions_few": "Призупинено — скасовано {{count}} сеанси",
+      "suspendedWithSessions_many": "Призупинено — скасовано {{count}} сеансів",
+      "suspendedWithSessions_other": "Призупинено — скасовано {{count}} сеансу",
+      "pageOf": "Сторінка {{page}} з {{pages}}",
+      "role": {
+        "admin": "Адміністратор",
+        "user": "Користувач"
+      },
+      "col": {
+        "account": "Обліковий запис",
+        "signIn": "Вхід",
+        "role": "Роль",
+        "status": "Статус",
+        "cash": "Баланс",
+        "trades": "Угоди",
+        "joined": "Приєднався"
+      }
     }
   },
   "notices": {

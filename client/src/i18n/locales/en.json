@@ -21,7 +21,8 @@
     "close": "Close",
     "featuredTraders": "Featured traders",
     "approvals": "Approvals",
-    "subscribers": "Subscribers"
+    "subscribers": "Subscribers",
+    "users": "Users"
   },
   "common": {
     "back": "Back",
@@ -40,7 +41,9 @@
     "saving": "Saving…",
     "clear": "Clear",
     "loadFailed": "Could not load this.",
-    "retry": "Try again"
+    "retry": "Try again",
+    "previous": "Previous",
+    "next": "Next"
   },
   "portfolio": {
     "title": "My Portfolio",
@@ -425,6 +428,39 @@
       "subscribed": "Subscribed",
       "on": "On the list",
       "off": "Unsubscribed"
+    },
+    "users": {
+      "title": "Users",
+      "intro": "Every account on the platform. The Sign-in column is the one that matters: credentials live in `accounts`, so a user row without one ranks on the leaderboard and can never log in.",
+      "total": "Accounts",
+      "canSignIn": "Can sign in",
+      "fixtures": "No credential",
+      "admins": "Admins",
+      "suspended": "Suspended",
+      "searchPlaceholder": "Search username or email",
+      "empty": "No accounts match.",
+      "you": "(you)",
+      "hasCredential": "Yes",
+      "noCredential": "No",
+      "suspend": "Suspend",
+      "reactivate": "Reactivate",
+      "statusChanged": "Status updated",
+      "suspendedWithSessions_one": "Suspended — 1 session revoked",
+      "suspendedWithSessions_other": "Suspended — {{count}} sessions revoked",
+      "pageOf": "Page {{page}} of {{pages}}",
+      "role": {
+        "admin": "Admin",
+        "user": "User"
+      },
+      "col": {
+        "account": "Account",
+        "signIn": "Sign-in",
+        "role": "Role",
+        "status": "Status",
+        "cash": "Cash",
+        "trades": "Trades",
+        "joined": "Joined"
+      }
     }
   },
   "notices": {

@@ -45,5 +45,8 @@ export const ADMIN = [
     icon: 'community',
     label: 'Featured traders',
   },
+  // Users before subscribers: an account is the more consequential record, and
+  // it is the only screen that says which of them can actually sign in.
+  { to: '/admin/users', key: 'users', icon: 'community', label: 'Users' },
   { to: '/admin/subscribers', key: 'subscribers', icon: 'news', label: 'Subscribers' },
 ];

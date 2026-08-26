@@ -218,6 +218,48 @@ disclosure on that surface.
 Both leaderboard surfaces now key their lists on `userId`, not `username`: a curated name is free text and
 may collide with a real trader's, and two rows sharing a React key silently drop one.
 
+### The user admin — `/admin/users`
+
+`services/adminUser.service.js`, `GET /api/admin/users`, `PATCH /api/admin/users/:id/status`,
+`pages/Users.jsx`. It exists because Better Auth moved credentials out of the user document.
+
+**THE COLUMN THE SCREEN EXISTS FOR IS "SIGN-IN".** A credential is a row in `accounts` now, so 209 user
+documents look identical and **two of them hold a password**. Which rows are real accounts and which are
+leaderboard fixtures was visible nowhere in the product. The header says it in one line: *Accounts 209 ·
+Can sign in 2 · No credential 207*. `canSignIn` is computed by joining `accounts` on every read, never
+stored — a stored flag needs a writer on the signup path, the credential-migration path and the deletion
+path, and one of the three would eventually be forgotten. Same reasoning `subscriber.service.js` gives for
+`converted`.
+
+**A fixture's missing credential is `neutral`, not a loss red.** Having no password is the *correct* state
+for 207 of these rows, not a fault, and red is what this palette uses for a loss and a rejection.
+
+**The search term is escaped, not interpolated.** `{ $regex: term }` with `.*` returns every row — a search
+box that dumps the table — and `(a+)+$` is a way to hang the process. `literal()` escapes the regex
+metacharacters; a test asserts `.*` and `^jd` match **0** while `jd_` still matches 1.
+
+**One query per page, not one per row.** Twenty-five sequential `findOne`s against `accounts` is the shape
+that looks free on a seeded database and is not — the same note `/admin/queues` carries about counting with
+`.length`.
+
+**ROLE IS DELIBERATELY NOT EDITABLE.** Granting `admin` from a table row is a privilege escalation one
+misclick wide and, unlike a suspension, invisible to the person it happened to. Status is the only write.
+
+**An admin cannot change their own status, and the button is HIDDEN rather than disabled on that row.**
+With one administrator — which is what this database has — suspending yourself removes the only account
+that could undo it and the recovery is a database edit. The server refuses it independently
+(`SELF_STATUS_CHANGE`); a control that exists only to reject you is worse than no control.
+
+**Suspending deletes the account's sessions.** `requireAuth` already refuses `Suspended` on the next
+request, so the block is immediate either way — but leaving the rows means the account is refused while its
+session sits there valid, which is two answers to "is this person signed in". The response returns
+`sessionsRevoked` because suspending somebody who is signed in *right now* is a different event from
+suspending a dormant account, and nothing else on screen would say so.
+
+`test/adminUser.test.js` pins all of it, including that the listing never carries `passwordHash`,
+`password`, `token` or `unsubscribeToken`, that paging covers every account exactly once, and that a status
+change moves no money.
+
 ### The approvals dashboard
 
 `/admin/approvals` (`pages/Approvals.jsx`) drives the three review queues that had complete APIs and no
@@ -2035,7 +2077,8 @@ reconciliation against an actual wallet.
 
 The Wallet screen and the limit-order sweeper. **The admin screens exist now** — `/admin/approvals` drives
 all three review queues and `/admin/featured-traders` curates the board, both behind an `adminOnly` route
-and an admin-filtered nav entry. What is still missing on the admin side is user and stock management, and
+and an admin-filtered nav entry. **`/admin/users` now lists every account** and is the only place that says
+which of them can actually sign in. What is still missing on the admin side is stock management and
 announcements; on the user side, a Wallet page listing a trader's own transactions and requests.
 
 Shipped since: `/news`, the watchlist, candle charts, the instrument terminal, and **order execution

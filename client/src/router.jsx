@@ -29,6 +29,7 @@ import Portfolio from './pages/Portfolio';
 import Admin from './pages/Admin';
 import Approvals from './pages/Approvals';
 import Subscribers from './pages/Subscribers';
+import Users from './pages/Users';
 import ComingSoon from './pages/ComingSoon';
 
 /**
@@ -174,6 +175,14 @@ export const router = createBrowserRouter([
             element: (
               <ProtectedRoute adminOnly>
                 <Approvals />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: '/admin/users',
+            element: (
+              <ProtectedRoute adminOnly>
+                <Users />
               </ProtectedRoute>
             ),
           },
