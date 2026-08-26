@@ -11,6 +11,7 @@ import newsRoutes, { announcementRouter } from './news.routes.js';
 import adminRoutes from './admin.routes.js';
 import subscriberRoutes from './subscribers.routes.js';
 import { optionalAuth } from '../middleware/requireAuth.js';
+import { googleEnabled } from '../auth/betterAuth.js';
 
 const router = Router();
 
@@ -20,7 +21,15 @@ router.get('/health', (req, res) => {
 
 /* `/auth` is NOT mounted here. Better Auth owns it, and its handler is mounted
    in app.js AHEAD of `express.json()` — a body parser in front of it consumes
-   the request stream and every sign-in arrives empty. See the note there. */
+   the request stream and every sign-in arrives empty. See the note there.
+
+   The one exception is this: which providers are actually CONFIGURED is our
+   question, not Better Auth's. The client asks so it can decline to render a
+   "Continue with Google" button that would bounce the user to a Google error
+   page. It is public and unauthenticated because the sign-in screen is. */
+router.get('/auth-providers', (req, res) => {
+  res.json({ google: googleEnabled });
+});
 router.use('/market', marketRoutes);
 router.use('/portfolio', portfolioRoutes);
 // Its own resource rather than /portfolio/watchlist: it now spans all three

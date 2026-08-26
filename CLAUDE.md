@@ -1998,10 +1998,57 @@ adapter resolves (6.21.0). Same object at runtime, nominally distinct to `checkJ
 carries two narrow `/** @type {any} */` casts. Narrower than a dedupe that would pin mongoose's driver to
 the adapter's.
 
-**Still not built: Google OAuth.** The provider slot is what Better Auth was adopted for and nothing is
-configured in it yet. Email verification, password reset and magic links are all equally inert until
-something can send mail — `requireEmailVerification` is explicitly `false` for that reason, named rather
-than defaulted into.
+#### Google OAuth
+
+Configured in `socialProviders`, with the button on `/auth`. **It registers only when both
+`GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are set** — an empty client id does not fail at boot, it
+fails when somebody presses the button and is bounced to a Google error page, which is the worst place to
+discover a missing environment variable. `GET /api/auth-providers` reports the answer so the client does
+not render a control that cannot work; with the credentials absent it returns `{ google: false }`, and a
+direct POST to the endpoint is a clean `404 PROVIDER_NOT_FOUND`.
+
+**The redirect URI to register in Google Cloud Console is `{baseURL}/api/auth/callback/google`** —
+`http://localhost:4000/api/auth/callback/google` for this dev setup. It is derived from `baseURL`, so that
+value has to be right in production or consent succeeds and the callback lands nowhere.
+
+**GOOGLE RETURNS A NAME, AN EMAIL AND A PICTURE — NEVER A HANDLE**, and this product requires a unique
+`username` matching `^[a-z0-9_]+$` on every user: it is in URLs, it drives `lib/monogram.js` and
+`investorPhoto()`, and it carries a unique index. So `auth/handle.js` invents one, in
+`databaseHooks.user.create.before` — *before*, because the handle has to be on the INSERT rather than
+patched in afterwards against an index that was checked without it. The guard is `if (user.username)`
+rather than a provider check, so an email signup passes through untouched and any future provider is
+covered without the hook learning about it.
+
+- **The fallback prefix is `user_`, never `trader_`.** That namespace belongs to the seed's synthetic
+  fixtures and is exactly what `/admin/users` uses to tell a real account from a leaderboard row.
+- **Deterministic suffixes before random ones.** `ada_2` is a handle somebody recognises as theirs;
+  `ada_k3f9x1` is not. After twenty collisions the name is clearly contested and readability has stopped
+  being the point.
+- **It is check-then-insert and therefore racy** — the unique index is what actually guarantees
+  correctness. The function exists to make a collision rare, not to prevent it.
+- Accents fold rather than being replaced: `José` → `jose`, not `jos_`.
+
+**Account linking is enabled with `trustedProviders: ['google']`, and that list is explicit for a reason.**
+Linking on a matching email is only safe for a provider that verifies emails — an IdP that let somebody
+claim an address they do not own would hand them the existing HyperStocks account at that address. Google
+verifies. Without linking the flow is worse than an error: somebody who registered with a password and
+later presses Continue with Google is told the account already exists with no way forward, and the product
+is insisting two identities are different people when they are the same one.
+
+`prompt: 'select_account'` forces the chooser rather than silently reusing whichever Google account the
+browser happens to be signed into — on a product holding a portfolio, "which of my accounts is this" must
+not be a guess.
+
+The mark is `FcGoogle` from `react-icons`, already a dependency — the same rule `CoinIcon` follows: never
+approximate a trademark by hand and never hotlink one.
+
+`test/handle.test.js` pins the generation rules. Verified live with a test client id: the endpoint builds a
+real `accounts.google.com/o/oauth2/v2/auth` URL carrying the right `redirect_uri`, `prompt` and
+`email profile openid` scope.
+
+**Still inert: everything that needs mail.** Email verification, password reset and magic links have no
+transport behind them — `requireEmailVerification` is explicitly `false` for that reason, named rather than
+defaulted into.
 
 ### Tailwind v4 theme
 
@@ -2051,8 +2098,8 @@ handlers into `middleware/validate.js`, and a 300ms debounce on search.
 
 **Knowingly still outstanding**, deferred by an explicit decision rather than overlooked:
 
-- ~~Auth is hand-rolled JWT, not Better Auth~~ — **done**, see the Auth section. Google OAuth is still
-  unconfigured, which is now a provider slot rather than a missing library.
+- ~~Auth is hand-rolled JWT, not Better Auth — no Google OAuth~~ — **done**, see the Auth section. Google
+  is wired and only needs credentials in `.env`.
 - No `/controllers` or `/utils` on the server; no `/context` or `/components/features` on the client
 - Twelve files exceed the 150-line limit (`seed.js` 872, `Landing.jsx` 589, `About.jsx` 577,
   `Portfolio.jsx` 431), and several hold multiple components in one file against one-per-file. The

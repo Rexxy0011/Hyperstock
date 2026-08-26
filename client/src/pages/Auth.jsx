@@ -1,5 +1,8 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useQuery } from '@tanstack/react-query';
+import { FcGoogle } from 'react-icons/fc';
+import { get } from '../lib/api';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
@@ -13,7 +16,7 @@ export default function Auth() {
   const { t } = useTranslation();
   const [params] = useSearchParams();
   const navigate = useNavigate();
-  const { user, authReady, login, register } = useAuth();
+  const { user, authReady, login, register, signInWithGoogle } = useAuth();
 
   const [mode, setMode] = useState(params.get('mode') === 'signup' ? MODES[1] : MODES[0]);
   // `email` is carried over from Landing's CTA, which collects it before
@@ -35,8 +38,34 @@ export default function Auth() {
     onChange: (e) => setForm((f) => ({ ...f, [name]: e.target.value })),
   });
 
+  /**
+   * Whether the button can actually work. Rendering "Continue with Google" on a
+   * deployment with no Google credentials configured produces a press that ends
+   * on a Google error page — so the server is asked, and the button simply does
+   * not exist when it would fail. `staleTime: Infinity` because this changes
+   * when the server restarts, not while somebody is looking at a login form.
+   */
+  const { data: providers } = useQuery({
+    queryKey: ['auth', 'providers'],
+    queryFn: () => get('/auth-providers'),
+    staleTime: Infinity,
+  });
+
   // Already signed in? Don't show the form at all.
   if (authReady && user) return <Navigate to={next} replace />;
+
+  const onGoogle = async () => {
+    setError(null);
+    setBusy(true);
+    try {
+      // Does not return — it navigates to Google. `busy` stays true so the
+      // button cannot be pressed twice while the redirect is in flight.
+      await signInWithGoogle(next);
+    } catch (err) {
+      setError(err.message ?? 'Could not start Google sign-in.');
+      setBusy(false);
+    }
+  };
 
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -84,6 +113,32 @@ export default function Auth() {
               ? 'Start trading eight exchanges in under a minute.'
               : 'Sign in to your portfolio.'}
           </p>
+
+          {providers?.google && (
+            <>
+              <button
+                type="button"
+                onClick={onGoogle}
+                disabled={busy}
+                className="flex w-full cursor-pointer items-center justify-center gap-2.5 rounded-lg border border-cool-grey bg-white py-2.5 font-display text-sm font-medium transition-colors hover:bg-hover disabled:cursor-default disabled:opacity-45"
+              >
+                {/* The real mark from react-icons, already in the bundle — the
+                    same rule CoinIcon follows: never approximate a trademark by
+                    hand, and never hotlink one either. */}
+                <FcGoogle size={18} aria-hidden="true" />
+                {t('auth.continueWithGoogle')}
+              </button>
+
+              {/* A rule with the word in it, not a bare line: two stacked
+                  buttons with nothing between them read as one control group
+                  rather than as two independent ways in. */}
+              <div className="my-5 flex items-center gap-3">
+                <span className="h-px flex-1 bg-cool-grey" />
+                <span className="text-2xs text-text-muted uppercase">{t('auth.or')}</span>
+                <span className="h-px flex-1 bg-cool-grey" />
+              </div>
+            </>
+          )}
 
           <form onSubmit={onSubmit} className="flex flex-col gap-4">
             {isSignup && (

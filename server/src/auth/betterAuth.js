@@ -6,6 +6,7 @@ import { username as usernamePlugin } from 'better-auth/plugins';
 import { env, SEED_CASH_CENTS, isProd } from '../config/env.js';
 import { supportsTransactions } from '../config/db.js';
 import { Transaction } from '../models/Transaction.js';
+import { uniqueHandle } from './handle.js';
 
 /**
  * Better Auth owns login, signup and every other credential path.
@@ -87,6 +88,13 @@ const additionalFields = {
 };
 
 /**
+ * Whether the Google provider can actually work. Exported so the client can be
+ * told, rather than rendering a button that bounces the user to a Google error
+ * page when the credentials are absent.
+ */
+export const googleEnabled = Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET);
+
+/**
  * Builds the instance. MUST be called after `connectDb()` — it borrows that
  * connection rather than opening a second one, so the auth writes and the
  * app's own writes share a pool, a replica set and a transaction session.
@@ -145,6 +153,56 @@ export function createAuth() {
 
     user: { additionalFields },
 
+    /**
+     * GOOGLE IS CONFIGURED ONLY WHEN BOTH HALVES OF THE CREDENTIAL EXIST.
+     *
+     * Registering the provider with an empty `clientId` does not fail at boot —
+     * it fails at the moment somebody presses "Continue with Google" and is
+     * bounced to a Google error page, which is the worst place to discover that
+     * an environment variable is missing. `googleEnabled` is reported by
+     * `/api/auth/providers` so the client can simply not render a button that
+     * cannot work.
+     *
+     * The redirect URI to register in Google Cloud Console is
+     * `{baseURL}/api/auth/callback/google` — for this dev setup,
+     * `http://localhost:4000/api/auth/callback/google`. It is derived from
+     * `baseURL`, so that value has to be right in production or consent
+     * succeeds and the callback lands nowhere.
+     */
+    ...(googleEnabled && {
+      socialProviders: {
+        google: {
+          clientId: env.GOOGLE_CLIENT_ID,
+          clientSecret: env.GOOGLE_CLIENT_SECRET,
+          // Forces the chooser rather than silently reusing whichever account
+          // the browser is already signed into — on a product holding a
+          // portfolio, "which of my accounts is this" must not be a guess.
+          prompt: 'select_account',
+        },
+      },
+    }),
+
+    account: {
+      accountLinking: {
+        enabled: true,
+        /**
+         * LINKING ON A MATCHING EMAIL IS ONLY SAFE FOR A PROVIDER THAT VERIFIES
+         * EMAILS, and that is the whole reason this list is explicit rather
+         * than "any provider". If an IdP let somebody claim an address they do
+         * not own, trusting it here would hand them the existing HyperStocks
+         * account at that address. Google verifies; that is what earns it the
+         * entry.
+         *
+         * Without linking the flow is worse than an error: somebody who
+         * registered with a password at ada@gmail.com, then later presses
+         * Continue with Google, is told the account already exists and has no
+         * way forward — the two identities are the same person and the product
+         * would be insisting they are not.
+         */
+        trustedProviders: ['google'],
+      },
+    },
+
     plugins: [
       usernamePlugin({
         minUsernameLength: 3,
@@ -168,7 +226,30 @@ export function createAuth() {
      */
     databaseHooks: {
       user: {
+        /**
+         * A SOCIAL SIGNUP ARRIVES WITH NO USERNAME, and this product requires
+         * one on every user — unique, URL-safe, and the thing `monogram()` and
+         * `investorPhoto()` key off. Google supplies a name, an email and a
+         * picture, never a handle.
+         *
+         * It runs in `before` rather than `after` because the username has to
+         * be present on the INSERT: filling it afterwards would mean the row
+         * exists for a moment violating its own schema, and the unique index
+         * would be checked against a value that was not there yet.
+         *
+         * The guard is `if (user.username)` rather than a provider check, so an
+         * email signup — which supplies its own handle through the plugin —
+         * passes straight through untouched, and any future provider is covered
+         * without this hook having to learn about it.
+         */
         create: {
+          before: async (user) => {
+            if (user.username) return undefined;
+            const username = await uniqueHandle({ email: user.email, name: user.name });
+            // `displayUsername` is the username plugin's cased variant; left
+            // unset it renders blank wherever the plugin prefers it.
+            return { data: { ...user, username, displayUsername: username } };
+          },
           after: async (user) => {
             await Transaction.create({
               userId: user.id,

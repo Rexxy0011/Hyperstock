@@ -307,7 +307,9 @@
     "disclaimer": "HyperStocks — це симуляційна платформа. Реальні кошти не інвестуються.",
     "haveAccount": "Вже маєте рахунок?",
     "noAccount": "Вперше тут?",
-    "grant": "Перші {{amount}} — за наш рахунок."
+    "grant": "Перші {{amount}} — за наш рахунок.",
+    "continueWithGoogle": "Увійти через Google",
+    "or": "або"
   },
   "leaderboard": {
     "title": "Рейтинг",

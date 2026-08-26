@@ -103,6 +103,29 @@ export function AuthProvider({ children }) {
     [adopt],
   );
 
+  /**
+   * Starts the Google round trip.
+   *
+   * IT RETURNS A URL AND WE LEAVE THE PAGE — there is no session yet, and there
+   * is nothing to `adopt`. Google redirects back to `/api/auth/callback/google`,
+   * which sets the cookie server-side and then sends the browser to
+   * `callbackURL`; the app boots fresh and the mount effect above picks the
+   * session up. So the whole return leg is handled by the code that already
+   * exists for "am I signed in".
+   *
+   * `errorCallbackURL` matters as much as the success one: without it a denied
+   * consent, or a misconfigured client id, lands the user on Better Auth's own
+   * error response rather than back on the screen they started from.
+   */
+  const signInWithGoogle = useCallback(async (next = '/portfolio') => {
+    const { url } = await post('/auth/sign-in/social', {
+      provider: 'google',
+      callbackURL: `${window.location.origin}${next}`,
+      errorCallbackURL: `${window.location.origin}/auth?error=oauth`,
+    });
+    if (url) window.location.href = url;
+  }, []);
+
   const logout = useCallback(async () => {
     await post('/auth/sign-out').catch(() => {});
     setUser(null);
@@ -113,7 +136,7 @@ export function AuthProvider({ children }) {
   const patchUser = useCallback((changes) => setUser((u) => (u ? { ...u, ...changes } : u)), []);
 
   return (
-    <AuthContext.Provider value={{ user, authReady, login, register, logout, patchUser }}>
+    <AuthContext.Provider value={{ user, authReady, login, register, signInWithGoogle, logout, patchUser }}>
       {children}
     </AuthContext.Provider>
   );

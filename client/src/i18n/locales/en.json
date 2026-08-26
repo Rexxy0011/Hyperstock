@@ -303,7 +303,9 @@
     "disclaimer": "HyperStocks is a simulation platform. No real money is invested.",
     "haveAccount": "Already have an account?",
     "noAccount": "New here?",
-    "grant": "Your first {{amount}} is on us."
+    "grant": "Your first {{amount}} is on us.",
+    "continueWithGoogle": "Continue with Google",
+    "or": "or"
   },
   "leaderboard": {
     "title": "Leaderboard",

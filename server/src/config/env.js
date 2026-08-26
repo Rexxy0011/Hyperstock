@@ -25,6 +25,16 @@ const schema = z.object({
     .default('dev-better-auth-secret-change-me-0123456789'),
 
   /**
+   * GOOGLE OAUTH. Both halves are optional and default to empty: the provider
+   * is registered only when both are present, so a clone with no Google project
+   * boots normally and simply does not offer the button. Registering it with an
+   * empty client id fails at the moment somebody presses it, on a Google error
+   * page, which is the worst place to learn an env var is missing.
+   */
+  GOOGLE_CLIENT_ID: z.string().default(''),
+  GOOGLE_CLIENT_SECRET: z.string().default(''),
+
+  /**
    * SUPERSEDED BY BETTER AUTH and kept only because a deployed `.env` still
    * carries them. Nothing reads these now: sessions are rows in `sessions`, not
    * self-contained JWTs, so there is no access token to sign and no refresh
