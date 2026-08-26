@@ -56,7 +56,31 @@ export default function TopNav({ onOpenNav, bordered = true }) {
         ))}
       </nav>
 
-      <label className="ml-auto flex min-w-0 flex-1 items-center gap-2.5 rounded-lg border border-cool-grey/80 px-3 py-2 lg:max-w-70 xl:max-w-80">
+      {/* HIDDEN BELOW `sm`, because it is the only flexible item in this bar
+          and every sibling is `shrink-0` — so it absorbs the whole squeeze and
+          collapses instead of wrapping. Measured on the rendered nav: the input
+          is 132px at 480, 66px at 414 (placeholder already clipped), **12px at
+          360** and **0px at 320**, where the label itself is 26px — narrower
+          than the magnifier inside it. A bordered box containing a clipped icon
+          and nothing else reads as a rendering fault, not as a control.
+
+          Nothing is lost by removing it there: this input does not search. Its
+          only behaviour is `onFocus` → `/markets`, and the mobile drawer
+          already carries a Market link, which is the same destination one tap
+          away. `/markets` has its own real search on arrival.
+
+          A min-width instead would only move the failure — at 320 there is no
+          room for it to be honoured, so it would force the page to scroll
+          sideways, which is worse than an absent shortcut.
+
+          HIDDEN AGAIN FROM `lg` TO `xl`, which is not a typo. `lg` is where the
+          desktop nav links appear, and measured signed in they take **353px** —
+          so the search is squeezed a second time in exactly that band: 45px at
+          1024, 121px at 1100, and only back to a usable 221px by 1200. The two
+          gaps have the same cause (this is the sole flexible item in a row of
+          `shrink-0` siblings) and therefore the same answer. `xl:flex` restores
+          it at 1280, measured at 234px. */}
+      <label className="ml-auto hidden min-w-0 flex-1 items-center gap-2.5 rounded-lg border border-cool-grey/80 px-3 py-2 sm:flex lg:hidden lg:max-w-70 xl:flex xl:max-w-80">
         <Icon name="search" size={16} className="text-text-muted" />
         <input
           type="search"
@@ -73,21 +97,42 @@ export default function TopNav({ onOpenNav, bordered = true }) {
         <LanguageSwitcher compact />
       </div>
 
-      {authReady && !user ? (
-        <div className="flex shrink-0 items-center gap-2">
-          <Button to="/auth" variant="ghost" size="sm">
-            {t('nav.login')}
-          </Button>
-          <Button to="/auth?mode=signup" size="sm">
-            {t('nav.getStarted')}
-          </Button>
-        </div>
-      ) : (
-        <>
-          <InvestmentPill />
-          <AccountMenu />
-        </>
-      )}
+      {/* THE ACCOUNT CLUSTER CARRIES THE AUTO MARGIN BELOW `sm`, because the
+          search — which is what pushed everything here to the right — is not in
+          the flow at that width. Without it the cluster packs against the logo
+          and the freed space trails behind it, which reads as the nav having
+          lost its right-hand side.
+
+          The breakpoints MIRROR THE SEARCH'S VISIBILITY EXACTLY — auto where it
+          is hidden, zero where it is shown — because the two must never both
+          carry it: two auto margins in one row SPLIT the free space between
+          them, leaving a gap in the middle rather than a bar that fills. So
+          `sm:ml-0` hands the job to the search at 640, `lg:ml-auto` takes it
+          back where the nav links crowd the search out, and `xl:ml-0` returns
+          it once the search is restored. Measured before this mirrored the
+          search: the `lg`–`xl` band left the cluster packed against the nav
+          links with 204–380px of dead space trailing it.
+
+          The gaps repeat the header's own `gap-3 sm:gap-4` so wrapping these
+          two changes nothing visually — the signed-in pill and avatar sit
+          exactly where they did. */}
+      <div className="ml-auto flex shrink-0 items-center gap-3 sm:ml-0 sm:gap-4 lg:ml-auto xl:ml-0">
+        {authReady && !user ? (
+          <div className="flex shrink-0 items-center gap-2">
+            <Button to="/auth" variant="ghost" size="sm">
+              {t('nav.login')}
+            </Button>
+            <Button to="/auth?mode=signup" size="sm">
+              {t('nav.getStarted')}
+            </Button>
+          </div>
+        ) : (
+          <>
+            <InvestmentPill />
+            <AccountMenu />
+          </>
+        )}
+      </div>
     </header>
   );
 }
