@@ -10,6 +10,7 @@ import notify from "../lib/toast";
 import Button from "../components/ui/Button";
 import Avatar from "../components/ui/Avatar";
 import Card from "../components/ui/Card";
+import Reveal from "../components/ui/Reveal";
 import PriceChange from "../components/market/PriceChange";
 import Money from "../components/market/Money";
 
@@ -78,7 +79,11 @@ function Hero() {
       <div
         className={`mx-auto grid max-w-300 items-center gap-12 px-8 lg:grid-cols-[1fr_1.1fr] ${SECTION_Y}`}
       >
-        <div className="relative">
+        {/* The hero is above the fold, so both halves reveal on load rather
+            than on scroll — the observer fires immediately for anything
+            already in view. The 90ms offset on the artwork is what makes it
+            read as one composition arriving rather than two elements racing. */}
+        <Reveal className="relative">
           <h1 className="m-0 text-[clamp(28px,4vw,42px)] font-bold">
             {t('landing.heroTitle')}
           </h1>
@@ -114,9 +119,9 @@ function Hero() {
             height={806}
             className="pointer-events-none absolute bottom-10 -left-24 hidden w-20 min-[1400px]:block"
           />
-        </div>
+        </Reveal>
 
-        <div className="relative">
+        <Reveal delay={90} className="relative">
           {/* The tinted field the shot sits on, bleeding off the right of the
               viewport. `w-screen` from the column's left edge always overshoots
               the page, and the section clips it — so it reads as a band running
@@ -131,7 +136,7 @@ function Hero() {
             height={858}
             className="relative w-full"
           />
-        </div>
+        </Reveal>
       </div>
     </section>
   );
@@ -204,7 +209,11 @@ function TopInvestors({ rows, loading = false }) {
             instead of forcing the row wider than its column. Below lg they
             stack, with the panel second — the ranking is the substance. */}
         <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
-          <div className="min-w-0 flex-1">
+          {/* Left to right, in reading order: the ranking, then the arrow that
+              points out of it, then what it points at. The stagger is the whole
+              reason the arrow reads as a connection rather than as an ornament
+              parked between two panels. */}
+          <Reveal className="min-w-0 flex-1">
             <h2 className="m-0 text-xl font-bold">{t('landing.topInvestors')}</h2>
             {/* The rows carry real people's names against entirely invented
                 figures. In a Forbes-styled ranking that reads as a claim about
@@ -291,20 +300,26 @@ function TopInvestors({ rows, loading = false }) {
                 {t('landing.seeRankings')}
               </Button>
             </div>
-          </div>
+          </Reveal>
 
           {/* Purely decorative, so it carries an empty alt and is hidden while
               the columns are stacked — an arrow pointing right means nothing
-              when the two things it connects sit one above the other. */}
-          <img
-            src={assets.flowArrow}
-            alt=""
-            width={993}
-            height={406}
-            className="hidden shrink-0 self-center lg:block lg:w-56"
-          />
+              when the two things it connects sit one above the other.
 
-          <div className="min-w-0 flex-1">
+              The layout classes move to the Reveal wrapper, which is now the
+              flex item; leaving `self-center` on the image would centre it
+              inside a wrapper that is already exactly its size and do nothing. */}
+          <Reveal delay={110} className="hidden shrink-0 self-center lg:block">
+            <img
+              src={assets.flowArrow}
+              alt=""
+              width={993}
+              height={406}
+              className="lg:w-56"
+            />
+          </Reveal>
+
+          <Reveal delay={220} className="min-w-0 flex-1">
             {/* Plain, matching "Top investors this month" in the left column.
                 This used to carry the secondary Button's skin — white fill,
                 cool-grey border, 8px radius. The border was the whole point of
@@ -325,7 +340,7 @@ function TopInvestors({ rows, loading = false }) {
               height={631}
               className="w-full rounded-3xl"
             />
-          </div>
+          </Reveal>
         </div>
       </div>
     </section>
@@ -386,17 +401,22 @@ function Security() {
 
             `rounded-full` is the second sanctioned use in the codebase after
             Button's `pill` prop; see the note in styles/theme.css. */}
-        <div className="flex items-center gap-4">
-          <span className="h-px flex-1 bg-linear-to-l from-slate/55 from-60% to-transparent" />
-          <h2 className="m-0 shrink-0 rounded-full border border-slate/35 px-6 py-2 text-center text-lg font-bold tracking-widest uppercase">
-            {t('landing.securityEyebrow')}
-          </h2>
-          <span className="h-px flex-1 bg-linear-to-r from-slate/55 from-60% to-transparent" />
-        </div>
+        {/* Capsule and lead arrive as one unit — they are a single heading
+            split over two elements, so revealing them separately would pull
+            apart something the reader takes in at once. */}
+        <Reveal>
+          <div className="flex items-center gap-4">
+            <span className="h-px flex-1 bg-linear-to-l from-slate/55 from-60% to-transparent" />
+            <h2 className="m-0 shrink-0 rounded-full border border-slate/35 px-6 py-2 text-center text-lg font-bold tracking-widest uppercase">
+              {t('landing.securityEyebrow')}
+            </h2>
+            <span className="h-px flex-1 bg-linear-to-r from-slate/55 from-60% to-transparent" />
+          </div>
 
-        <p className="mx-auto mt-4 mb-8 max-w-118 text-center font-display text-base font-normal text-text-muted">
-          {t('landing.securityLead')}
-        </p>
+          <p className="mx-auto mt-4 mb-8 max-w-118 text-center font-display text-base font-normal text-text-muted">
+            {t('landing.securityLead')}
+          </p>
+        </Reveal>
 
         {/* One column on phones, two from `sm` up — and it stops at two.
             Four columns put these bodies at 26-30 characters a line, less than
@@ -408,8 +428,14 @@ function Security() {
             borders align when one body runs a line longer, which is grid's
             default behaviour. */}
         <div className="grid gap-4 sm:grid-cols-2">
+          {/* `h-full` on both the wrapper and the Card is load-bearing. The
+              Reveal div is the grid item now, so it is the thing grid stretches
+              — without passing that height down, the Card sizes to its own copy
+              and the borders stop aligning across the row, which is the exact
+              thing the note above about `items-start` warns off. */}
           {PILLARS.map(({ icon, key }, i) => (
-            <Card key={key} className="flex flex-col gap-3 rounded-xl">
+            <Reveal key={key} delay={i * 80} className="h-full">
+            <Card className="flex h-full flex-col gap-3 rounded-xl">
               {/* No mist tile behind these. It was there to give an 18px line
                   icon a surface to sit on; full-colour artwork brings its own,
                   and a second one just competes. alt is empty on purpose —
@@ -433,6 +459,7 @@ function Security() {
                 {t(`landing.${key}Body`)}
               </p>
             </Card>
+            </Reveal>
           ))}
         </div>
       </div>
@@ -446,7 +473,9 @@ function Markets({ exchanges }) {
   const { t } = useTranslation();
   return (
     <section className={`mx-auto max-w-300 px-8 ${SECTION_Y}`}>
-      <h2 className="m-0 mb-6 text-xl font-bold">{t('landing.marketsCovered')}</h2>
+      <Reveal>
+        <h2 className="m-0 mb-6 text-xl font-bold">{t('landing.marketsCovered')}</h2>
+      </Reveal>
 
       {/* bg-ink, the same deep surface as the nav balance pill and the ticker
           tape. No border on the panel: a cool-grey rule against near-black
@@ -454,7 +483,7 @@ function Markets({ exchanges }) {
           already defines the shape. Row separators move to white/10 for the
           same reason — the light divider has to come out of the surface, not
           off the light-theme palette. */}
-      <div className="overflow-x-auto rounded-md bg-ink shadow-card">
+      <Reveal delay={90} className="overflow-x-auto rounded-md bg-ink shadow-card">
         <table className="w-full border-collapse">
           <thead>
             <tr>
@@ -490,7 +519,7 @@ function Markets({ exchanges }) {
             ))}
           </tbody>
         </table>
-      </div>
+      </Reveal>
     </section>
   );
 }
@@ -566,7 +595,7 @@ function CtaShowcase() {
           so the border and shadow are what separate it from the background.
           Same pair the Card component uses, kept here rather than swapping to
           Card because that brings a p-5 that fights this padding. */}
-      <div className="flex w-full flex-col items-center gap-10 rounded-xl border border-cool-grey bg-white px-6 py-14 text-center shadow-card lg:aspect-91/32 lg:flex-row lg:justify-between lg:gap-12 lg:px-14 lg:py-0 lg:text-left">
+      <Reveal className="flex w-full flex-col items-center gap-10 rounded-xl border border-cool-grey bg-white px-6 py-14 text-center shadow-card lg:aspect-91/32 lg:flex-row lg:justify-between lg:gap-12 lg:px-14 lg:py-0 lg:text-left">
         <div className="lg:max-w-150">
           <h2 className="m-0 text-xl font-bold">
             {t('landing.closingTitle')}
@@ -623,7 +652,7 @@ function CtaShowcase() {
           height={933}
           className="w-56 shrink-0 sm:w-64 lg:w-72"
         />
-      </div>
+      </Reveal>
     </section>
   );
 }
@@ -718,12 +747,12 @@ function MarketPartners() {
   return (
     <section className="border-t border-cool-grey bg-mist">
       <div className="mx-auto max-w-300 px-8 py-14">
-        <div className="text-center">
+        <Reveal className="text-center">
           <h2 className="m-0 text-xl font-bold">{t('landing.partnersTitle')}</h2>
           <p className="mx-auto mt-3 mb-0 max-w-150 font-display text-base font-normal text-text-muted">
             {t('landing.partnersBody')}
           </p>
-        </div>
+        </Reveal>
 
         {/* Clipped, with the edges MASKED rather than cut.
             A hard clip severs a wordmark mid-letter — measured at 1440 it left
@@ -732,12 +761,15 @@ function MarketPartners() {
             makes entering and leaving deliberate. Dropped under reduced motion,
             where nothing moves and a fade over static text is just low
             contrast. */}
-        <div className="mt-10 overflow-hidden mask-[linear-gradient(to_right,transparent,black_6%,black_94%,transparent)] motion-reduce:mask-none">
+        <Reveal
+          delay={110}
+          className="mt-10 overflow-hidden mask-[linear-gradient(to_right,transparent,black_6%,black_94%,transparent)] motion-reduce:mask-none"
+        >
           <div className="flex w-max animate-marquee-partners hover:[animation-play-state:paused] motion-reduce:w-full motion-reduce:animate-none">
             {row(false)}
             {row(true)}
           </div>
-        </div>
+        </Reveal>
 
         {/*
           NOT IN THE SUPPLIED COPY. These are real, trademarked firms, and a
@@ -747,9 +779,13 @@ function MarketPartners() {
           names counterparties rather than individuals. One quiet line is what
           separates a credibility strip from an assertion of affiliation.
         */}
-        <p className="mx-auto mt-8 mb-0 max-w-150 text-center text-2xs text-text-muted">
+        <Reveal
+          as="p"
+          delay={200}
+          className="mx-auto mt-8 mb-0 max-w-150 text-center text-2xs text-text-muted"
+        >
           {t('landing.partnersNote')}
-        </p>
+        </Reveal>
       </div>
     </section>
   );

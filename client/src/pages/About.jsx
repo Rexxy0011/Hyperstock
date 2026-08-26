@@ -5,6 +5,7 @@ import { useAuth } from "../auth/AuthProvider";
 import Button from "../components/ui/Button";
 import CountUp from "../components/ui/CountUp";
 import Eyebrow from "../components/ui/Eyebrow";
+import Reveal from "../components/ui/Reveal";
 import VideoBackdrop from "../components/ui/VideoBackdrop";
 import { assets } from "../assets/assets";
 
@@ -111,7 +112,7 @@ function AboutHero() {
           page has changed colour. */}
       <div className="overflow-hidden rounded-3xl bg-mist p-8 lg:p-12">
         <div className="grid items-stretch gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-12">
-          <div className="flex flex-col">
+          <Reveal className="flex flex-col">
             <Eyebrow className="self-start">{t('about.eyebrow')}</Eyebrow>
 
             <h1 className="mt-6 mb-0 text-[clamp(28px,4vw,42px)] font-bold">
@@ -139,7 +140,7 @@ function AboutHero() {
                 Explore markets
               </Button>
             </div>
-          </div>
+          </Reveal>
 
           {/* The photo is positioned out of flow inside a wrapper that has no
               intrinsic height, so the row is sized by the copy column alone and
@@ -150,7 +151,12 @@ function AboutHero() {
               own natural size first, so the 4:5 source made the row 585px tall
               against 490px of copy and left a gap under the buttons. Below `lg`
               the wrapper carries the ratio, because there is no row to fill. */}
-          <div className="relative aspect-4/5 w-full lg:aspect-auto">
+          {/* Still the grid item with no intrinsic height, so the note above
+              holds: Reveal renders exactly this div, it does not add one. The
+              `transform` the reveal animates does not disturb the absolute
+              child, which is positioned against `relative` on this same
+              element and travels with it. */}
+          <Reveal delay={90} className="relative aspect-4/5 w-full lg:aspect-auto">
             <img
               src={assets.about.floor}
               alt="The main trading floor of a stock exchange, its overhead boards lit with quotes"
@@ -158,7 +164,7 @@ function AboutHero() {
               height={1080}
               className="absolute inset-0 size-full rounded-2xl object-cover"
             />
-          </div>
+          </Reveal>
         </div>
 
         {/* Under the buttons in reading order, but spanning the whole card
@@ -169,7 +175,10 @@ function AboutHero() {
 
             Never more than three abreast below `lg`: five columns of a title
             AND a sentence is the layout that turns this into confetti. */}
-        <div className="mt-10 grid grid-cols-2 gap-x-8 gap-y-8 border-t border-cool-grey pt-10 sm:grid-cols-3 lg:grid-cols-5">
+        <Reveal
+          delay={180}
+          className="mt-10 grid grid-cols-2 gap-x-8 gap-y-8 border-t border-cool-grey pt-10 sm:grid-cols-3 lg:grid-cols-5"
+        >
           {HERO_STATS.map(({ key, ...fig }) => (
             <div key={key}>
               <CountUp
@@ -184,7 +193,7 @@ function AboutHero() {
               </span>
             </div>
           ))}
-        </div>
+        </Reveal>
       </div>
     </section>
   );
@@ -204,17 +213,34 @@ function AboutHero() {
  * these sections the copy is reliably the taller of the two.
  */
 function Split({ image, alt, reverse = false, children }) {
+  // The half that is visually FIRST leads, so the stagger follows the eye
+  // rather than the source order — `reverse` moves the photo to the right, and
+  // a right-hand element arriving before the left one reads backwards. Below
+  // `lg` the columns stack photo-first in both cases, which is why the photo
+  // never leads by more than one step.
+  const imageDelay = reverse ? 110 : 0;
+  const copyDelay = reverse ? 0 : 110;
+
   return (
     <section className={`${CONTAINER} ${SECTION_Y}`}>
       <div className="grid items-stretch gap-10 lg:grid-cols-2 lg:gap-14">
-        <img
-          src={image}
-          alt={alt}
-          className={`aspect-4/3 w-full rounded-2xl object-cover lg:aspect-auto lg:h-full lg:max-h-130 ${
-            reverse ? "lg:order-2" : ""
-          }`}
-        />
-        <div className="flex flex-col justify-center">{children}</div>
+        {/* The wrapper is the grid item now, so it is what stretches and the
+            image's `lg:h-full` resolves against it — the row is still sized by
+            the copy column and the photo still fills it. `lg:order-2` has to
+            travel to the wrapper for the same reason. */}
+        <Reveal
+          delay={imageDelay}
+          className={`lg:h-full ${reverse ? "lg:order-2" : ""}`}
+        >
+          <img
+            src={image}
+            alt={alt}
+            className="aspect-4/3 w-full rounded-2xl object-cover lg:aspect-auto lg:h-full lg:max-h-130"
+          />
+        </Reveal>
+        <Reveal delay={copyDelay} className="flex flex-col justify-center">
+          {children}
+        </Reveal>
       </div>
     </section>
   );
@@ -314,10 +340,12 @@ function Markets() {
   return (
     <section className="bg-mist">
       <div className={`${CONTAINER} ${SECTION_Y}`}>
-        <Eyebrow>{t('about.assetsEyebrow')}</Eyebrow>
-        <h2 className="mt-6 mb-8 max-w-160 text-2xl font-medium">
-          {t('about.assetsTitle')}
-        </h2>
+        <Reveal>
+          <Eyebrow>{t('about.assetsEyebrow')}</Eyebrow>
+          <h2 className="mt-6 mb-8 max-w-160 text-2xl font-medium">
+            {t('about.assetsTitle')}
+          </h2>
+        </Reveal>
 
         {/* Two columns, not the reference's three, and it stops at two for the
             reason the Landing security grid does: these bodies run 120-180
@@ -334,9 +362,12 @@ function Markets() {
             // so the fill did not have to move to a card with a safer glyph.
             const filled = i === 0;
             return (
+              // `h-full` on both wrapper and card: the Reveal div is the grid
+              // item, so it takes the stretch and the card has to be told to
+              // fill it or the two cards in a row stop ending level.
+              <Reveal key={key} delay={i * 80} className="h-full">
               <div
-                key={key}
-                className={`flex flex-col gap-3 rounded-xl border p-5 ${
+                className={`flex h-full flex-col gap-3 rounded-xl border p-5 ${
                   filled
                     ? "border-transparent bg-green-deep text-text-on-deep"
                     : "border-cool-grey bg-white shadow-card"
@@ -364,6 +395,7 @@ function Markets() {
                   {t(`about.${key}Body`)}
                 </p>
               </div>
+              </Reveal>
             );
           })}
         </div>
@@ -464,7 +496,7 @@ function Security() {
   return (
     <section className="bg-mist">
       <div className={`${CONTAINER} ${SECTION_Y}`}>
-        <div className="mx-auto flex max-w-160 flex-col items-center text-center">
+        <Reveal className="mx-auto flex max-w-160 flex-col items-center text-center">
           <img
             src={assets.icons.shield}
             alt=""
@@ -490,7 +522,7 @@ function Security() {
               {t('about.securityP3')}
             </p>
           </div>
-        </div>
+        </Reveal>
       </div>
     </section>
   );
@@ -571,13 +603,20 @@ function WhatsNext() {
           slice is 44% of the frame and the chart reads as texture rather than
           as a chart. The extra 48px takes it past half. */}
       <div className={`${CONTAINER} py-20`}>
-        <div className="mx-auto max-w-160 text-center">
+        {/* The copy reveals; the video and the scrim behind it do not. Fading a
+            full-bleed background band in reads as a rendering fault rather than
+            as an entrance, and `VideoBackdrop` already has its own
+            intersection trigger — it starts playing when this scrolls into
+            view, which is the same moment. */}
+        <Reveal className="mx-auto max-w-160 text-center">
           <h2 className="m-0 text-2xl font-medium">
             {t('about.nextTitle')}
           </h2>
 
           <div className="mt-5 flex flex-col gap-4 font-display text-base font-normal text-white/85">
-            {t('about.nextP1')}
+            <p className="m-0">
+              {t('about.nextP1')}
+            </p>
             <p className="m-0">
               {t('about.nextP2')}
             </p>
@@ -589,7 +628,7 @@ function WhatsNext() {
           <p className="mt-8 mb-0 font-display text-lg font-bold text-text-on-deep">
             {t('about.nextP4')}
           </p>
-        </div>
+        </Reveal>
       </div>
     </section>
   );
@@ -613,9 +652,9 @@ function AboutCta() {
 
   return (
     <section className={`${CONTAINER} ${SECTION_Y}`}>
-      <div className="flex w-full flex-col items-center gap-8 rounded-xl border border-cool-grey bg-white px-6 py-12 text-center shadow-card lg:flex-row lg:justify-between lg:gap-12 lg:px-14 lg:text-left">
+      <Reveal className="flex w-full flex-col items-center gap-8 rounded-xl border border-cool-grey bg-white px-6 py-12 text-center shadow-card lg:flex-row lg:justify-between lg:gap-12 lg:px-14 lg:text-left">
         <div className="lg:max-w-150">
-          {t('about.ctaTitle')}
+          <h2 className="m-0 text-xl font-bold">{t('about.ctaTitle')}</h2>
           <p className="mt-3 mb-0 font-display text-base font-normal text-text-muted">
             {t('about.ctaBody')}
           </p>
@@ -625,7 +664,7 @@ function AboutCta() {
           {cta.label}
           <FiArrowRight size={18} aria-hidden="true" />
         </Button>
-      </div>
+      </Reveal>
     </section>
   );
 }
