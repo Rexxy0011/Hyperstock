@@ -2046,9 +2046,61 @@ approximate a trademark by hand and never hotlink one.
 real `accounts.google.com/o/oauth2/v2/auth` URL carrying the right `redirect_uri`, `prompt` and
 `email profile openid` scope.
 
-**Still inert: everything that needs mail.** Email verification, password reset and magic links have no
-transport behind them — `requireEmailVerification` is explicitly `false` for that reason, named rather than
-defaulted into.
+#### Email — Resend, and codes rather than links
+
+`lib/mailer.js` sends and `lib/emails.js` says what. One owner each, for the reason `toast.js` owns
+durations: on email an inconsistency is not a rough edge, it is the difference between a message that looks
+like the product and one that looks like phishing.
+
+**NO SDK.** Resend's API is a single POST and `market/providers/*` already reach their vendors with `fetch`
+directly; a dependency for one request would be the odd one out.
+
+**WITHOUT A KEY IT PRINTS TO THE TERMINAL INSTEAD OF THROWING — except in production**, where a missing key
+is logged as the misconfiguration it is and nothing is printed. The body of a sign-in mail is a live
+one-time code; putting that in a production log means anyone who can read logs can sign in as anyone.
+
+**CODES, NOT MAGIC LINKS** (`emailOTP`), which is a UX decision before a security one. A link has to survive
+an email client that rewrites URLs, a preview fetcher that burns a single-use token before the reader
+clicks, and being opened in a different browser from the one that asked — where the session lands in the
+wrong place and the original tab waits forever. A six-digit code is typed into the tab already open.
+
+Two plugin defaults are overridden, and both matter:
+
+- **`storeOTP: 'hashed'` over a default of `'plain'`.** Stored in the clear, anybody who can read the
+  database — a backup, a log shipper — is holding live sign-in codes for every account currently
+  authenticating. Verified: the row reads `9BSty...:0`, a hash plus the attempt counter.
+- **`disableSignUp: true` over a default of false.** Left alone, posting any address to
+  `/sign-in/email-otp` **creates an account for it** — a second signup path that bypasses the form, invents
+  a handle for a typo'd address and grants it $10,000.
+
+**`requireEmailVerification` is still `false`, but no longer for want of a mailer.** It stays off because
+turning it on locks every account created before this out of its own portfolio, and gates a
+simulated-trading demo behind an inbox round trip to prevent fraud that cannot happen. Flip it the moment
+anything of value hangs off an address being real.
+
+**The resend button has a 60s cooldown**, because one without a cooldown is an email-bombing tool: every
+press is a message to an address the presser does not have to own, and it burns the sending quota while
+teaching the provider to treat the domain as a spammer.
+
+**Errors go through `errorMessage()`, not `err.message`.** Better Auth's strings are developer English —
+the raw failure rendered as *"Invalid OTP"* on screen before this was fixed, which does not translate and
+does not tell anyone what to do. The code is the translation key, as everywhere else.
+
+**`/unsubscribe` exists because the email promises it.** The consent line under the subscribe button was
+removed on the grounds that people "could unsubscribe from the emails", which makes that link the whole of
+the promise — a 404 there is worse than no unsubscribe at all. It runs on mount with no confirm step
+(somebody who clicked unsubscribe has decided; a second "are you sure" is what makes people hit *spam*
+instead), and **unknown, already-unsubscribed and success all render identically**, so the page cannot
+become the oracle the API deliberately is not.
+
+**`RESEND_API_KEY=` IS FORCED EMPTY IN THE TEST SCRIPT**, alongside `MONGODB_URI` and
+`DEPOSIT_DESTINATIONS` — the same trap a fourth time. Without it, the day a real key lands in `.env`,
+`npm test` starts sending real email and burning quota. `GOOGLE_CLIENT_ID`/`SECRET` are forced empty there
+too.
+
+**Still not built: the newsletter SENDER.** `newsletterEmail()` and `/unsubscribe` exist and are tested, but
+nothing iterates the subscriber list and sends — that needs batching against the free tier's 100/day, a
+dry-run, and a `List-Unsubscribe` header. Nothing sends marketing mail today.
 
 ### Tailwind v4 theme
 

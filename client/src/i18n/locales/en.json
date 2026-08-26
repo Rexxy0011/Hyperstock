@@ -286,7 +286,13 @@
     "UNAUTHORIZED": "Please sign in again.",
     "generic": "Something went wrong. Please try again.",
     "NETWORK_ERROR": "Could not reach HyperStocks. Check your connection and try again.",
-    "SERVER_ERROR": "Something went wrong on our side. Please try again."
+    "SERVER_ERROR": "Something went wrong on our side. Please try again.",
+    "INVALID_OTP": "That code is wrong. Check it and try again.",
+    "OTP_EXPIRED": "That code has expired. Ask for a new one.",
+    "TOO_MANY_ATTEMPTS": "Too many wrong codes. Ask for a new one.",
+    "INVALID_EMAIL_OR_PASSWORD": "Email or password is incorrect.",
+    "USER_NOT_FOUND": "No account matches that.",
+    "PROVIDER_NOT_FOUND": "That sign-in method is not available right now."
   },
   "auth": {
     "signIn": "Sign in",
@@ -305,7 +311,26 @@
     "noAccount": "New here?",
     "grant": "Your first {{amount}} is on us.",
     "continueWithGoogle": "Continue with Google",
-    "or": "or"
+    "or": "or",
+    "code": {
+      "useCode": "Sign in with a code",
+      "signInTitle": "Sign in with a code",
+      "signInLead": "We'll email you a six-digit code. No password needed.",
+      "resetTitle": "Reset your password",
+      "resetLead": "We'll email you a six-digit code to confirm it's you.",
+      "sentTo": "We sent a code to {{email}}. It expires in 10 minutes.",
+      "label": "Code",
+      "newPassword": "New password",
+      "send": "Email me a code",
+      "signInSubmit": "Sign in",
+      "resetSubmit": "Set new password",
+      "resend": "Send another code",
+      "resendIn": "Send another code in {{seconds}}s",
+      "changeEmail": "Use a different email",
+      "back": "Back to sign in",
+      "wrong": "That code is wrong or has expired.",
+      "sendFailed": "Could not send the code. Try again."
+    }
   },
   "leaderboard": {
     "title": "Leaderboard",
@@ -486,5 +511,13 @@
   "legal": {
     "lastUpdated": "Last updated",
     "englishOnly": "This document is published in English, and the English version governs. A translation is not a second version of the agreement — if you would like one, contact us and we will provide it alongside the original."
+  },
+  "unsubscribe": {
+    "working": "Removing you from the list…",
+    "doneTitle": "You're unsubscribed",
+    "doneBody": "You won't receive any more emails from HyperStocks.",
+    "failedTitle": "That link didn't work",
+    "failedBody": "The link may be incomplete. Forward the email to",
+    "home": "Back to HyperStocks"
   }
 }

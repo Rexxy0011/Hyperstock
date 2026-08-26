@@ -11,6 +11,7 @@ export default function Input({
   error = undefined,
   className = '',
   as = 'input',
+  code = false,
   id: providedId = undefined,
   ...rest
 }) {
@@ -32,11 +33,24 @@ export default function Input({
         aria-invalid={error ? 'true' : undefined}
         aria-describedby={error || hint ? `${id}-msg` : undefined}
         className={[
-          'w-full rounded-md border bg-white px-3 py-2.5 text-base text-text-body',
+          'w-full rounded-md border bg-white px-3 py-2.5 text-text-body',
           'transition-colors placeholder:text-text-muted',
           'focus:border-gain focus:outline-none',
           error ? 'border-loss' : 'border-cool-grey',
           as === 'textarea' ? 'resize-y font-body' : '',
+          /**
+           * A PROP RATHER THAN A className, for the reason `Button` has `pill`:
+           * the size here conflicts with the base `text-base`, and conflicting
+           * utilities passed through className are resolved by position in the
+           * generated stylesheet rather than by order in the attribute — so one
+           * of them loses silently. Only one is ever emitted.
+           *
+           * Numeric, not mono: a one-time code is a figure, and `--font-numeric`
+           * carries the tabular set so six digits do not shift as they are typed.
+           */
+          code
+            ? 'text-center font-numeric text-lg tracking-[0.4em] tabular-nums'
+            : 'text-base',
         ].join(' ')}
         {...rest}
       />

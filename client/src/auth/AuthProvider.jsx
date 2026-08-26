@@ -104,6 +104,48 @@ export function AuthProvider({ children }) {
   );
 
   /**
+   * Asks for a one-time code.
+   *
+   * THE TWO PURPOSES USE DIFFERENT ENDPOINTS and must not be collapsed: a
+   * sign-in code and a password-reset code carry different subject lines,
+   * because somebody who receives "your sign-in code" when they asked to reset
+   * a password has just learned that a stranger is in their account.
+   *
+   * Both answer 200 whether or not the address is registered. That is
+   * deliberate on the server's side and must not be "improved" here by
+   * surfacing a not-found — a code request that behaves differently for a known
+   * address is an oracle for which addresses have accounts.
+   */
+  const requestCode = useCallback(
+    async ({ email, purpose }) =>
+      purpose === 'reset'
+        ? post('/auth/email-otp/request-password-reset', { email })
+        : post('/auth/email-otp/send-verification-otp', { email, type: 'sign-in' }),
+    [],
+  );
+
+  const signInWithCode = useCallback(
+    async ({ email, otp }) => adopt(await post('/auth/sign-in/email-otp', { email, otp })),
+    [adopt],
+  );
+
+  /**
+   * Resets the password and signs in with it.
+   *
+   * The reset endpoint returns `{ success: true }`, not a session — so without
+   * the second call the user is bounced back to a login form to type the
+   * password they chose four seconds ago. They have just proven possession of
+   * the address AND chosen the secret; asking again is ceremony.
+   */
+  const resetPasswordWithCode = useCallback(
+    async ({ email, otp, password }) => {
+      await post('/auth/email-otp/reset-password', { email, otp, password });
+      return adopt(await post('/auth/sign-in/email', { email, password }));
+    },
+    [adopt],
+  );
+
+  /**
    * Starts the Google round trip.
    *
    * IT RETURNS A URL AND WE LEAVE THE PAGE — there is no session yet, and there
@@ -136,7 +178,18 @@ export function AuthProvider({ children }) {
   const patchUser = useCallback((changes) => setUser((u) => (u ? { ...u, ...changes } : u)), []);
 
   return (
-    <AuthContext.Provider value={{ user, authReady, login, register, signInWithGoogle, logout, patchUser }}>
+    <AuthContext.Provider value={{
+        user,
+        authReady,
+        login,
+        register,
+        signInWithGoogle,
+        requestCode,
+        signInWithCode,
+        resetPasswordWithCode,
+        logout,
+        patchUser,
+      }}>
       {children}
     </AuthContext.Provider>
   );

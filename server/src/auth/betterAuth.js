@@ -2,11 +2,13 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import { betterAuth } from 'better-auth';
 import { mongodbAdapter } from 'better-auth/adapters/mongodb';
-import { username as usernamePlugin } from 'better-auth/plugins';
+import { username as usernamePlugin, emailOTP } from 'better-auth/plugins';
 import { env, SEED_CASH_CENTS, isProd } from '../config/env.js';
 import { supportsTransactions } from '../config/db.js';
 import { Transaction } from '../models/Transaction.js';
 import { uniqueHandle } from './handle.js';
+import { sendMail } from '../lib/mailer.js';
+import { otpEmail, OTP_EXPIRY_SECONDS } from '../lib/emails.js';
 
 /**
  * Better Auth owns login, signup and every other credential path.
@@ -143,12 +145,26 @@ export function createAuth() {
 
     emailAndPassword: {
       enabled: true,
-      // No mail transport exists in this repo, so requiring verification would
-      // lock out every account that ever registered. The flag is here, named,
-      // so the decision is visible rather than defaulted into.
+      /**
+       * STILL FALSE, BUT NO LONGER FOR WANT OF A MAILER — there is one now, and
+       * `/email-otp/send-verification-otp` will deliver a code to anyone who
+       * asks. It stays off because turning it on locks every account created
+       * before this out of its own portfolio until it verifies, and gates a
+       * simulated-trading demo behind an inbox round trip to prevent fraud that
+       * cannot happen: there is no real money and no payout without an operator.
+       *
+       * Verification is AVAILABLE and opt-in. Flip this to true the moment
+       * anything of value hangs off an address being real.
+       */
       requireEmailVerification: false,
       minPasswordLength: 8,
       password,
+      /**
+       * Password reset goes through the OTP plugin's own
+       * `/email-otp/request-password-reset`, so no link-based `sendResetPassword`
+       * is configured here. Two reset paths would be two things to keep in step
+       * and two ways for the copy to disagree about what arrives.
+       */
     },
 
     user: { additionalFields },
@@ -211,6 +227,39 @@ export function createAuth() {
         // about what a handle is. Letters, numbers and underscores only — it
         // appears in URLs and in `lib/monogram.js`.
         usernameValidator: (value) => /^[a-z0-9_]+$/i.test(value),
+      }),
+
+      /**
+       * CODES, NOT LINKS. A magic link has to survive an email client that
+       * rewrites URLs, a preview fetcher that consumes single-use tokens before
+       * the reader clicks, and being opened in a different browser from the one
+       * that asked — at which point the session lands in the wrong place. A
+       * six-digit code is read by a person and typed into the tab already open,
+       * so none of those apply.
+       *
+       * `storeOTP: 'hashed'` OVERRIDES A DEFAULT OF 'plain'. Stored in the
+       * clear, anybody who can read the database — a backup, a log shipper, an
+       * aggregation pipeline — is holding live sign-in codes for every account
+       * currently authenticating. Hashed, the row is worthless on its own, and
+       * nothing about the flow changes: the code in the email is the same.
+       *
+       * `disableSignUp: true` ALSO OVERRIDES A DEFAULT. Left false, posting any
+       * address to `/sign-in/email-otp` CREATES an account for it — a second
+       * signup path that bypasses the form, invents a handle for a typo'd
+       * address, and grants it $10,000. Signing up happens on the signup form
+       * or through Google; this verifies people who already exist.
+       */
+      emailOTP({
+        otpLength: 6,
+        expiresIn: OTP_EXPIRY_SECONDS,
+        // Three guesses against a six-digit space, expiring in ten minutes.
+        allowedAttempts: 3,
+        storeOTP: 'hashed',
+        disableSignUp: true,
+        sendVerificationOTP: async ({ email, otp, type }) => {
+          const { subject, text, html } = otpEmail({ otp, type });
+          await sendMail({ to: email, subject, text, html });
+        },
       }),
     ],
 

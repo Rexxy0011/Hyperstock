@@ -30,6 +30,7 @@ import Admin from './pages/Admin';
 import Approvals from './pages/Approvals';
 import Subscribers from './pages/Subscribers';
 import Users from './pages/Users';
+import Unsubscribe from './pages/Unsubscribe';
 import ComingSoon from './pages/ComingSoon';
 
 /**
@@ -107,6 +108,10 @@ export const router = createBrowserRouter([
           // the footer that carries support and legal links with it.
           { path: '/faqs', element: <Faqs /> },
           { path: '/auth', element: <Auth /> },
+          /* Linked from every newsletter, so it is public and must never sit
+             behind a session — somebody unsubscribing is by definition not
+             signing in to do it. */
+          { path: '/unsubscribe', element: <Unsubscribe /> },
           // Legal documents are marketing-shell regardless of session: a
           // signed-in reader wants the same page as a visitor, plus the footer
           // that carries the rest of the legal links.

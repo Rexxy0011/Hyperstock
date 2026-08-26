@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { FcGoogle } from 'react-icons/fc';
 import { get } from '../lib/api';
+import CodeForm from '../components/auth/CodeForm';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
@@ -45,6 +46,9 @@ export default function Auth() {
    * not exist when it would fail. `staleTime: Infinity` because this changes
    * when the server restarts, not while somebody is looking at a login form.
    */
+  /** null, 'sign-in' or 'reset' — which code flow has replaced the form. */
+  const [codeFlow, setCodeFlow] = useState(/** @type {null|'sign-in'|'reset'} */ (null));
+
   const { data: providers } = useQuery({
     queryKey: ['auth', 'providers'],
     queryFn: () => get('/auth-providers'),
@@ -94,6 +98,18 @@ export default function Auth() {
         </div>
 
         <div className="rounded-md border border-cool-grey bg-white p-6 shadow-card">
+          {codeFlow ? (
+            <CodeForm
+              purpose={codeFlow}
+              /* The address already typed is carried across. Asking for it a
+                 second time on the next screen is the kind of small friction
+                 that makes a recovery flow feel like a punishment. */
+              initialEmail={form.email}
+              onCancel={() => setCodeFlow(null)}
+              onSuccess={() => navigate(next, { replace: true })}
+            />
+          ) : (
+          <>
           <SegmentedControl
             options={MODES}
             value={mode}
@@ -200,11 +216,28 @@ export default function Auth() {
               {t('auth.grant', { amount: '$10,000' })}
             </p>
           ) : (
-            <p className="mt-4 text-center text-xs">
-              <span className="cursor-pointer text-text-muted hover:text-gain">
+            /* BOTH OF THESE USED TO BE DEAD. "Forgot password" was a styled
+               <span> that did nothing, because there was no mailer behind it;
+               it opens the reset flow now. The code option sits beside it
+               because the same machinery serves both. */
+            <div className="mt-4 flex justify-center gap-5 text-xs">
+              <button
+                type="button"
+                onClick={() => setCodeFlow('sign-in')}
+                className="cursor-pointer text-text-muted underline underline-offset-2 hover:text-gain"
+              >
+                {t('auth.code.useCode')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setCodeFlow('reset')}
+                className="cursor-pointer text-text-muted underline underline-offset-2 hover:text-gain"
+              >
                 {t('auth.forgot')}
-              </span>
-            </p>
+              </button>
+            </div>
+          )}
+          </>
           )}
         </div>
 

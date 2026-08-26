@@ -35,6 +35,21 @@ const schema = z.object({
   GOOGLE_CLIENT_SECRET: z.string().default(''),
 
   /**
+   * EMAIL. Optional: with no key the mailer prints messages to the terminal in
+   * development instead of sending, so a fresh clone can still complete a
+   * code-based sign-in. In production a missing key is reported as the
+   * misconfiguration it is and nothing is printed — the body of a sign-in mail
+   * is a live one-time code.
+   *
+   * MAIL_FROM must be an address on a domain verified with the provider, and
+   * a SUBDOMAIN is the right choice: `send.hyperstocks.app` keeps a newsletter
+   * that gets spam-flagged from poisoning the reputation that password resets
+   * depend on.
+   */
+  RESEND_API_KEY: z.string().default(''),
+  MAIL_FROM: z.string().default('HyperStocks <onboarding@resend.dev>'),
+
+  /**
    * SUPERSEDED BY BETTER AUTH and kept only because a deployed `.env` still
    * carries them. Nothing reads these now: sessions are rows in `sessions`, not
    * self-contained JWTs, so there is no access token to sign and no refresh
