@@ -1419,6 +1419,45 @@ is meant to fill a desktop viewport.
 `MobileDrawer` (below `lg`, icons retained). `TopNav` swaps the account cluster for Login/Get Started based
 on auth state.
 
+**THE NAV SEARCH IS THE ONLY FLEXIBLE ITEM IN A ROW OF `shrink-0` SIBLINGS, so it absorbs every squeeze and
+collapses instead of wrapping.** Measured on the rendered nav, it fails in *two* separate bands:
+
+| | 480 | 414 | 390 | 360 | 320 |
+|---|---|---|---|---|---|
+| input width | 132px | 66px | 42px | **12px** | **0px** |
+
+At 360 the label is 64px — a bordered box holding a clipped magnifier and nothing else, which reads as a
+rendering fault rather than a control. The second band is signed-in from `lg`, where the desktop nav links
+appear and take **353px**: the input measures 45px at 1024, 121px at 1100, and is only back to a usable
+221px by 1200. So the search is `hidden sm:flex lg:hidden xl:flex` — present 640–1023 and from 1280,
+absent in the two bands where it has no room.
+
+**Nothing is lost by hiding it: it does not search.** Its only behaviour is `onFocus` → `/markets`, and the
+mobile drawer already carries a Market link to the same place. A `min-width` instead would only move the
+failure — at 320 there is no room to honour one, so it would force the page to scroll sideways, which is
+worse than an absent shortcut.
+
+**The account cluster's `ml-auto` MIRRORS THE SEARCH'S VISIBILITY EXACTLY** — `ml-auto sm:ml-0 lg:ml-auto
+xl:ml-0` — because the search is what pushed the cluster right, and hiding it drops the auto margin with
+it. Measured before this mirrored: the `lg`–`xl` band left the cluster packed against the nav links with
+**204–380px of dead space** trailing it. The two must never both carry it, either: two auto margins in one
+row split the free space and leave a gap in the middle rather than a bar that fills. Wrapping the two
+branches in one div is what gives the signed-in fragment (`InvestmentPill` + `AccountMenu`) something to
+hang that margin on; it repeats the header's own `gap-3 sm:gap-4` so nothing moves visually.
+
+Audited across **22 routes × 7 widths (1920 → 360), 154 combinations, zero horizontal overflow**, public
+anonymously and the six authenticated routes with a fresh login each. Two overflows exist at **320px only**,
+both pre-existing and below the 414 floor this file sets: Landing's `rounded-full` security capsule is
+299px against 256px of container (it is `shrink-0` by design so the flanking rules collapse first, but the
+capsule itself then cannot fit — `text-base` would bring it to 249px at the cost of shrinking the heading
+on every phone), and `/leaderboard` rows overflow 6px.
+
+**Auditing an authenticated route needs A FRESH LOGIN PER ROUTE, and one login per *navigation* trips the
+auth limiter** — measured, `429 RATE_LIMITED` at 20/15min. Each load calls `/auth/refresh`, which rotates
+the token, so navigating again before that request completes replays a spent one and revokes the family.
+The first run of the audit lost its session partway through and measured `/auth` six times while reporting
+it as `/portfolio`; every authenticated result now asserts `location.pathname` stayed on the route.
+
 **Import `Link` and `NavLink` from `components/ui/Link`, never from `react-router-dom`.** The wrapper
 exists only to default `viewTransition` on. React Router has no router-level switch for it, so without one
 owner every new `<Link>` is a chance to forget — and the failure is silent: the link works, it just skips
@@ -1443,6 +1482,66 @@ Three pieces that only work together, all in `router.jsx` and `styles/theme.css`
 Route crossfade is the browser's native View Transitions — no animation library, ~180ms, and browsers
 without the API navigate instantly. A crossfade rather than a slide because these pages have no spatial
 relationship; /markets is not to the left of /news.
+
+### Scroll reveal — `components/ui/Reveal`, and why it is not Framer Motion
+
+Landing and About fade-and-lift their sections in on scroll. `Reveal` is ~50 lines: an
+IntersectionObserver that runs once and toggles a class, with the animation itself in
+`--animate-reveal`.
+
+**Framer Motion was evaluated and rejected on three specific grounds.** It earns its place for layout
+projection, drag, shared-element transitions and exit animations on lists — and these two pages need none
+of them. The two cases that would have justified it are already solved in CSS here: `Modal`'s exit via
+`@starting-style` + `transition-behavior: allow-discrete`, and the route crossfade above.
+
+- **It ships to every route.** There are no `React.lazy` routes (see the AGENTS.md gaps), so the bundle is
+  one chunk — measured **1,017KB raw / 327KB gzipped**. `motion`'s plain import is ~34KB gz, about +10%,
+  downloaded by `/portfolio`, `/fund` and `/withdraw`, which would never use it. `Reveal` minifies to a
+  few hundred bytes.
+- **It would be a second owner of `prefers-reduced-motion`.** One block in `theme.css` currently kills the
+  hourglass, `rise`, the marquees and the dialog transitions. `useReducedMotion` is that same decision
+  again, in JS, free to drift from the CSS. Compare `PriceChange` owning signed percentages and
+  `toast.js` owning durations.
+- **Every call site could invent its own easing.** `--radius-*` and `--shadow-*` are deliberately wiped so
+  `shadow-lg` will not compile; inline `transition={{ duration: 0.8, ease: 'backOut' }}` is exactly what
+  those wipes exist to prevent.
+
+**`--animate-reveal` is a separate token from `--animate-rise`, not a reuse of it.** `rise` is a panel
+replacing another in place — 8px over 240ms, sized to read as content settling. A whole section arriving as
+you scroll to it has further to travel and needs longer, so this is 16px over 560ms. Same easing
+deliberately: the distance and duration differ, the character does not.
+
+**THE TRIGGER IS A NEGATIVE `rootMargin`, NOT A THRESHOLD, and the difference is a bug rather than a
+preference.** A threshold is a ratio of the *element*, so `threshold: 0.12` can never be satisfied by a
+section taller than ~8× the viewport — at 900px against a 10,000px section the observer tops out at 9% and
+the content stays invisible forever. Shrinking the root's bottom edge fires at a fixed distance in
+whatever the element measures.
+
+**AN ELEMENT WITH NO BOX CAN NEVER INTERSECT, and IntersectionObserver does not re-fire when it later
+gains one.** A `hidden lg:block` child would be stranded at `opacity: 0` until something happened to
+scroll. Measured on Landing's flow arrow: at 414 it is `display: none` and correctly invisible, but
+resizing to 1440 left it `display: block; opacity: 0`, recovering only on the next scroll. `Reveal` now
+reveals a zero-area element immediately — nothing without a box is visible anyway, so it costs no
+animation anybody could have seen and makes stranding impossible.
+
+**It runs once and never replays.** Content that re-animates every time it passes the fold reads as a
+glitch, and on pages this long it would happen constantly.
+
+**Stagger is `animation-delay`, passed as `delay`.** The keyframes carry `both`, so an element holds the
+hidden state through its delay instead of flashing in and back out. Grids pass `i * 80`; `Split` gives
+whichever half is *visually* first the zero delay, because `reverse` moves the photo right and a
+right-hand element arriving before the left one reads backwards.
+
+**Wrapping a grid item moves the stretch.** `Reveal` becomes the grid item, so anything relying on
+`align-items: stretch` needs `h-full` on **both** the wrapper and the child — otherwise cards size to
+their own copy and stop ending level, which is the failure the note about `items-start` already warns off.
+Verified at 1440: security cards 216/216, asset cards 195/195 and 174/174, Split photos filling their
+wrappers exactly, all Δbottom = 0.
+
+Verified across `/` and `/about` at 1440 and 414, motion and reduced: **35 reveal elements, 0 stranded,
+0 horizontal overflow**. Under `prefers-reduced-motion` the component never applies the class at all, so
+the count is 0 and the content simply renders — the CSS kill-list entry is a second line of defence for
+the element that was already on screen when the setting was switched on mid-session.
 
 Verified: 0 animated frames on the router's scroll, 28 on an ordinary `scrollTo`, `startViewTransition`
 called once per navigation, Back restoring to 1399px, and under `prefers-reduced-motion: reduce`
