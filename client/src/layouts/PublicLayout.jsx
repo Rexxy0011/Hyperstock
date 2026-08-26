@@ -7,13 +7,27 @@ import MobileDrawer from '../components/nav/MobileDrawer';
 import Logo from '../components/ui/Logo';
 import { assets } from '../assets/assets';
 import { SUPPORT_EMAIL } from '../lib/contact';
+import LiveGains from '../components/market/LiveGains';
 
 /**
  * The marketing shell. It shares the app's navbar rather than carrying a
  * reduced one, so navigation is identical everywhere; TopNav swaps the account
  * cluster for Login / Get Started when signed out.
+ *
+ * `chrome` TURNS OFF THE MARKETING FURNITURE — the footer and the activity
+ * toasts — while keeping the nav. `/auth` is the one route that wants it: a
+ * five-column footer of legal and support links under a sign-in form is a wall
+ * of exits placed directly beneath the one thing the page is asking somebody to
+ * do, and an unrequested toast arriving bottom-right while a password is being
+ * typed is noise at the worst possible moment.
+ *
+ * It is a PROP RATHER THAN A PATHNAME CHECK inside the layout: a shell that
+ * knows the names of the routes it renders acquires one more `if` per exception
+ * until nobody can tell what it does. The router says which shell it wants.
+ *
+ * @param {{ chrome?: boolean }} props
  */
-export default function PublicLayout() {
+export default function PublicLayout({ chrome = true }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const location = useLocation();
 
@@ -27,9 +41,20 @@ export default function PublicLayout() {
         <Outlet />
       </main>
 
-      <SiteFooter />
+      {chrome && <SiteFooter />}
 
       {drawerOpen && <MobileDrawer onClose={() => setDrawerOpen(false)} />}
+
+      {/* MARKETING SHELL ONLY, and that is a deliberate boundary rather than
+          where it happened to be mounted. This shell is where social proof does
+          its job — somebody deciding whether to open an account. The signed-in
+          dashboard is where people trade, fund and withdraw, and a toast that
+          arrives on its own lands bottom-right over exactly the controls a
+          person is reaching for: the Trade button, the deposit address they are
+          copying, the withdrawal they are confirming. Interrupting a money
+          action to say somebody else is up $4,000 is the one place this feature
+          does harm. Move it to `Root` if it is ever wanted everywhere. */}
+      {chrome && <LiveGains />}
     </>
   );
 }

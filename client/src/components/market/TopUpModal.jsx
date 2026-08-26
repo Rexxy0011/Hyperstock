@@ -194,7 +194,7 @@ export default function TopUpModal({
             needed review only once the balance failed to move is the thing this
             sentence exists to prevent. */}
         Up to {money(instantCents)} is added straight away. Anything larger, to a
-        maximum of {money(maxCents)}, is reviewed first. This is virtual capital —
+        maximum of {money(maxCents)}, is reviewed first. This is virtual capital -
         no real money is involved.
       </p>
 

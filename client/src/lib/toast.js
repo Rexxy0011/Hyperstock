@@ -45,6 +45,28 @@ export const notify = {
   t: (key, vars = undefined, kind = 'success') =>
     notify[kind](/** @type {string} */ (i18n.t(key, vars))),
 
+  /**
+   * A toast that renders its own body instead of a string and an icon.
+   *
+   * IT EXISTS SO THE LIBRARY STAYS AT ONE IMPORT. `LiveGains` needs an avatar,
+   * a name, a figure and a disclosure label in one row, which the string API
+   * cannot express — and importing `react-hot-toast` there to get `toast.custom`
+   * would be the second owner this module exists to prevent.
+   *
+   * `ariaProps` DEFAULTS TO SILENT here, which is the opposite of every other
+   * toast in the app and is the point. The rest are consequences of something
+   * the user just did and must be announced; a marketing notice that arrives on
+   * its own every half minute would interrupt a screen reader mid-sentence,
+   * repeatedly, with something nobody asked for. Callers that need it announced
+   * pass their own.
+   */
+  custom: (render, opts = {}) =>
+    toast.custom(render, {
+      duration: DURATION.info,
+      ariaProps: { role: 'status', 'aria-live': 'off' },
+      ...opts,
+    }),
+
   dismiss: toast.dismiss,
 };
 

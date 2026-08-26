@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Button from '../components/ui/Button';
+import { useAccountCta } from '../hooks/useAccountCta';
 import Icon from '../components/ui/Icon';
 import { useFaqs, FAQ_COUNT } from './faqContent';
 
@@ -70,6 +71,7 @@ export default function Faqs() {
 /* -------------------------------------------------------------------- hero */
 
 function Hero() {
+  const cta = useAccountCta();
   const { t } = useTranslation();
 
   return (
@@ -89,7 +91,7 @@ function Hero() {
         </p>
 
         <div className="mt-8 flex flex-wrap gap-3">
-          <Button to="/auth?mode=signup">{t('faq.openAccount')}</Button>
+          <Button to={cta.to}>{cta.label}</Button>
           <Button to="/contact" variant="secondary">
             {t('faq.contactSupport')}
           </Button>
@@ -222,6 +224,7 @@ function CategoryRail({ categories }) {
  * through empty space. These answers run from two lines to eight.
  */
 function FaqItem({ faq }) {
+  const cta = useAccountCta();
   const [open, setOpen] = useState(false);
   const panelId = `faq-panel-${faq.n}`;
 
@@ -286,9 +289,18 @@ function FaqItem({ faq }) {
               ),
             )}
 
+            {/* The answer's own button. Signed in, the account already
+                exists, so it offers the way back into the product rather than
+                a signup form the reader has plainly already completed — the
+                copy above it still describes the process, which is fine, since
+                it is reference material rather than a step being asked for. */}
             {faq.cta && (
-              <Button to={faq.cta.to} size="sm" className="mt-2 self-start">
-                {faq.cta.label}
+              <Button
+                to={cta.signedIn ? cta.to : faq.cta.to}
+                size="sm"
+                className="mt-2 self-start"
+              >
+                {cta.signedIn ? cta.label : faq.cta.label}
               </Button>
             )}
           </div>
@@ -311,6 +323,7 @@ function FaqItem({ faq }) {
  * addressed to the reader. It is what the reference does as well.
  */
 function ClosingCta() {
+  const cta = useAccountCta();
   const { t } = useTranslation();
 
   return (
@@ -328,8 +341,8 @@ function ClosingCta() {
 
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <Button to="/contact">{t('faq.contactSupport')}</Button>
-          <Button to="/auth?mode=signup" variant="secondary">
-            {t('faq.openAccount')}
+          <Button to={cta.to} variant="secondary">
+            {cta.label}
           </Button>
         </div>
       </div>

@@ -55,6 +55,20 @@ import iconFacebook from "./icons/facebook.webp";
 import iconInstagram from "./icons/instagram.webp";
 import iconYoutube from "./icons/youtube.webp";
 
+// The language switcher's flags. Sources are 512px circular PNGs in ./brand;
+// these are the webp builds actually shipped — 66KB of source down to 10KB,
+// built at 96px because they render at 20 and never need more than 3x.
+//
+// NAMED FOR THE LANGUAGE, NOT THE COUNTRY, because that is what selects them:
+// the switcher keys on an i18n code, and `flag-uk` here is UKRAINIAN while a
+// reader coming from the file names alone would take `uk` for the United
+// Kingdom. English is deliberately the odd one out — its flag IS the UK's,
+// which is why the pairing has to be stated somewhere rather than inferred.
+import flagEnImg from "./icons/flag-en.webp";
+import flagEsImg from "./icons/flag-es.webp";
+import flagDeImg from "./icons/flag-de.webp";
+import flagUkImg from "./icons/flag-uk.webp";
+
 import deniseCoates from "./investors/denise_coates.webp";
 import elonMusk from "./investors/elon_musk.webp";
 import emmaGrede from "./investors/emma_grede.webp";
@@ -106,6 +120,19 @@ export const assets = {
     vadym_novynskyi: vadymNovynskyi,
   },
 };
+
+/**
+ * The switcher's flags, exported individually rather than through `assets`.
+ *
+ * `i18n/index.js` attaches one to each entry in `LANGUAGES`, so the import is
+ * by name at a single call site. Reaching through `assets.icons.flagEn` there
+ * would make the language list depend on the shape of this whole object for
+ * four values.
+ */
+export const flagEn = flagEnImg;
+export const flagEs = flagEsImg;
+export const flagDe = flagDeImg;
+export const flagUk = flagUkImg;
 
 export function investorPhoto(username) {
   return assets.investors[username];

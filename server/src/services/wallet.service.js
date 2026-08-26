@@ -166,7 +166,7 @@ async function credit({ userId, requestId, amountCents, reviewedBy = null }) {
       type: LEDGER_TYPE.TOPUP,
       amountCents,
       reference: String(requestId),
-      detail: `Practice funds — ${usdFromCents(amountCents)}`,
+      detail: `Practice funds - ${usdFromCents(amountCents)}`,
       session,
     });
 
@@ -175,7 +175,7 @@ async function credit({ userId, requestId, amountCents, reviewedBy = null }) {
         {
           userId,
           type: 'Top-up',
-          detail: `Virtual capital added — ${usdFromCents(amountCents)}`,
+          detail: `Virtual capital added - ${usdFromCents(amountCents)}`,
           amountCents,
           status: 'Approved',
           relatedTopUpId: requestId,

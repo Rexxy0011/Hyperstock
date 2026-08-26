@@ -86,6 +86,36 @@ function providersFor(assetClass) {
 }
 
 /**
+ * Em and en dashes out of vendor prose, to the plain hyphen this product sets
+ * its own copy in.
+ *
+ * IT LIVES HERE RATHER THAN IN THE ADAPTERS, which is a deliberate departure
+ * from the rule that cleaning happens at the vendor boundary. That rule exists
+ * so the cache holds clean records, and this runs immediately before the cache
+ * write, so it still holds. What it buys is that no adapter can forget: there
+ * are two today reaching four sites between them, and a third would otherwise
+ * inherit the obligation silently.
+ *
+ * IT IS PUNCTUATION ONLY, AND ONLY IN THE TWO PROSE FIELDS. `url` is excluded
+ * because a dash there is part of an address and rewriting it 404s the story;
+ * `source` and `symbols` are names and tickers, not sentences. Headlines really
+ * do carry these: a syndicated wire item reads "Fed holds rates — what it means
+ * for markets", and the entity decoder in `rss.news.js` deliberately still
+ * decodes `&mdash;` correctly, so both the entity and the literal land here.
+ */
+const PROSE_FIELDS = ['headline', 'summary'];
+
+const plainDashes = (article) => {
+  const out = { ...article };
+  for (const f of PROSE_FIELDS) {
+    if (typeof out[f] === 'string') {
+      out[f] = out[f].replace(/\s*[—–]\s*/g, (m) => (/\s/.test(m) ? ' - ' : '-'));
+    }
+  }
+  return out;
+};
+
+/**
  * Upsert on `url`. `$addToSet` on symbols rather than `$set`: the same story
  * arrives once from the general feed with no tickers and again from a company
  * feed with one, and the second write must not erase what the first learned.
@@ -95,7 +125,7 @@ async function store(articles) {
   const expiresAt = new Date(Date.now() + env.NEWS_TTL_MS);
 
   await NewsArticle.bulkWrite(
-    articles.map(({ symbols, ...a }) => ({
+    articles.map(plainDashes).map(({ symbols, ...a }) => ({
       updateOne: {
         filter: { url: a.url },
         update: {

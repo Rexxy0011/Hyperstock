@@ -241,7 +241,7 @@ function QueueRow({ row, tab, onAction }) {
             <div className="text-2xs text-text-muted">{trader.email}</div>
           </>
         ) : (
-          <span className="text-text-muted">—</span>
+          <span className="text-text-muted">-</span>
         )}
       </td>
 
@@ -284,7 +284,7 @@ function Detail({ row, tab }) {
     return row.reason ? (
       <span className="text-xs text-text-muted">{row.reason}</span>
     ) : (
-      <span className="text-text-muted">—</span>
+      <span className="text-text-muted">-</span>
     );
   }
 
@@ -314,7 +314,7 @@ function Actions({ row, tab, onAction }) {
   const { t } = useTranslation();
 
   if (tab === 'topups') {
-    if (row.status !== 'Pending') return <span className="text-2xs text-text-muted">—</span>;
+    if (row.status !== 'Pending') return <span className="text-2xs text-text-muted">-</span>;
     return (
       <>
         <Button variant="ghost" size="sm" onClick={() => onAction(row, 'approve')}>
@@ -328,7 +328,7 @@ function Actions({ row, tab, onAction }) {
   }
 
   if (tab === 'deposits') {
-    if (row.status !== 'under_review') return <span className="text-2xs text-text-muted">—</span>;
+    if (row.status !== 'under_review') return <span className="text-2xs text-text-muted">-</span>;
     return (
       <>
         <Button variant="ghost" size="sm" onClick={() => onAction(row, 'approve')}>
@@ -366,7 +366,7 @@ function Actions({ row, tab, onAction }) {
       </>
     );
   }
-  return <span className="text-2xs text-text-muted">—</span>;
+  return <span className="text-2xs text-text-muted">-</span>;
 }
 
 /* -------------------------------------------------------------------- modal */
@@ -444,7 +444,7 @@ function ReviewModal({ open, action, onClose, onDone }) {
               view behind it, and this is the last screen before money moves. */}
           <dl className="m-0 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 rounded-md bg-mist px-3 py-2.5 text-sm">
             <dt className="text-text-muted">{t('admin.approvals.col.trader')}</dt>
-            <dd className="m-0 font-medium">{row.trader?.displayName ?? '—'}</dd>
+            <dd className="m-0 font-medium">{row.trader?.displayName ?? '-'}</dd>
             <dt className="text-text-muted">{t('admin.approvals.col.amount')}</dt>
             <dd className="m-0">
               <Money value={row.amountCents} size={14} />

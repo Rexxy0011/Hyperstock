@@ -133,7 +133,7 @@ function ResumeBanner({ trade, needCents, backTo }) {
         {needCents > 0 && (
           <>
             {' '}
-            — <span className="font-numeric tabular-nums">{money(needCents)}</span>{' '}
+            - <span className="font-numeric tabular-nums">{money(needCents)}</span>{' '}
             {t('fund.short')}
           </>
         )}
@@ -963,7 +963,7 @@ function SupportLine({ deposit }) {
       <a href={`mailto:${email}?subject=${subject}&body=${body}`} className="text-gain">
         Email {email}
       </a>{' '}
-      — your reference and transaction are filled in for you.
+      - your reference and transaction are filled in for you.
     </p>
   );
 }

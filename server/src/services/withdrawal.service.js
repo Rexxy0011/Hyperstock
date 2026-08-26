@@ -203,11 +203,11 @@ const ADDRESS_RULES = {
   },
   SPL: {
     test: (a) => /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(a),
-    hint: 'A Solana address is 32–44 base58 characters.',
+    hint: 'A Solana address is 32-44 base58 characters.',
   },
   SOLANA: {
     test: (a) => /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(a),
-    hint: 'A Solana address is 32–44 base58 characters.',
+    hint: 'A Solana address is 32-44 base58 characters.',
   },
 
   /**
@@ -414,7 +414,7 @@ export async function createWithdrawal(input) {
             {
               userId: input.userId,
               type: 'Withdrawal',
-              detail: `Withdrawal ${reference} — ${usdFromCents(amountCents)} ${asset}`,
+              detail: `Withdrawal ${reference} - ${usdFromCents(amountCents)} ${asset}`,
               amountCents: -amountCents,
               status: 'Pending',
               relatedWithdrawalId: created._id,
@@ -471,7 +471,7 @@ async function priceAsset(asset, destination) {
   if (!Number.isFinite(rateUsdNanos) || rateUsdNanos <= 0) {
     throw ApiError.unavailable(
       'NO_RATE',
-      `No usable ${symbol} price right now — try again in a moment`,
+      `No usable ${symbol} price right now - try again in a moment`,
     );
   }
 
@@ -567,7 +567,7 @@ async function reverseHold({ withdrawal, to, adminId = null, note = '' }) {
       type: LEDGER_TYPE.WITHDRAWAL_REVERSAL,
       amountCents: withdrawal.amountCents,
       reference: withdrawal.reference,
-      detail: `${withdrawal.asset} withdrawal ${to} — ${usdFromCents(withdrawal.amountCents)} returned`,
+      detail: `${withdrawal.asset} withdrawal ${to} - ${usdFromCents(withdrawal.amountCents)} returned`,
       session,
     });
 
@@ -596,7 +596,7 @@ export async function cancelWithdrawal({ userId, reference }) {
     throw ApiError.conflict(
       'STALE_STATE',
       row.status === WITHDRAWAL_STATUS.UNDER_REVIEW
-        ? 'That withdrawal is already being reviewed — contact support to stop it'
+        ? 'That withdrawal is already being reviewed - contact support to stop it'
         : `That withdrawal is ${row.status}`,
     );
   }

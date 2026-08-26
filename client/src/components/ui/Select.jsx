@@ -32,6 +32,7 @@ export default function Select({
   disabled = false,
   id = undefined,
   className = '',
+  menuToContent = false,
 }) {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
@@ -186,7 +187,24 @@ export default function Select({
           role="listbox"
           // z-20 clears the page but stays under the nav's z-30 — a dropdown
           // painting over the navbar reads as a rendering fault.
-          className="absolute z-20 mt-1.5 max-h-72 w-full list-none overflow-y-auto rounded-lg border border-cool-grey bg-white p-1 shadow-panel"
+          //
+          // `menuToContent` EXISTS FOR A TRIGGER THAT IS DELIBERATELY TOO SMALL
+          // FOR ITS OWN OPTIONS, which is the language switcher in the nav. The
+          // whole point of `triggerLabel` is that the closed control shows "ES"
+          // while the OPEN list shows "Español" — and with the menu locked to
+          // `w-full` it did not: at the nav's 112px the list rendered "E…",
+          // "Deuts…" and "Украї…", so the one menu that must be readable by
+          // somebody who cannot read the current language was the one truncating
+          // the names. `w-max` grows it to the longest label, `min-w-full` keeps
+          // it from ever being narrower than the trigger, and `right-0` grows it
+          // leftward from a control that sits on the right of the bar so it
+          // cannot run off the screen. Default stays `w-full`: a form select is
+          // already as wide as its content and should not reflow.
+          className={[
+            'absolute z-20 mt-1.5 max-h-72 list-none overflow-y-auto rounded-lg',
+            'border border-cool-grey bg-white p-1 shadow-panel',
+            menuToContent ? 'right-0 w-max min-w-full max-w-[min(18rem,90vw)]' : 'w-full',
+          ].join(' ')}
         >
           {options.map((o, i) => {
             const isSelected = o.value === value;

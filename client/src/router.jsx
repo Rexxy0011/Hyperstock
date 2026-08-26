@@ -107,7 +107,6 @@ export const router = createBrowserRouter([
           // asking how withdrawals work wants the same page as a visitor, and
           // the footer that carries support and legal links with it.
           { path: '/faqs', element: <Faqs /> },
-          { path: '/auth', element: <Auth /> },
           /* Linked from every newsletter, so it is public and must never sit
              behind a session — somebody unsubscribing is by definition not
              signing in to do it. */
@@ -123,6 +122,18 @@ export const router = createBrowserRouter([
           { path: '/disclosures', element: <LegalDocument id="disclosures" /> },
           { path: '*', element: <ComingSoon title="Not found" /> },
         ],
+      },
+
+      /* THE SAME MARKETING SHELL WITHOUT ITS FURNITURE. `/auth` keeps the nav —
+         it carries the language switcher, which somebody who cannot read the
+         current interface needs before they can sign in — but drops the footer
+         and the activity toasts. A five-column footer of legal and support
+         links sits a wall of exits directly under the one action the page
+         exists for, and a toast arriving on its own while a password is being
+         typed is an interruption at the worst moment. */
+      {
+        element: <PublicLayout chrome={false} />,
+        children: [{ path: '/auth', element: <Auth /> }],
       },
 
       // Public content that becomes app content once you sign in.

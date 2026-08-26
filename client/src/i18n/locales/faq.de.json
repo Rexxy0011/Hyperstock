@@ -1,0 +1,185 @@
+{
+  "gettingStarted": {
+    "label": "Erste Schritte",
+    "items": {
+      "whatIs": {
+        "q": "Was ist Hyperstock?",
+        "body": [
+          "Hyperstock ist eine Multi-Asset-Investmentplattform, die Privatpersonen über ein einziges Konto Zugang zu einer Reihe von Finanzmärkten gibt. Je nach Verfügbarkeit und Zulassung können Anleger auf Vermögenswerte wie Aktien, Kryptowährungen, Gold und Investmentfonds zugreifen.",
+          "Unsere Plattform verbindet Marktzugang, Portfolioverwaltung, Kontoaufladung und Anlagewerkzeuge in einem schlanken Ablauf."
+        ]
+      },
+      "whoCanOpen": {
+        "q": "Wer kann ein Hyperstock-Konto eröffnen?",
+        "body": [
+          "Hyperstock-Konten stehen zugelassenen Privatpersonen offen, die unsere Anforderungen an Kontoeröffnung und Verifizierung erfüllen.",
+          "Die Zulassung kann von Faktoren wie Ihrem Wohnsitzland oder Bundesstaat, Ihrem Alter, der Identitätsprüfung und den konkreten Anlageprodukten abhängen, auf die Sie zugreifen möchten. Für bestimmte Produkte oder Dienste können zusätzliche Anforderungen gelten."
+        ]
+      },
+      "howToOpen": {
+        "q": "Wie eröffne ich ein Konto?",
+        "cta": "Konto erstellen",
+        "body": [
+          "Die Kontoeröffnung ist bewusst unkompliziert gehalten.",
+          "Erstellen Sie Ihr Hyperstock-Konto, geben Sie die erforderlichen persönlichen Daten an, schließen Sie die Identitätsprüfung ab und reichen Sie alle weiteren angeforderten Unterlagen ein. Sobald Ihr Antrag freigegeben ist, können Sie Ihr Konto aufladen und die Plattform nutzen."
+        ]
+      }
+    }
+  },
+
+  "accounts": {
+    "label": "Konten und Verifizierung",
+    "items": {
+      "whyVerify": {
+        "q": "Warum muss Hyperstock meine Identität prüfen?",
+        "body": [
+          "Die Identitätsprüfung hilft uns, Ihr Konto zu schützen und die geltenden Finanzvorschriften einzuhalten.",
+          "Im Rahmen der Aufnahme können wir Angaben wie Ihren vollständigen Namen, Ihr Geburtsdatum, Ihre Wohnanschrift und einen amtlichen Lichtbildausweis anfordern. Die Prüfanforderungen können je nach Standort und den von Ihnen genutzten Produkten oder Diensten variieren."
+        ]
+      },
+      "documents": {
+        "q": "Welche Unterlagen muss ich möglicherweise einreichen?",
+        "body": [
+          "Je nach Ihren Umständen werden Sie möglicherweise um einen gültigen amtlichen Lichtbildausweis und um Angaben gebeten, die Ihre Identität und Anschrift belegen.",
+          "Gelegentlich können weitere Unterlagen erforderlich sein, um regulatorische Prüfungen oder die Kontoverifizierung abzuschließen."
+        ]
+      },
+      "howLong": {
+        "q": "Wie lange dauert die Kontoverifizierung?",
+        "body": [
+          "Viele Prüfungen sind schnell abgeschlossen, die Bearbeitungszeiten können jedoch variieren.",
+          "Werden zusätzliche Angaben oder Unterlagen benötigt, kann die Prüfung länger dauern. Wir empfehlen sicherzustellen, dass die bei der Registrierung übermittelten Angaben korrekt sind und zu Ihren Nachweisen passen."
+        ]
+      }
+    }
+  },
+
+  "funding": {
+    "label": "Ein- und Auszahlungen",
+    "items": {
+      "howToFund": {
+        "q": "Wie kann ich mein Hyperstock-Konto aufladen?",
+        "body": [
+          "Welche Einzahlungswege verfügbar sind, hängt von Ihrem Standort und der Zulassung Ihres Kontos ab.",
+          "Sobald Ihr Konto verifiziert ist, werden die verfügbaren Einzahlungsmethoden in Ihrem Hyperstock-Konto angezeigt. Bearbeitungszeiten und geltende Limits können je nach Methode unterschiedlich sein."
+        ]
+      },
+      "depositTime": {
+        "q": "Wie lange dauert es, bis meine Einzahlung ankommt?",
+        "body": [
+          "Die Dauer hängt von der verwendeten Zahlungsmethode ab.",
+          "Manche Einzahlungswege schlagen sich schnell in Ihrem verfügbaren Guthaben nieder, andere brauchen zusätzliche Bearbeitungszeit. Hyperstock zeigt Ihnen die geltenden Bearbeitungsinformationen an, bevor Sie eine Einzahlung abschließen."
+        ]
+      },
+      "howToWithdraw": {
+        "q": "Wie zahle ich Geld von meinem Konto aus?",
+        "body": [
+          "Sie können eine Auszahlung von Ihrem Hyperstock-Konto über eine verfügbare Auszahlungsmethode beantragen.",
+          "Aus Sicherheits- und Compliance-Gründen können Auszahlungen einer Prüfung, Bearbeitungszeiten, Kontobeschränkungen und weiteren geltenden Anforderungen unterliegen. Mittel sind in der Regel nach den für Ihr Konto verfügbaren Verfahren auszuzahlen."
+        ]
+      },
+      "limits": {
+        "q": "Gibt es Limits für Ein- oder Auszahlungen?",
+        "body": [
+          "Für bestimmte Konten, Zahlungsmethoden, Vermögenswerte oder Transaktionen können Mindest- oder Höchstbeträge oder andere Limits gelten.",
+          "Alle geltenden Limits werden über die Plattform mitgeteilt und können je nach Faktoren wie Kontostatus, Verifizierungsstufe, Zahlungsmethode und regulatorischen Anforderungen unterschiedlich ausfallen."
+        ]
+      }
+    }
+  },
+
+  "trading": {
+    "label": "Handel und Anlagen",
+    "items": {
+      "whatCanInvest": {
+        "q": "Worin kann ich über Hyperstock investieren?",
+        "body": [
+          "Hyperstock bietet über eine Plattform Zugang zu mehreren Anlageklassen.",
+          "Je nach Verfügbarkeit und Zulassung können dazu gehören:",
+          {
+            "list": [
+              "Aktien: Anteile börsennotierter Unternehmen",
+              "Kryptowährungen: unterstützte digitale Vermögenswerte",
+              "Gold: Zugang zum Goldmarkt",
+              "Investmentfonds: gestreute, professionell verwaltete Fonds"
+            ]
+          },
+          "Die Verfügbarkeit einzelner Vermögenswerte und Produkte kann je nach Rechtsraum und Kontoart unterschiedlich sein."
+        ]
+      },
+      "sameAccount": {
+        "q": "Kann ich Aktien und Kryptowährungen über dasselbe Konto handeln?",
+        "body": [
+          "Ja. Wo beide Produkte für Ihr Konto verfügbar sind, ist Hyperstock darauf ausgelegt, mehrere Anlageklassen über eine zusammenhängende Plattform zu verwalten.",
+          "Sie können Ihr Portfolio im Blick behalten und zugelassene Anlagen verwalten, ohne für jede unterstützte Anlageklasse ein eigenes Hyperstock-Konto zu führen."
+        ]
+      },
+      "fractional": {
+        "q": "Bietet Hyperstock Bruchteile von Aktien an?",
+        "body": [
+          "Ob Bruchteile verfügbar sind, hängt vom jeweiligen Wertpapier und Produktangebot ab.",
+          "Wo Bruchteilsanlagen unterstützt werden, können Anleger einen Teil einer zugelassenen Aktie statt einer ganzen Aktie kaufen. Verfügbarkeit, Mindestanlagebeträge und geltende Beschränkungen können unterschiedlich sein."
+        ]
+      },
+      "anyTime": {
+        "q": "Kann ich jederzeit kaufen und verkaufen?",
+        "body": [
+          "Ob gehandelt werden kann, hängt vom Vermögenswert und den geltenden Marktzeiten ab.",
+          "Aktien werden in der Regel während der festgelegten Börsenzeiten gehandelt, während manche Märkte, etwa die für Kryptowährungen, nach anderen Zeitplänen arbeiten. Orders können außerdem von Marktbedingungen, Liquidität, Börsenregeln und geltenden Beschränkungen abhängen."
+        ]
+      },
+      "advice": {
+        "q": "Bietet Hyperstock Anlageberatung?",
+        "body": [
+          "Hyperstock stellt Anlagewerkzeuge, Marktinformationen und Zugang zu Finanzprodukten bereit. Über die Plattform bereitgestellte Informationen sind jedoch nicht automatisch als persönliche Anlageberatung zu verstehen.",
+          "Investieren ist mit Risiken verbunden, und Sie sollten Ihre finanzielle Lage, Ihre Ziele und Ihre Risikobereitschaft berücksichtigen, bevor Sie Anlageentscheidungen treffen. Wenn Sie persönliche Finanzberatung benötigen, ziehen Sie eine qualifizierte Fachperson hinzu."
+        ]
+      }
+    }
+  },
+
+  "security": {
+    "label": "Sicherheit und Vertrauen",
+    "items": {
+      "howProtected": {
+        "q": "Wie schützt Hyperstock mein Konto?",
+        "body": [
+          "Sicherheit ist in jede Ebene von Hyperstock eingebaut.",
+          "Wir setzen Sicherheitsmaßnahmen ein, die Ihr Konto, Ihre persönlichen Daten und Ihre Handelsaktivität schützen sollen. Je nach Dienst und Kontoeinstellungen können dazu Verschlüsselung, Authentifizierungskontrollen, Überwachungssysteme und Maßnahmen zur Erkennung verdächtiger Aktivitäten gehören.",
+          "Wir empfehlen außerdem, alle verfügbaren Sicherheitsfunktionen zu aktivieren und Ihre Zugangsdaten geheim zu halten."
+        ]
+      },
+      "suspicious": {
+        "q": "Was soll ich tun, wenn mir verdächtige Aktivität auffällt?",
+        "body": [
+          "Wenden Sie sich sofort an den Hyperstock-Support und sichern Sie Ihr Konto.",
+          "Wenn Ihnen eine unbekannte Anmeldung, Transaktion, Auszahlung oder andere verdächtige Aktivität auffällt, ändern Sie Ihr Passwort und folgen Sie den Sicherheitshinweisen in Ihrem Konto. Unser Support-Team hilft Ihnen dabei, die passenden nächsten Schritte zu bestimmen.",
+          "Geben Sie Ihr Passwort, Authentifizierungscodes oder private Sicherheitsinformationen niemals an jemanden weiter, der vorgibt, Hyperstock zu vertreten."
+        ]
+      }
+    }
+  },
+
+  "fees": {
+    "label": "Gebühren und Preise",
+    "items": {
+      "whatFees": {
+        "q": "Welche Gebühren berechnet Hyperstock?",
+        "body": [
+          "Die Gebühren hängen vom jeweiligen Produkt, der Transaktion, dem Einzahlungsweg und dem Dienst ab.",
+          "Geltende Gebühren und Entgelte werden über die Plattform und die zugehörigen Pflichtangaben dargestellt. Dazu können handelsbezogene Entgelte, Fondskosten, Spreads, Auszahlungs- oder Zahlungsabwicklungsgebühren sowie weitere anfallende Kosten gehören.",
+          "Prüfen Sie stets die geltenden Gebühreninformationen, bevor Sie eine Transaktion abschließen."
+        ]
+      },
+      "riskFree": {
+        "q": "Ist das Investieren mit Hyperstock risikofrei?",
+        "body": [
+          "Nein. Investieren ist immer mit Risiken verbunden.",
+          "Der Wert von Anlagen kann steigen oder fallen, und Sie können einen Teil oder Ihr gesamtes eingesetztes Geld verlieren. Verschiedene Anlageklassen tragen unterschiedliche Arten und Grade von Risiko. Kryptowährungen, Einzelaktien, Rohstoffe und andere Anlagen können erhebliche Kursschwankungen aufweisen.",
+          "Die Wertentwicklung in der Vergangenheit ist kein Hinweis auf künftige Ergebnisse.",
+          "Berücksichtigen Sie vor einer Anlage Ihre Anlageziele, Ihre finanzielle Lage und Ihre Risikobereitschaft."
+        ]
+      }
+    }
+  }
+}

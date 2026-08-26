@@ -495,7 +495,7 @@ export const COOKIES = {
       heading: 'How HyperStocks Uses Cookies',
       blocks: [
         'We may use cookies and similar technologies for several purposes.',
-        { subheading: 'Essential Cookies — always active' },
+        { subheading: 'Essential Cookies - always active' },
         'These cookies are necessary for the website to function.',
         'They may support:',
         {

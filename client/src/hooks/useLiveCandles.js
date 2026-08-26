@@ -24,7 +24,7 @@ const CAPTION = {
   coingecko: 'Real open/high/low/close from CoinGecko.',
   twelvedata: 'Real open/high/low/close and volume from Twelve Data.',
   frankfurter:
-    'Real daily closes from the ECB. It publishes one rate per business day, so there is no intraday high or low to draw — the bars have no wicks.',
+    'Real daily closes from the ECB. It publishes one rate per business day, so there is no intraday high or low to draw - the bars have no wicks.',
   // Reached by non-US equities only, now that Twelve Data covers NYSE and
   // NASDAQ. Finnhub 403s candles everywhere and Twelve Data's free plan is
   // US-only, so the other six venues have no free source at all.
@@ -134,7 +134,7 @@ export function useLiveCandles(data, assetClass, tick, connected) {
     // "numeric" | "2-digit", and a plain object widens them to `string`.
     const dateFmt = /** @type {const} */ ({ month: 'short', day: 'numeric', year: 'numeric' });
     const spanLabel = points.length
-      ? `${new Date(first.t).toLocaleDateString('en-US', dateFmt)} — ${new Date(last.t).toLocaleDateString('en-US', dateFmt)}`
+      ? `${new Date(first.t).toLocaleDateString('en-US', dateFmt)} - ${new Date(last.t).toLocaleDateString('en-US', dateFmt)}`
       : '';
     // Open of the first bar to close of the last: the period return, which is
     // a different number from the row's 24h `changePct` and must not reuse it.

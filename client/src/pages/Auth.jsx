@@ -1,17 +1,33 @@
 import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { FcGoogle } from 'react-icons/fc';
+import { FiLock, FiMail, FiUser } from 'react-icons/fi';
 import { get } from '../lib/api';
 import CodeForm from '../components/auth/CodeForm';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
+import Link from '../components/ui/Link';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import SegmentedControl from '../components/ui/SegmentedControl';
 import Logo from '../components/ui/Logo';
 import { useAuth } from '../auth/AuthProvider';
 
-const MODES = ['Sign in', 'Create account'];
+/**
+ * THE VALUE IS STABLE, THE LABEL IS TRANSLATED, and separating them was a fix
+ * rather than tidying. This used to be `['Sign in', 'Create account']`, doing
+ * double duty as both the button text and the state, so `mode === MODES[1]`
+ * compared a stored English string against whatever the control displayed.
+ * Translating the labels in place would have made that comparison fail the
+ * moment somebody changed language with the form open: `mode` still held the
+ * old language's string, nothing matched, and the page silently dropped back
+ * to Sign in with the typed details gone.
+ *
+ * Same reasoning as `navItems.js` carrying `key` apart from `label` — a value
+ * derived from English copy breaks when the copy is reworded or translated.
+ */
+const SIGNIN = 'signin';
+const SIGNUP = 'signup';
 
 export default function Auth() {
   const { t } = useTranslation();
@@ -19,7 +35,7 @@ export default function Auth() {
   const navigate = useNavigate();
   const { user, authReady, login, register, signInWithGoogle } = useAuth();
 
-  const [mode, setMode] = useState(params.get('mode') === 'signup' ? MODES[1] : MODES[0]);
+  const [mode, setMode] = useState(params.get('mode') === 'signup' ? SIGNUP : SIGNIN);
   // `email` is carried over from Landing's CTA, which collects it before
   // sending the visitor here — without this the field arrives empty and they
   // type it twice.
@@ -31,8 +47,18 @@ export default function Auth() {
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
 
-  const isSignup = mode === MODES[1];
-  const next = params.get('next') || '/portfolio';
+  const isSignup = mode === SIGNUP;
+  /**
+   * WHERE SIGNING IN LANDS YOU. The default is the landing page, not the
+   * portfolio.
+   *
+   * `?next=` STILL WINS, and that is the half that matters. `ProtectedRoute`
+   * sends somebody here with the page they were trying to reach attached, so a
+   * user who clicked through to `/withdraw` and got bounced to sign in still
+   * arrives at `/withdraw` afterwards — changing the fallback must not break
+   * the case where the destination was actually known.
+   */
+  const next = params.get('next') || '/';
 
   const field = (name) => ({
     value: form[name],
@@ -90,14 +116,26 @@ export default function Auth() {
   };
 
   return (
-    <div className="flex min-h-[calc(100vh-140px)] items-center justify-center bg-mist px-4 py-16">
-      <div className="w-full max-w-95">
-        {/* Large enough for the disc's own wordmark to read, so no label. */}
-        <div className="mb-6 flex justify-center">
-          <Logo size={72} withWordmark={false} />
+    <div className="flex min-h-[calc(100vh-140px)] items-center justify-center bg-mist px-4 py-10 sm:py-16">
+      <div className="w-full max-w-105">
+        {/* The mark sits ABOVE the card rather than inside it. Inside, it
+            competed with the heading for the top of the card and pushed the
+            form down; outside, it identifies the page and lets the card open
+            on the thing the visitor came to do. */}
+        <div className="mb-7 flex justify-center">
+          <Logo size={44} withWordmark={false} to={null} />
         </div>
 
-        <div className="rounded-md border border-cool-grey bg-white p-6 shadow-card">
+        {/*
+          `rounded-xl` and `shadow-panel`, not the `rounded-md`/`shadow-card`
+          this used to carry. Those are the table-and-tile pair used across the
+          dashboard, where a card is one of twenty on screen; this is a single
+          object on an empty field and the softer, larger pairing is what stops
+          it reading as a widget that lost its page. The padding went from 24 to
+          32/40 for the same reason.
+        */}
+        <div className="animate-rise rounded-xl border border-cool-grey bg-white p-8 shadow-panel sm:p-10">
+
           {codeFlow ? (
             <CodeForm
               purpose={codeFlow}
@@ -111,24 +149,31 @@ export default function Auth() {
           ) : (
           <>
           <SegmentedControl
-            options={MODES}
+            options={[
+              { value: SIGNIN, label: t('auth.signIn') },
+              { value: SIGNUP, label: t('auth.signUp') },
+            ]}
             value={mode}
             onChange={(m) => {
               setMode(m);
               setError(null);
             }}
             size="sm"
-            className="mb-6 w-full [&>button]:flex-1"
+            className="mb-7 w-full [&>button]:flex-1"
           />
 
-          <h1 className="m-0 text-2xl font-medium">
-            {isSignup ? t('auth.createAccount') : t('auth.welcomeBack')}
-          </h1>
-          <p className="mt-2 mb-6 text-sm text-text-muted">
-            {isSignup
-              ? 'Start trading eight exchanges in under a minute.'
-              : 'Sign in to your portfolio.'}
-          </p>
+          {/* KEYED ON THE MODE so the fade actually replays. React would
+              otherwise reuse these nodes and just swap their text, and a CSS
+              animation on an element that never remounts runs exactly once —
+              the first switch would animate and every one after it would snap. */}
+          <div key={mode} className="animate-swap">
+            <h1 className="m-0 text-2xl font-medium">
+              {isSignup ? t('auth.createAccount') : t('auth.welcomeBack')}
+            </h1>
+            <p className="mt-2 mb-7 text-sm text-text-muted">
+              {isSignup ? t('auth.signupLead') : t('auth.signinLead')}
+            </p>
+          </div>
 
           {providers?.google && (
             <>
@@ -157,30 +202,55 @@ export default function Auth() {
           )}
 
           <form onSubmit={onSubmit} className="flex flex-col gap-4">
-            {isSignup && (
-              <Input
-                label={t('auth.username')}
-                placeholder={t('auth.usernamePlaceholder')}
-                autoComplete="username"
-                required
-                {...field('username')}
-              />
-            )}
+            {/*
+              `grid-template-rows: 0fr -> 1fr`, the same technique the FAQ
+              accordion uses, because `height: auto` is not animatable and the
+              usual `max-height` workaround makes the field open at the speed of
+              whatever arbitrary maximum was guessed.
+              `invisible` rather than unmounting: the input must leave the tab
+              order and the form's required-field set while collapsed, and
+              `visibility` does both without costing the animation its element.
+            */}
+            <div
+              data-auth-collapse
+              className={`grid transition-[grid-template-rows] duration-200 ease-out ${
+                isSignup ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+              }`}
+            >
+              <div className={`overflow-hidden ${isSignup ? '' : 'invisible'}`}>
+                <Input
+                  label={t('auth.username')}
+                  placeholder={t('auth.usernamePlaceholder')}
+                  autoComplete="username"
+                  icon={<FiUser size={16} />}
+                  required={isSignup}
+                  disabled={!isSignup}
+                  {...field('username')}
+                />
+              </div>
+            </div>
 
             <Input
               label={t('auth.email')}
               type="email"
               placeholder={t('auth.emailPlaceholder')}
               autoComplete="email"
+              icon={<FiMail size={16} />}
               required
               {...field('email')}
             />
 
+            {/* `revealable` matters most on signup, where a typo creates the
+                account with the wrong password and there is no second chance to
+                notice — but it is on both, since a blind retype is the commonest
+                reason a correct credential gets rejected on a phone. */}
             <Input
               label={t('auth.password')}
               type="password"
               placeholder="••••••••"
               autoComplete={isSignup ? 'new-password' : 'current-password'}
+              icon={<FiLock size={16} />}
+              revealable
               required
               {...field('password')}
             />
@@ -192,10 +262,15 @@ export default function Auth() {
             )}
 
             <Button type="submit" className="w-full" loading={busy}>
-              {isSignup ? 'Create account' : 'Sign in'}
+              {isSignup ? t('auth.signUp') : t('auth.signIn')}
             </Button>
           </form>
 
+          {/* A TINTED STRIP, NOT A BORDERED BUTTON. With a border it carried the
+              same weight as Continue with Google and sat directly beneath the
+              primary action, so the card ended in three controls that all looked
+              equally like the thing to press. It is a convenience for looking
+              around the product, so it recedes. */}
           {!isSignup && (
             <button
               type="button"
@@ -203,7 +278,7 @@ export default function Auth() {
                 setForm({ username: '', email: 'jd@hyperstocks.app', password: 'password123' });
                 setError(null);
               }}
-              className="mt-3 w-full cursor-pointer rounded-lg border border-cool-grey py-2 text-xs text-text-muted transition-colors hover:text-void"
+              className="mt-3 w-full cursor-pointer rounded-lg bg-mist py-2.5 text-xs text-text-muted transition-colors hover:bg-hover hover:text-void"
             >
               {t('auth.fillDemo')}
             </button>
@@ -239,8 +314,47 @@ export default function Auth() {
           )}
           </>
           )}
+
+          {/*
+            `<Trans>` RATHER THAN THREE KEYS SPLICED TOGETHER, and this sentence
+            is the case that justifies it. It carries TWO links, so a
+            pre/mid/post split would need three fragments whose order is fixed
+            by the JSX — and that order is not fixed across languages. German is
+            the proof: "Mit dem Fortfahren stimmen Sie unseren <terms>…</terms>
+            und unserer <privacy>…</privacy> ZU", where the verb's particle
+            lands after both links. No concatenation can express that.
+
+            The components are NAMED, not indexed. `<0>`/`<1>` keys break
+            silently the moment anybody reorders the JSX, and the failure there
+            is a link pointing at the wrong document — on a consent line.
+
+            Shown on BOTH modes by request. On sign-in "by continuing" is the
+            weaker claim, but the terms govern using the account either way.
+          */}
+          <p className="mt-6 text-center text-xs leading-relaxed text-text-muted">
+            <Trans
+              i18nKey="auth.termsNotice"
+              components={{
+                terms: (
+                  <Link
+                    to="/terms"
+                    className="text-text-body underline underline-offset-2 hover:text-gain"
+                  />
+                ),
+                privacy: (
+                  <Link
+                    to="/privacy"
+                    className="text-text-body underline underline-offset-2 hover:text-gain"
+                  />
+                ),
+              }}
+            />
+          </p>
         </div>
 
+        {/* Outside the card, not in it: it qualifies the whole screen rather
+            than the form, and inside it would be the last thing read before the
+            submit button. */}
         <p className="mt-6 text-center text-xs text-text-muted">
           {t('auth.disclaimer')}
         </p>
@@ -248,3 +362,4 @@ export default function Auth() {
     </div>
   );
 }
+

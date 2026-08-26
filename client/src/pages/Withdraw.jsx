@@ -692,7 +692,7 @@ function WithdrawalDetail({ reference }) {
   });
 
   if (isPending) return <DetailSkeleton />;
-  if (!withdrawal) return <p className="text-sm text-text-muted">No such withdrawal.</p>;
+  if (!withdrawal) return <p className="text-sm text-text-muted">{t('withdraw.noSuchWithdrawal')}</p>;
 
   const tone = STATUS_META[withdrawal.status] ?? 'neutral';
   // Cast because a dynamic key widens i18next's return type past ReactNode.

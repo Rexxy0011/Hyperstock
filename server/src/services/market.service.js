@@ -167,7 +167,7 @@ async function equitySessions() {
     code: e.code,
     open: isOpen(e),
     minutesUntilOpen: minutesUntilOpen(e),
-    hours: `${e.openTime}–${e.closeTime} ${e.tzLabel}`,
+    hours: `${e.openTime}-${e.closeTime} ${e.tzLabel}`,
   }));
 }
 

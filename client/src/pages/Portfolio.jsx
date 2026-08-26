@@ -267,7 +267,7 @@ function HoldingsTable({ holdings, onSelect }) {
                       not one — it is still counted, so it has to say that the
                       number is not a live quote. */}
                   {h.resolved === false ? (
-                    <span title="No live quote — shown at its last known value">
+                    <span title={t('portfolio.staleQuote')}>
                       {money(h.priceCents, h.currency)}
                       <span className="ml-1.5 text-2xs text-text-muted">stale</span>
                     </span>
@@ -299,6 +299,7 @@ function HoldingsTable({ holdings, onSelect }) {
 /* --------------------------------------------------------- holdings rail */
 
 function HoldingsRail({ holdings, loading, activeId, onSelect }) {
+  const { t } = useTranslation();
   const railRef = useRef(null);
 
   const scrollNext = () => {
@@ -318,7 +319,7 @@ function HoldingsRail({ holdings, loading, activeId, onSelect }) {
   if (!holdings.length) {
     return (
       <div className="rounded-xl border border-cool-grey px-6 py-10 text-center">
-        <div className="text-sm font-semibold text-void">No positions yet</div>
+        <div className="text-sm font-semibold text-void">{t('portfolio.noPositions')}</div>
         <p className="mx-auto mt-1 max-w-80 text-xs text-text-muted">
           Your first $10,000 is already in your account. Pick a stock to place your first order.
         </p>
@@ -326,7 +327,7 @@ function HoldingsRail({ holdings, loading, activeId, onSelect }) {
           to="/markets"
           className="mt-4 inline-flex rounded-lg bg-gain px-4 py-2 text-sm font-semibold text-white no-underline"
         >
-          Browse markets
+          {t('portfolio.browseMarkets')}
         </Link>
       </div>
     );
@@ -352,7 +353,7 @@ function HoldingsRail({ holdings, loading, activeId, onSelect }) {
         <button
           type="button"
           onClick={scrollNext}
-          aria-label="Scroll for more positions"
+          aria-label={t('portfolio.scrollPositions')}
           className="absolute top-1/2 -right-2 hidden size-8 -translate-y-1/2 cursor-pointer items-center justify-center rounded-lg border border-cool-grey bg-white text-text-muted shadow-card transition-colors hover:text-void lg:flex"
         >
           <Icon name="chevronRight" size={16} />
@@ -363,6 +364,7 @@ function HoldingsRail({ holdings, loading, activeId, onSelect }) {
 }
 
 function HoldingCard({ holding: h, active, onSelect }) {
+  const { t } = useTranslation();
   /**
    * A cheap, deterministic shape for the card sparkline: the position's own
    * return arc, from average cost to current value per unit.
@@ -399,14 +401,14 @@ function HoldingCard({ holding: h, active, onSelect }) {
       </div>
 
       <div className="mt-3 flex items-center justify-between">
-        <span className="text-2xs text-text-muted">Market value</span>
+        <span className="text-2xs text-text-muted">{t('portfolio.marketValue')}</span>
         <span className="font-numeric text-sm font-bold tabular-nums text-void">
           {money(h.marketValueCents)}
         </span>
       </div>
 
       <div className="mt-1.5 flex items-center justify-between">
-        <span className="text-2xs text-text-muted">Total Return</span>
+        <span className="text-2xs text-text-muted">{t('portfolio.totalReturn')}</span>
         <span
           className={`font-numeric text-xs font-semibold tabular-nums ${
             h.totalReturnPct >= 0 ? 'text-gain' : 'text-loss'
@@ -504,7 +506,7 @@ function ChartCard({ holding, range, onRange, chartType, onChartType, onTrade, s
             )}
             <span className="font-numeric text-lg font-bold tabular-nums text-void">
               {!data
-                ? '—'
+                ? '-'
                 : isForex
                   ? rate?.toFixed(rate >= 50 ? 2 : 4)
                   : money(priceCents, data.currency)}
@@ -597,7 +599,7 @@ function ChartCard({ holding, range, onRange, chartType, onChartType, onTrade, s
       <p className="mt-3 mb-0 text-2xs text-text-muted">
         {candles.caption}
         {candles.interval ? ` ${candles.interval} bars.` : ''}
-        {!tradable && data ? ` ${symbol} is ${String(data.status).toLowerCase()} — not tradable.` : ''}
+        {!tradable && data ? ` ${symbol} is ${String(data.status).toLowerCase()} - not tradable.` : ''}
       </p>
     </section>
   );
@@ -622,7 +624,7 @@ function Watchlist({ items, onRemove }) {
 
       {items.length === 0 ? (
         <p className="py-8 text-center text-xs text-text-muted">
-          Nothing on your watchlist yet.
+          {t('portfolio.watchlistEmpty')}
         </p>
       ) : (
         <div className="flex flex-col">
@@ -683,7 +685,7 @@ function Watchlist({ items, onRemove }) {
                 type="button"
                 onClick={() => onRemove({ assetClass: s.assetClass, symbol: s.symbol })}
                 aria-label={`Remove ${s.symbol} from watchlist`}
-                title="Remove from watchlist"
+                title={t('common.removeFromWatchlist')}
                 className="inline-flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-transparent text-text-muted opacity-0 transition-all hover:border-loss hover:text-loss focus-visible:opacity-100 group-hover:opacity-100"
               >
                 <Icon name="minus" size={14} />

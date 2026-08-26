@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import i18n from '../i18n';
 import { useQuery } from '@tanstack/react-query';
 import { FiAlertCircle, FiExternalLink } from 'react-icons/fi';
 import { get } from '../lib/api';
@@ -30,7 +31,7 @@ const SOURCE_NOTE = {
   stocks: 'Equity headlines from Finnhub, with Nasdaq behind it as a fallback.',
   crypto: 'Merged from Finnhub, CoinTelegraph and Decrypt.',
   forex: 'FXStreet and Investing.com. Finnhub has no usable forex feed on this tier.',
-  commodities: 'Nasdaq and Investing.com — no keyed provider covers commodities for free.',
+  commodities: 'Nasdaq and Investing.com - no keyed provider covers commodities for free.',
 };
 
 /**
@@ -88,7 +89,7 @@ export default function News() {
             nothing, because it implies the feed is moving. */}
         {lead && (
           <span className="font-numeric text-xs text-text-muted tabular-nums">
-            Latest {relativeTime(lead.publishedAt)}
+            {t('news.latest', { time: relativeTime(lead.publishedAt, t) })}
           </span>
         )}
       </header>
@@ -169,7 +170,7 @@ function Announcements({ notices, pending }) {
               <Badge variant={a.status === 'Live' ? 'approved' : 'neutral'}>{a.status}</Badge>
               {a.audience !== 'All users' && <Badge>{a.audience}</Badge>}
               <span className="ml-auto font-numeric text-xs text-text-muted tabular-nums">
-                {relativeTime(a.publishedAt)}
+                {relativeTime(a.publishedAt, t)}
               </span>
             </div>
 
@@ -318,6 +319,7 @@ function ArticleCard({ article }) {
 
 /** Publisher, age and up to three tickers — the same line at both sizes. */
 function Meta({ article, lead = false }) {
+  const { t } = useTranslation();
   return (
     <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
       <span className={`font-medium text-text-muted ${lead ? 'text-sm' : 'text-xs'}`}>
@@ -327,7 +329,7 @@ function Meta({ article, lead = false }) {
         ·
       </span>
       <span className="font-numeric text-xs text-text-muted tabular-nums">
-        {relativeTime(article.publishedAt)}
+        {relativeTime(article.publishedAt, t)}
       </span>
 
       {/* Cap the tickers. A single story can carry a dozen, and a row of them
@@ -361,7 +363,7 @@ function DegradedPill({ source, empty }) {
 function EmptyFeed() {
   return (
     <p className="m-0 rounded-xl border border-cool-grey bg-mist px-5 py-16 text-center text-sm text-text-muted">
-      No headlines available right now. Market news needs a provider key — see{' '}
+      No headlines available right now. Market news needs a provider key - see{' '}
       <span className="font-mono">NEWS_PROVIDER</span> in <span className="font-mono">.env</span>.
     </p>
   );
@@ -436,20 +438,27 @@ function groupByDay(articles) {
  * "3h ago". A news feed is read by recency, and an absolute timestamp makes
  * the reader do that subtraction themselves. Falls back to a date past a week,
  * where "9d ago" stops being easier than "Aug 14".
+ *
+ * IT TAKES `t` RATHER THAN CALLING THE HOOK, because it is a plain function
+ * called from several components and from inside a map — the same reason
+ * `format.js` has its locale pushed in by `setNumberLocale` instead of reading
+ * one. The date fallback is localised through `i18n.language` for the same
+ * reason the digits are: "Aug 14" in a German feed is the one line on the page
+ * still written in English.
  */
-function relativeTime(value) {
+function relativeTime(value, t) {
   const then = new Date(value).getTime();
   if (Number.isNaN(then)) return '';
 
   const mins = Math.round((Date.now() - then) / 60_000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 1) return t('time.justNow');
+  if (mins < 60) return t('time.minsAgo', { count: mins });
 
   const hours = Math.round(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
+  if (hours < 24) return t('time.hoursAgo', { count: hours });
 
   const days = Math.round(hours / 24);
-  if (days <= 7) return `${days}d ago`;
+  if (days <= 7) return t('time.daysAgo', { count: days });
 
-  return new Date(then).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return new Date(then).toLocaleDateString(i18n.language, { month: 'short', day: 'numeric' });
 }

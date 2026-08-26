@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import Icon from './Icon';
 
 /**
@@ -15,6 +16,7 @@ import Icon from './Icon';
  * and silently skips the focus trap and the backdrop.
  */
 export default function Modal({ open, onClose, title, children, footer = undefined }) {
+  const { t } = useTranslation();
   const ref = useRef(/** @type {HTMLDialogElement | null} */ (null));
 
   useEffect(() => {
@@ -57,7 +59,7 @@ export default function Modal({ open, onClose, title, children, footer = undefin
         <button
           type="button"
           onClick={onClose}
-          aria-label="Close"
+          aria-label={t('common.close')}
           className="inline-flex size-7 cursor-pointer items-center justify-center rounded-lg border border-transparent text-text-muted transition-colors hover:bg-mist hover:text-text-body"
         >
           <Icon name="close" size={16} />

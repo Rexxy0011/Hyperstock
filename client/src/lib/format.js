@@ -54,10 +54,27 @@ export const CURRENCY_SYMBOL = {
 /** Currencies conventionally shown without decimals. */
 const ZERO_DECIMAL = new Set(['JPY']);
 
-/** "+2.20%" / "−4.30%" — always 2dp, always signed, always U+2212 for negative. */
+/**
+ * "+2.20%" / "−4.30%" — always 2dp, always signed, always U+2212 for negative.
+ *
+ * THE DIGITS ARE LOCALISED AND THE SIGN IS NOT, which is the same split
+ * `money()` makes and for the same reasons. It did NOT used to be: this was
+ * `toFixed(2)`, which is hardcoded English whatever the interface language, so
+ * a German page rendered a localised balance beside an unlocalised percentage
+ * — `+$4.289,96` and `+16.91%` on one line, with the decimal mark disagreeing
+ * with itself inside a single row. Found when Spanish and German landed; it had
+ * been true for Ukrainian all along.
+ *
+ * `toLocaleString` rather than `toFixed` also means a percentage above 1000
+ * finally groups: `1.234,56%` in German, `1,234.56%` in English.
+ */
 export function pct(value) {
   const v = Number(value) || 0;
-  return `${v >= 0 ? '+' : MINUS}${Math.abs(v).toFixed(2)}%`;
+  const body = Math.abs(v).toLocaleString(numberLocale, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  return `${v >= 0 ? '+' : MINUS}${body}%`;
 }
 
 /**

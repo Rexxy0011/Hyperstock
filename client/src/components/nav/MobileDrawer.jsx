@@ -8,6 +8,7 @@ import { useAuth } from '../../auth/AuthProvider';
 import Icon from '../ui/Icon';
 import Button from '../ui/Button';
 import Logo from '../ui/Logo';
+import LanguageSwitcher from './LanguageSwitcher';
 import { NAV, SECONDARY, ADMIN } from './navItems';
 
 const itemClass = ({ isActive }) =>
@@ -44,7 +45,7 @@ export default function MobileDrawer({ onClose }) {
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close navigation"
+            aria-label={t('nav.close')}
             className="cursor-pointer rounded-lg p-1.5 text-text-muted hover:bg-hover"
           >
             <Icon name="close" size={18} />
@@ -62,7 +63,7 @@ export default function MobileDrawer({ onClose }) {
             />
             <div className="relative">
               <div className="flex items-start justify-between gap-2">
-                <span className="text-2xs text-text-on-deep-muted">Total Investment</span>
+                <span className="text-2xs text-text-on-deep-muted">{t('nav.totalInvestment')}</span>
                 <span
                   className={`font-numeric text-2xs font-semibold tabular-nums ${
                     s.allTimeReturnPct >= 0 ? 'text-gain' : 'text-loss'
@@ -81,10 +82,10 @@ export default function MobileDrawer({ onClose }) {
         {!user && (
           <div className="flex flex-col gap-2">
             <Button to="/auth?mode=signup" onClick={onClose} className="w-full">
-              Get Started
+              {t('nav.getStarted')}
             </Button>
             <Button to="/auth" onClick={onClose} variant="secondary" className="w-full">
-              Login
+              {t('nav.login')}
             </Button>
           </div>
         )}
@@ -99,7 +100,18 @@ export default function MobileDrawer({ onClose }) {
 
         </nav>
 
-        <div className="mt-auto flex flex-col gap-1 border-t border-cool-grey/70 pt-4">
+        {/* THE ONLY LANGUAGE CONTROL BELOW 768px. TopNav's is `hidden md:block`,
+            so before this the switcher simply did not exist on a phone: the
+            product shipped four languages and no way to reach three of them on
+            the device most likely to want one. It sits above the secondary
+            links rather than among them because it is a control, not a
+            destination, and it is full width here where the nav slot is not,
+            so it shows the language's own name instead of a two-letter code. */}
+        <div className="mt-auto border-t border-cool-grey/70 pt-4">
+          <LanguageSwitcher />
+        </div>
+
+        <div className="mt-4 flex flex-col gap-1 border-t border-cool-grey/70 pt-4">
           {[...SECONDARY, ...(user?.role === 'admin' ? ADMIN : [])].map((item) => (
             <NavLink key={item.to} to={item.to} onClick={onClose} className={itemClass}>
               <Icon name={item.icon} />

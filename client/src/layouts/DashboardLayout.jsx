@@ -71,7 +71,7 @@ function AppFooter() {
     <footer className="mt-auto border-t border-cool-grey px-4 py-6 sm:px-5 lg:px-7 2xl:px-9">
       <div className="flex flex-col gap-3 text-xs text-text-muted sm:flex-row sm:items-center sm:justify-between">
         <p className="m-0">
-          &copy; 2026 HyperStocks. Simulated trading with virtual capital — no real money is
+          &copy; 2026 HyperStocks. Simulated trading with virtual capital - no real money is
           invested.
         </p>
 

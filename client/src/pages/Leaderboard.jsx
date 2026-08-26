@@ -9,16 +9,16 @@ import Money from '../components/market/Money';
 import PriceChange from '../components/market/PriceChange';
 
 const PERIODS = [
-  { value: 'weekly', label: 'Weekly' },
-  { value: 'monthly', label: 'Monthly' },
-  { value: 'alltime', label: 'All-time' },
+  { value: 'weekly', labelKey: 'leaderboard.tabWeekly' },
+  { value: 'monthly', labelKey: 'leaderboard.tabMonthly' },
+  { value: 'alltime', labelKey: 'leaderboard.tabAlltime' },
 ];
 
 /** Adjectival, to match the design's "Ranked by all-time portfolio value…". */
 const PERIOD_COPY = {
-  weekly: 'weekly',
-  monthly: 'monthly',
-  alltime: 'all-time',
+  weekly: 'leaderboard.periodWeekly',
+  monthly: 'leaderboard.periodMonthly',
+  alltime: 'leaderboard.periodAlltime',
 };
 
 export default function Leaderboard() {
@@ -40,14 +40,17 @@ export default function Leaderboard() {
         <div>
           <h1 className="m-0 text-xl font-bold">{t('leaderboard.title')}</h1>
           <p className="mt-2 text-sm text-text-muted">
-            Ranked by {PERIOD_COPY[period]} portfolio value across{' '}
-            <span className="font-numeric tabular-nums">
-              {(data?.totalTraders ?? 0).toLocaleString('en-US')}
-            </span>{' '}
-            traders.
+            {t('leaderboard.rankedBy', {
+              period: t(PERIOD_COPY[period]),
+              count: data?.totalTraders ?? 0,
+            })}
           </p>
         </div>
-        <Tabs tabs={PERIODS} value={period} onChange={setPeriod} />
+        <Tabs
+          tabs={PERIODS.map((p) => ({ value: p.value, label: t(p.labelKey) }))}
+          value={period}
+          onChange={setPeriod}
+        />
       </div>
 
       {isLoading ? (
@@ -140,7 +143,7 @@ function Row({ row, pinned = false }) {
             <PriceChange value={row.best.returnPct} size={12} />
           </span>
         ) : (
-          <span className="text-text-muted">—</span>
+          <span className="text-text-muted">-</span>
         )}
       </td>
       <td className={`${td} text-right`}>

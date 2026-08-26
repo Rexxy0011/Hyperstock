@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { FiLock, FiMail } from 'react-icons/fi';
 import { useAuth } from '../../auth/AuthProvider';
 import { errorMessage } from '../../lib/apiError';
 import Button from '../ui/Button';
@@ -125,6 +126,7 @@ export default function CodeForm({ purpose, initialEmail = '', onCancel, onSucce
             type="email"
             required
             autoComplete="email"
+            icon={<FiMail size={16} />}
             placeholder={t('auth.emailPlaceholder')}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -158,12 +160,17 @@ export default function CodeForm({ purpose, initialEmail = '', onCancel, onSucce
             code
           />
 
+          {/* Revealable for the reason the signup field is: this sets a password
+              the user will have to type again later, and a typo here locks them
+              out of the account they are in the middle of recovering. */}
           {isReset && (
             <Input
               label={t('auth.code.newPassword')}
               type="password"
               required
               minLength={8}
+              icon={<FiLock size={16} />}
+              revealable
               autoComplete="new-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}

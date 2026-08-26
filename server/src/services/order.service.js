@@ -171,7 +171,7 @@ export async function placeOrder(input) {
   if (quotedNanos) {
     const drift = (Math.abs(fillPriceUsdNanos - quotedNanos) / quotedNanos) * 100;
     if (drift > MAX_SLIPPAGE_PCT) {
-      throw ApiError.conflict('PRICE_MOVED', `${symbol} moved ${drift.toFixed(2)}% — confirm again`, {
+      throw ApiError.conflict('PRICE_MOVED', `${symbol} moved ${drift.toFixed(2)}% - confirm again`, {
         quotedPriceUsdCents: input.quotedPriceUsdCents,
         currentPriceUsdCents: fillPriceUsdCents,
         currentPriceUsdNanos: fillPriceUsdNanos,

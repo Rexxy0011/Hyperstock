@@ -28,7 +28,7 @@ export const OTP_EXPIRY_SECONDS = 600;
 
 /** Wraps a body in the one shell every message shares. */
 const shell = (bodyText, { footer }) =>
-  `${bodyText}\n\n—\n${BRAND}\n${footer}`;
+  `${bodyText}\n\n--\n${BRAND}\n${footer}`;
 
 /**
  * A one-time code, for sign-in, email verification or a password reset.
@@ -76,7 +76,7 @@ export function otpEmail({ otp, type }) {
   const text = shell(
     `${reason.lead}\n\n${otp}\n\n` +
       `The code expires in ${Math.round(OTP_EXPIRY_SECONDS / 60)} minutes and can only be used once.\n\n` +
-      `If you did not request it, you can ignore this email — the code is useless on its own and nobody can act on it without it.`,
+      `If you did not request it, you can ignore this email - the code is useless on its own and nobody can act on it without it.`,
     { footer: 'Simulated trading. No real securities are bought or sold.' },
   );
 
@@ -90,11 +90,11 @@ export function otpEmail({ otp, type }) {
         The code expires in ${Math.round(OTP_EXPIRY_SECONDS / 60)} minutes and can only be used once.
       </p>
       <p style="margin:12px 0 0;font-size:13px;line-height:1.6;color:#5c6470">
-        If you did not request it, you can ignore this email — the code is useless on its own.
+        If you did not request it, you can ignore this email - the code is useless on its own.
       </p>
       <hr style="border:0;border-top:1px solid #e4e7eb;margin:28px 0 16px">
       <p style="margin:0;font-size:12px;color:#8a929e">
-        ${BRAND} — simulated trading. No real securities are bought or sold.
+        ${BRAND} - simulated trading. No real securities are bought or sold.
       </p>
     </div>`;
 
@@ -131,7 +131,7 @@ export function newsletterEmail({ subject, body, unsubscribeToken }) {
       <div style="font-size:15px;line-height:1.6">${body.replace(/\n/g, '<br>')}</div>
       <hr style="border:0;border-top:1px solid #e4e7eb;margin:28px 0 16px">
       <p style="margin:0 0 8px;font-size:12px;color:#8a929e">
-        ${BRAND} — simulated trading. No real securities are bought or sold.
+        ${BRAND} - simulated trading. No real securities are bought or sold.
       </p>
       <p style="margin:0;font-size:12px;color:#8a929e">
         <a href="${url}" style="color:#8a929e">Unsubscribe</a>

@@ -54,7 +54,7 @@ router.get(
         code: e.code,
         name: e.name,
         region: e.region,
-        hours: `${e.openTime}–${e.closeTime} ${e.tzLabel}`,
+        hours: `${e.openTime}-${e.closeTime} ${e.tzLabel}`,
         openTime: e.openTime,
         closeTime: e.closeTime,
         timezone: e.timezone,
@@ -288,7 +288,7 @@ router.get(
           code: venue.code,
           open: isOpen(venue),
           minutesUntilOpen: minutesUntilOpen(venue),
-          hours: `${venue.openTime}–${venue.closeTime} ${venue.tzLabel}`,
+          hours: `${venue.openTime}-${venue.closeTime} ${venue.tzLabel}`,
         };
       }
     }

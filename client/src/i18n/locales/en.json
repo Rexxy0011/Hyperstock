@@ -17,6 +17,7 @@
     "logout": "Log out",
     "search": "Press 'K' to search",
     "total": "Total",
+    "totalInvestment": "Total Investment",
     "menu": "Menu",
     "close": "Close",
     "featuredTraders": "Featured traders",
@@ -46,7 +47,16 @@
     "next": "Next",
     "copy": "Copy",
     "copyValue": "Copy {{label}}",
-    "copied": "Copied"
+    "copied": "Copied",
+    "close": "Close",
+    "notFound": "Not found",
+    "comingSoon": "This screen is next in the build.",
+    "backHome": "Back to home",
+    "homeAria": "HyperStocks home",
+    "removeFromWatchlist": "Remove from watchlist",
+    "addToWatchlist": "Add to watchlist",
+    "openAccount": "Open an account",
+    "goToDashboard": "Go to dashboard"
   },
   "portfolio": {
     "title": "My Portfolio",
@@ -72,7 +82,12 @@
     "price": "Price",
     "cash": "Cash",
     "signInToTrade": "Sign in to trade",
-    "notTradable": "{{symbol}} is {{status}} — not tradable."
+    "notTradable": "{{symbol}} is {{status}} - not tradable.",
+    "noPositions": "No positions yet",
+    "browseMarkets": "Browse markets",
+    "scrollPositions": "Scroll for more positions",
+    "staleQuote": "No live quote - shown at its last known value",
+    "watchlistEmpty": "Nothing on your watchlist yet."
   },
   "trade": {
     "title": "Trade {{symbol}}",
@@ -88,10 +103,10 @@
     "sharesNoun": "Shares",
     "unitsNoun": "Units",
     "perShare": "per share",
-    "disclaimer": "Market order, filled immediately at the price above. HyperStocks trades virtual capital — no real money moves.",
+    "disclaimer": "Market order, filled immediately at the price above. HyperStocks trades virtual capital - no real money moves.",
     "shortOf": "{{missing}} short of {{total}}",
     "depositAmount": "Deposit {{amount}}",
-    "depositNote": "A deposit is reviewed before it clears — we'll bring you back to this order.",
+    "depositNote": "A deposit is reviewed before it clears - we'll bring you back to this order.",
     "submitBuy": "Buy {{quantity}} {{symbol}}",
     "submitSell": "Sell {{quantity}} {{symbol}}",
     "wholeShares": "Enter a whole number of shares.",
@@ -110,8 +125,8 @@
     "stageSell": "Free up cash",
     "stageDetails": "Payout details",
     "available": "Available to withdraw",
-    "sellHint": "Sell a position to move its value into cash. Sales fill immediately at the market price — only the withdrawal itself is reviewed.",
-    "noPositions": "You hold no positions — your whole balance is already cash.",
+    "sellHint": "Sell a position to move its value into cash. Sales fill immediately at the market price - only the withdrawal itself is reviewed.",
+    "noPositions": "You hold no positions - your whole balance is already cash.",
     "minimumHint": "A withdrawal starts at {{min}}. Sell a position to free up {{missing}} more.",
     "pending": "Pending withdrawals",
     "showMore": "Show {{count}} more",
@@ -166,7 +181,8 @@
       "rejectedBody": "This payout was not approved and the full amount is back in your balance.",
       "cancelled": "Withdrawal cancelled",
       "cancelledBody": "You cancelled this payout. The full amount is back in your balance."
-    }
+    },
+    "noSuchWithdrawal": "No such withdrawal."
   },
   "fund": {
     "title": "Fund account",
@@ -193,7 +209,7 @@
     "copyAddress": "Copy address",
     "copied": "Copied",
     "sentFunds": "I've sent the funds",
-    "sentNote": "This does not credit your account — it puts the deposit in front of a reviewer.",
+    "sentNote": "This does not credit your account - it puts the deposit in front of a reviewer.",
     "txHash": "Transaction hash",
     "transaction": "Transaction",
     "email": "Email",
@@ -248,17 +264,21 @@
     "live": "Live",
     "liveHint": "Streaming trades as they print",
     "reconnecting": "Reconnecting",
-    "reconnectingHint": "Reconnecting — showing polled prices",
-    "delayedHint": "Reference price — this venue needs a paid data plan",
+    "reconnectingHint": "Reconnecting - showing polled prices",
+    "delayedHint": "Reference price - this venue needs a paid data plan",
     "matches": "Matches",
-    "pairs": "Pairs"
+    "pairs": "Pairs",
+    "addHintPre": "Use the",
+    "addHint": "on any row to add it here.",
+    "blurbStocks": "Live quotes on NYSE and NASDAQ. The other six exchanges are delayed reference prices.",
+    "blurbCrypto": "Live prices for the top 50 by market capitalisation.",
+    "blurbForex": "Live OANDA rates. The daily change is measured against the ECB reference publication."
   },
   "faq": {
     "eyebrow": "Support",
     "title": "Frequently asked questions",
     "lead": "Everything you need to know about investing with Hyperstock.",
     "sub": "From opening your account and funding your portfolio to trading, withdrawals, security and supported assets, find answers to the questions investors ask most.",
-    "openAccount": "Open an account",
     "contactSupport": "Contact support",
     "categories": "Categories",
     "answered_one": "{{count}} question answered",
@@ -275,7 +295,7 @@
     "AMOUNT_TOO_LARGE": "That amount is above the limit.",
     "BAD_ADDRESS": "That is not a valid address for this network.",
     "NO_NETWORK": "That network is not supported.",
-    "NO_RATE": "No usable price right now — try again in a moment.",
+    "NO_RATE": "No usable price right now - try again in a moment.",
     "NO_DESTINATION": "Crypto deposits are not configured on this deployment.",
     "WITHDRAWALS_DISABLED": "Withdrawals are not enabled on this deployment.",
     "TOO_MANY_PENDING": "You already have too many requests awaiting review.",
@@ -302,6 +322,8 @@
     "signUp": "Create account",
     "welcomeBack": "Welcome back",
     "createAccount": "Create your account",
+    "signinLead": "Sign in to your portfolio.",
+    "signupLead": "Start trading eight exchanges in under a minute.",
     "username": "Username",
     "email": "Email",
     "password": "Password",
@@ -333,7 +355,15 @@
       "back": "Back to sign in",
       "wrong": "That code is wrong or has expired.",
       "sendFailed": "Could not send the code. Try again."
-    }
+    },
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "panelTitle": "Practise on the real thing.",
+    "panelBody": "Live prices from eight exchanges, virtual capital, and a portfolio that moves the moment an order fills.",
+    "point1": "Real market data, three asset classes",
+    "point2": "{{amount}} of virtual capital to start",
+    "point3": "Not a cent of your own money at risk",
+    "termsNotice": "By continuing you agree to our <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy>."
   },
   "leaderboard": {
     "title": "Leaderboard",
@@ -341,14 +371,22 @@
     "trader": "Trader",
     "portfolioValue": "Portfolio value",
     "return": "Return",
-    "you": "You"
+    "you": "You",
+    "rankedBy": "Ranked by {{period}} portfolio value across {{count}} traders.",
+    "periodWeekly": "weekly",
+    "periodMonthly": "monthly",
+    "periodAlltime": "all-time",
+    "tabWeekly": "Weekly",
+    "tabMonthly": "Monthly",
+    "tabAlltime": "All-time"
   },
   "news": {
     "title": "News",
     "lead": "Platform announcements and headlines from the markets you trade.",
     "announcements": "From HyperStocks",
     "headlines": "Market headlines",
-    "empty": "No headlines right now."
+    "empty": "No headlines right now.",
+    "latest": "Latest {{time}}"
   },
   "admin": {
     "featured": {
@@ -374,7 +412,7 @@
       "linkPlaceholder": "Search by username or name",
       "activeLabel": "Show on the leaderboard",
       "wouldLead": "This figure would place first on the board.",
-      "wouldPlace": "This figure would place {{rank}} — the current leader is {{top}}.",
+      "wouldPlace": "This figure would place {{rank}} - the current leader is {{top}}.",
       "col": {
         "trader": "Trader",
         "value": "Value",
@@ -386,7 +424,7 @@
     },
     "approvals": {
       "title": "Approvals",
-      "intro": "Deposits, withdrawals and top-up requests waiting on a reviewer. Approving a deposit or a top-up credits that account; approving a withdrawal records that you sent the funds by hand — nothing here moves anything on a chain.",
+      "intro": "Deposits, withdrawals and top-up requests waiting on a reviewer. Approving a deposit or a top-up credits that account; approving a withdrawal records that you sent the funds by hand - nothing here moves anything on a chain.",
       "filter": "Status",
       "empty": "Nothing waiting in this queue.",
       "approve": "Approve",
@@ -398,7 +436,7 @@
       "reasonHint": "Shown to the trader on their own screen.",
       "note": "Note (optional)",
       "txHash": "Transaction hash",
-      "txHashHint": "Evidence the transfer happened. Required — an approved payout with no hash is a row asserting money left with nothing to check it against.",
+      "txHashHint": "Evidence the transfer happened. Required - an approved payout with no hash is a row asserting money left with nothing to check it against.",
       "sendTo": "Send to",
       "tab": {
         "deposits": "Deposits",
@@ -475,8 +513,8 @@
       "suspend": "Suspend",
       "reactivate": "Reactivate",
       "statusChanged": "Status updated",
-      "suspendedWithSessions_one": "Suspended — 1 session revoked",
-      "suspendedWithSessions_other": "Suspended — {{count}} sessions revoked",
+      "suspendedWithSessions_one": "Suspended - 1 session revoked",
+      "suspendedWithSessions_other": "Suspended - {{count}} sessions revoked",
       "pageOf": "Page {{page}} of {{pages}}",
       "role": {
         "admin": "Admin",
@@ -496,7 +534,7 @@
   "notices": {
     "marketOpen": "US markets are open. Prices are live.",
     "marketClosed": "US markets have closed. Prices will not move until the next session.",
-    "feedLost": "Live price feed disconnected — prices on screen may be out of date.",
+    "feedLost": "Live price feed disconnected - prices on screen may be out of date.",
     "feedBack": "Live price feed reconnected.",
     "queueArrived_one": "{{count}} new request is waiting for review.",
     "queueArrived_other": "{{count}} new requests are waiting for review."
@@ -513,7 +551,7 @@
   },
   "legal": {
     "lastUpdated": "Last updated",
-    "englishOnly": "This document is published in English, and the English version governs. A translation is not a second version of the agreement — if you would like one, contact us and we will provide it alongside the original."
+    "englishOnly": "This document is published in English, and the English version governs. A translation is not a second version of the agreement - if you would like one, contact us and we will provide it alongside the original."
   },
   "unsubscribe": {
     "working": "Removing you from the list…",
@@ -522,5 +560,36 @@
     "failedTitle": "That link didn't work",
     "failedBody": "The link may be incomplete. Forward the email to",
     "home": "Back to HyperStocks"
+  },
+  "instrument": {
+    "backToMarkets": "Back to markets",
+    "loadingMarketData": "Loading market data",
+    "liveFx": "Live FX",
+    "haltedHint": "This listing is halted and cannot be traded",
+    "liveFxHint": "Streaming OANDA rate; the daily change is against the ECB publication",
+    "signInWatchlist": "Sign in to keep a watchlist and jump between instruments here.",
+    "watchlistEmptyPre": "Nothing followed yet. The",
+    "watchlistEmptyPost": "beside any symbol adds it here.",
+    "open": "Open",
+    "high": "High",
+    "low": "Low",
+    "last": "Last",
+    "peRef": "P/E · ref",
+    "pair": "Pair",
+    "currency": "Currency",
+    "about": "About",
+    "details": "Details",
+    "position": "Position"
+  },
+  "time": {
+    "justNow": "just now",
+    "minsAgo": "{{count}}m ago",
+    "hoursAgo": "{{count}}h ago",
+    "daysAgo": "{{count}}d ago"
+  },
+  "liveGains": {
+    "summary": "{{amount}} on {{symbol}}",
+    "simulated": "Simulated",
+    "trader": "Trader {{id}}"
   }
 }

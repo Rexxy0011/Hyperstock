@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Link from '../ui/Link';
 import Button from '../ui/Button';
 import Tabs from '../ui/Tabs';
@@ -35,11 +36,12 @@ export default function InstrumentSidebar({
   tradable,
   onTrade,
 }) {
+  const { t } = useTranslation();
   // All three classes are tradable now, so all three get a Position tab. It
   // used to be equities-only because they were the only class with a holding.
   const tabs = [
-    { value: 'details', label: 'Details' },
-    { value: 'position', label: 'Position' },
+    { value: 'details', label: t('instrument.details') },
+    { value: 'position', label: t('instrument.position') },
   ];
   const [tab, setTab] = useState('details');
 
@@ -83,7 +85,7 @@ export default function InstrumentSidebar({
 
       <section className="relative flex min-h-0 flex-1 flex-col border-t border-white/10">
         <h2 className="m-0 shrink-0 border-b border-white/10 px-4 py-2.5 text-2xs font-medium tracking-wide text-text-on-deep-muted uppercase">
-          Watchlist
+          {t('markets.watchlist')}
         </h2>
         {/* Its own scroll, so a sixty-row list cannot lengthen the terminal and
             push the status bar off the bottom of the panel. */}
@@ -131,27 +133,28 @@ function ScrollFade() {
  * day, which is only true on 1D.
  */
 function Details({ data, candles, assetClass }) {
+  const { t } = useTranslation();
   const p = candles.points;
   if (!p.length) return null;
 
   const fmt = candles.format;
   const rows = [
-    ['Open', fmt(p[0].o)],
-    [`High · ${candles.range}`, fmt(Math.max(...p.map((x) => x.h)))],
-    [`Low · ${candles.range}`, fmt(Math.min(...p.map((x) => x.l)))],
-    ['Last', fmt(p[p.length - 1].c)],
+    [t('instrument.open'), fmt(p[0].o)],
+    [`${t('instrument.high')} · ${candles.range}`, fmt(Math.max(...p.map((x) => x.h)))],
+    [`${t('instrument.low')} · ${candles.range}`, fmt(Math.min(...p.map((x) => x.l)))],
+    [t('instrument.last'), fmt(p[p.length - 1].c)],
     // Volume is absent from CoinGecko's OHLC endpoint and market cap has no
     // meaning for a currency pair — the rows are dropped rather than dashed.
-    data.volume ? ['Volume', compact(data.volume)] : null,
-    data.marketCap ? ['Market cap', compact(data.marketCap, { prefix: '$' })] : null,
+    data.volume ? [t('markets.volume'), compact(data.volume)] : null,
+    data.marketCap ? [t('markets.marketCap'), compact(data.marketCap, { prefix: '$' })] : null,
     // Seeded reference data, and labelled as such — Finnhub 401s fundamentals.
-    data.reference?.peRatio ? ['P/E · ref', String(data.reference.peRatio)] : null,
+    data.reference?.peRatio ? [t('instrument.peRef'), String(data.reference.peRatio)] : null,
     assetClass === 'forex'
-      ? ['Pair', `${data.symbol.slice(0, 3)} / ${data.symbol.slice(3)}`]
+      ? [t('instrument.pair'), `${data.symbol.slice(0, 3)} / ${data.symbol.slice(3)}`]
       : null,
-    assetClass !== 'forex' ? ['Currency', data.currency] : null,
-    data.exchange ? ['Exchange', data.exchange] : null,
-    data.sector ? ['Sector', data.sector] : null,
+    assetClass !== 'forex' ? [t('instrument.currency'), data.currency] : null,
+    data.exchange ? [t('markets.exchange'), data.exchange] : null,
+    data.sector ? [t('markets.sector'), data.sector] : null,
   ].filter(Boolean);
 
   return (
@@ -173,7 +176,7 @@ function Details({ data, candles, assetClass }) {
       {data.about && (
         <div className="border-t border-white/6 px-4 py-4">
           <h2 className="m-0 text-2xs font-medium tracking-wide text-text-on-deep-muted uppercase">
-            About
+            {t('instrument.about')}
           </h2>
           <p className="mt-2 mb-0 text-xs leading-relaxed text-text-on-deep-muted">{data.about}</p>
         </div>
@@ -194,15 +197,16 @@ function Details({ data, candles, assetClass }) {
  * /markets, and forty rows cost one connection rather than forty.
  */
 function WatchlistRail({ assetClass, symbol }) {
+  const { t } = useTranslation();
   const { items, isLoading, signedIn } = useWatchlist();
   const { live } = useLivePrices();
 
   if (!signedIn) {
     return (
       <Empty>
-        <p className="m-0">Sign in to keep a watchlist and jump between instruments here.</p>
+        <p className="m-0">{t('instrument.signInWatchlist')}</p>
         <Button to="/auth?mode=signup" size="sm" className="mt-3">
-          Get started
+          {t('nav.getStarted')}
         </Button>
       </Empty>
     );
@@ -221,9 +225,14 @@ function WatchlistRail({ assetClass, symbol }) {
   if (items.length === 0) {
     return (
       <Empty>
+        {/* SPLIT ACROSS TWO KEYS BECAUSE THE GLYPH SITS INSIDE THE SENTENCE.
+            Every language puts it in the same place here, which is what makes
+            the split safe — if one ever needs it elsewhere in the clause this
+            has to become a `<Trans>` rather than a third key, since a
+            pre/post pair silently fixes the word order for all of them. */}
         <p className="m-0">
-          Nothing followed yet. The <span className="text-text-on-deep">＋</span> beside any symbol
-          adds it.
+          {t('instrument.watchlistEmptyPre')} <span className="text-text-on-deep">＋</span>{' '}
+          {t('instrument.watchlistEmptyPost')}
         </p>
       </Empty>
     );
@@ -277,7 +286,7 @@ function WatchlistRail({ assetClass, symbol }) {
               <span className="shrink-0 text-right">
                 <span className="block font-numeric text-xs tabular-nums text-text-on-deep">
                   {!item.resolved
-                    ? '—'
+                    ? '-'
                     : isForex
                       ? rate?.toFixed(rate >= 50 ? 2 : 4)
                       : money(priceCents, item.currency)}
@@ -302,12 +311,13 @@ function WatchlistRail({ assetClass, symbol }) {
  * is: signed out, halted, or simply not held yet.
  */
 function Position({ data, assetClass, holding, buyingPowerCents, signedIn, tradable, onTrade }) {
+  const { t } = useTranslation();
   if (!signedIn) {
     return (
       <Empty>
         <p className="m-0">Sign in to trade {data.symbol} and track the position here.</p>
         <Button to="/auth?mode=signup" size="sm" className="mt-3">
-          Get started
+          {t('nav.getStarted')}
         </Button>
       </Empty>
     );
@@ -331,7 +341,7 @@ function Position({ data, assetClass, holding, buyingPowerCents, signedIn, trada
     [assetClass === 'stocks' ? 'Shares' : 'Units', qty(holding.shares, assetClass)],
     ['Average cost', money(holding.avgCostCents ?? 0)],
     ['Cost basis', money(holding.costBasisCents ?? 0)],
-    ['Market value', money(holding.marketValueCents ?? 0)],
+    [t('portfolio.marketValue'), money(holding.marketValueCents ?? 0)],
   ];
 
   return (
@@ -344,12 +354,12 @@ function Position({ data, assetClass, holding, buyingPowerCents, signedIn, trada
           </div>
         ))}
         <div className="flex items-baseline justify-between gap-4 px-4 py-2.5">
-          <dt className="text-xs text-text-on-deep-muted">Total return</dt>
+          <dt className="text-xs text-text-on-deep-muted">{t('portfolio.totalReturn')}</dt>
           <dd className="m-0">
             {holding.totalReturnPct != null ? (
               <PriceChange value={holding.totalReturnPct} size={13} onDark />
             ) : (
-              '—'
+              '-'
             )}
           </dd>
         </div>

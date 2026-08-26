@@ -1,4 +1,5 @@
 import Icon from '../ui/Icon';
+import { useTranslation } from 'react-i18next';
 import Link from '../ui/Link';
 import { useWatchlist } from '../../hooks/useWatchlist';
 
@@ -28,6 +29,7 @@ export default function WatchButton({
   onDark = false,
   className = '',
 }) {
+  const { t } = useTranslation();
   const { isWatched, add, remove, signedIn } = useWatchlist();
 
   // Same reasoning as Tabs: the resting border and text have to change together
@@ -53,7 +55,7 @@ export default function WatchButton({
         to="/auth?mode=signup"
         style={box}
         aria-label={`Sign in to add ${row.symbol} to your watchlist`}
-        title="Sign in to build a watchlist"
+        title={t('markets.signInWatchlist')}
         className={cls(idle)}
       >
         <Icon name="plus" size={glyph} />
@@ -71,7 +73,7 @@ export default function WatchButton({
         style={box}
         onClick={() => remove(payload)}
         aria-label={`Remove ${row.symbol} from watchlist`}
-        title="Remove from watchlist"
+        title={t('common.removeFromWatchlist')}
         className={cls(
           'border-transparent bg-green-tint text-gain hover:bg-red-tint hover:text-loss focus-visible:bg-red-tint focus-visible:text-loss',
         )}
@@ -98,7 +100,7 @@ export default function WatchButton({
       style={box}
       onClick={() => add(payload)}
       aria-label={`Add ${row.symbol} to watchlist`}
-      title="Add to watchlist"
+      title={t('common.addToWatchlist')}
       className={cls(`${idle} hover:bg-green-tint`)}
     >
       <Icon name="plus" size={glyph} />

@@ -348,7 +348,7 @@ async function priceAsset(asset, destination) {
   if (!Number.isFinite(rateUsdNanos) || rateUsdNanos <= 0) {
     throw ApiError.unavailable(
       'NO_RATE',
-      `No usable ${symbol} price right now — try again in a moment`,
+      `No usable ${symbol} price right now - try again in a moment`,
     );
   }
 
@@ -444,7 +444,7 @@ export async function submitProof({
     await transition(deposit._id, DEPOSIT_STATUS.AWAITING_PAYMENT, DEPOSIT_STATUS.EXPIRED, {
       note: 'no payment claimed before expiry',
     });
-    throw ApiError.unprocessable('EXPIRED', 'That deposit expired — start a new one');
+    throw ApiError.unprocessable('EXPIRED', 'That deposit expired - start a new one');
   }
 
   try {
@@ -544,7 +544,7 @@ export async function approveDeposit({ reference, adminId, note = '' }) {
         {
           userId: deposit.userId,
           type: 'Top-up',
-          detail: `Deposit ${ref} — ${usdFromCents(deposit.amountCents)} ${deposit.asset}`,
+          detail: `Deposit ${ref} - ${usdFromCents(deposit.amountCents)} ${deposit.asset}`,
           amountCents: deposit.amountCents,
           status: 'Approved',
         },

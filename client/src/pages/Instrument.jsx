@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { FiArrowLeft } from 'react-icons/fi';
@@ -67,6 +68,7 @@ const CHART_TYPES = [
  * sections; nothing new was invented for it.
  */
 export default function Instrument({ assetClass }) {
+  const { t } = useTranslation();
   const { symbol } = useParams();
   const [range, setRange] = useState('1M');
   // Annotated because TvChart's `chartType` is a union and `useState('candles')`
@@ -134,12 +136,12 @@ export default function Instrument({ assetClass }) {
       <Shell>
         <Panel>
           <div className="p-8">
-            <h1 className="m-0 text-xl font-bold">Not found</h1>
+            <h1 className="m-0 text-xl font-bold">{t('common.notFound')}</h1>
             <p className="mt-2 text-sm text-text-on-deep-muted">
               No {assetClass} listing for <span className="font-mono">{symbol}</span>.
             </p>
             <Button to="/markets" variant="secondary" onDark className="mt-6">
-              Back to markets
+              {t('instrument.backToMarkets')}
             </Button>
           </div>
         </Panel>
@@ -172,8 +174,8 @@ export default function Instrument({ assetClass }) {
               a breadcrumb. */}
           <Link
             to="/markets"
-            aria-label="Back to markets"
-            title="Back to markets"
+            aria-label={t('instrument.backToMarkets')}
+            title={t('instrument.backToMarkets')}
             className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-text-on-deep-muted no-underline transition-colors hover:bg-white/8 hover:text-text-on-deep"
           >
             <FiArrowLeft size={16} aria-hidden="true" />
@@ -379,6 +381,7 @@ function Panel({ children }) {
  * empty after every server restart — so this is a state people will see.
  */
 function Loading() {
+  const { t } = useTranslation();
   const bar = 'animate-pulse rounded-md bg-white/8';
 
   return (
@@ -416,7 +419,7 @@ function Loading() {
       {/* The only text in the state, and it is for a screen reader rather than
           the eye — the pulse says the same thing visually. */}
       <span className="sr-only" role="status">
-        Loading market data
+        {t('instrument.loadingMarketData')}
       </span>
     </Shell>
   );
@@ -434,6 +437,7 @@ function Loading() {
  * Hiding it would leave an unexplained gap where the primary action sits.
  */
 function TradeAction({ signedIn, onOpen, tradable }) {
+  const { t } = useTranslation();
   if (!signedIn) {
     // A link, not a disabled button: signing in is the actual next step, and
     // /stocks/:symbol is reachable signed out.
@@ -446,7 +450,7 @@ function TradeAction({ signedIn, onOpen, tradable }) {
 
   if (!tradable) {
     return (
-      <span title="This listing is halted and cannot be traded">
+      <span title={t('instrument.haltedHint')}>
         <Button variant="secondary" size="sm" disabled onDark>
           Trade
         </Button>
@@ -466,16 +470,17 @@ function TradeAction({ signedIn, onOpen, tradable }) {
  * of them is "live tick", so leaving it off would let all three read as one.
  */
 function Freshness({ row, assetClass }) {
+  const { t } = useTranslation();
   if (assetClass === 'forex') {
     return (
-      <span title="Streaming OANDA rate; the daily change is against the ECB publication">
-        <Badge variant="approved">Live FX</Badge>
+      <span title={t('instrument.liveFxHint')}>
+        <Badge variant="approved">{t('instrument.liveFx')}</Badge>
       </span>
     );
   }
   if (assetClass === 'stocks' && !row.live) {
     return (
-      <span title="Reference price — this venue needs a paid data plan">
+      <span title={t('markets.delayedHint')}>
         <Badge variant="neutral">Delayed</Badge>
       </span>
     );

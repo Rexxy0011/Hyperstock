@@ -40,7 +40,7 @@ export default function TopNav({ onOpenNav, bordered = true }) {
       <button
         type="button"
         onClick={onOpenNav}
-        aria-label="Open navigation"
+        aria-label={t('nav.menu')}
         className="-ml-1 shrink-0 cursor-pointer rounded-lg p-2 text-text-muted transition-colors hover:bg-hover hover:text-void lg:hidden"
       >
         <Icon name="menu" size={20} />
@@ -93,7 +93,16 @@ export default function TopNav({ onOpenNav, bordered = true }) {
       {/* Beside the account cluster in both states: a visitor reading the
           marketing pages needs this at least as much as a signed-in user, and
           hiding it behind the account menu would put it behind a sign-in. */}
-      <div className="hidden w-24 shrink-0 md:block">
+      {/* w-32, and the two step-ups behind that number are worth recording.
+          It was w-24 (96px) before the flags; the flag takes 20px plus a 12px
+          gap, so the code beside it truncated and it went to w-28. That was
+          still one pixel short: measured, "УКР" needs 27px of label and w-28
+          leaves 26, which is enough to trip `text-overflow: ellipsis` and
+          render "У…" — a control naming nothing, in exactly the language whose
+          reader depends on it. Do not trust `scrollWidth > clientWidth` to
+          catch this; with ellipsis applied the two are equal, which is why the
+          first check missed it. Measure the string against the box instead. */}
+      <div className="hidden w-32 shrink-0 md:block">
         <LanguageSwitcher compact />
       </div>
 
@@ -230,7 +239,7 @@ function AccountMenu() {
               className="flex w-full cursor-pointer items-center gap-2.5 border-t border-cool-grey px-3 py-2 text-sm text-text-body transition-colors hover:bg-hover"
             >
               <Icon name="logout" size={16} className="text-text-muted" />
-              Sign out
+              {t('nav.logout')}
             </button>
           </div>
         </>

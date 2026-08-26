@@ -608,7 +608,7 @@ async function seedAnnouncements(adminUser) {
 
   await Announcement.insertMany([
     {
-      title: "US market holiday — Labor Day",
+      title: "US market holiday - Labor Day",
       body: "NYSE and NASDAQ are closed on Monday, Sep 7. Orders placed during the holiday queue for the next open.",
       audience: "All users",
       status: "Live",
@@ -636,7 +636,7 @@ async function seedAnnouncements(adminUser) {
     },
     {
       title: "New exchange: XETRA",
-      body: "921 German stocks are now tradable. Trading hours 09:00–17:30 CET.",
+      body: "921 German stocks are now tradable. Trading hours 09:00-17:30 CET.",
       audience: "All users",
       status: "Draft",
       createdBy: adminUser._id,

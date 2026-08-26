@@ -159,7 +159,9 @@ export function AuthProvider({ children }) {
    * consent, or a misconfigured client id, lands the user on Better Auth's own
    * error response rather than back on the screen they started from.
    */
-  const signInWithGoogle = useCallback(async (next = '/portfolio') => {
+  // Default matches Auth.jsx's: signing in lands on the landing page unless
+  // a `?next=` said otherwise. Every caller passes one explicitly.
+  const signInWithGoogle = useCallback(async (next = '/') => {
     const { url } = await post('/auth/sign-in/social', {
       provider: 'google',
       callbackURL: `${window.location.origin}${next}`,

@@ -83,6 +83,16 @@ export const keys = {
   wallet: ['wallet'],
   transactions: (page) => ['transactions', page],
   leaderboard: (period) => ['leaderboard', period],
+  /**
+   * The activity-toast pool, deliberately NOT `leaderboard('monthly')`.
+   *
+   * Landing already holds that key for a five-row panel. Sharing it would mean
+   * two components registering different `queryFn`s against one cache entry —
+   * whichever mounted first would decide, so the panel would sometimes get 50
+   * rows and the toast pool would sometimes get 5 and repeat itself. Its own
+   * key costs one request a session, since this list has no reason to be fresh.
+   */
+  liveGains: ['leaderboard', 'live-gains'],
   news: (symbol) => ['news', symbol ?? ''],
   announcements: ['announcements'],
   orders: (filters) => ['orders', filters],

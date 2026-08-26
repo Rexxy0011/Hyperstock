@@ -281,7 +281,7 @@ export default function TvChart({
   }, [chartType, dark]);
 
   const fmt = (v) =>
-    v == null ? '—' : v.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+    v == null ? '-' : v.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 
   return (
     <div className={fill ? 'relative h-full' : 'relative'}>

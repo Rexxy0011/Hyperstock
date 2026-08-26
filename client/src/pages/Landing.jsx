@@ -269,7 +269,7 @@ function TopInvestors({ rows, loading = false }) {
                   {r.name ?? r.username}
                 </span>
                 <span className="block truncate text-xs text-text-muted">
-                  {r.trades} trades
+                  {t('landing.trades', { count: r.trades })}
                 </span>
               </span>
 
@@ -407,7 +407,22 @@ function Security() {
         <Reveal>
           <div className="flex items-center gap-4">
             <span className="h-px flex-1 bg-linear-to-l from-slate/55 from-60% to-transparent" />
-            <h2 className="m-0 shrink-0 rounded-full border border-slate/35 px-6 py-2 text-center text-lg font-bold tracking-widest uppercase">
+            {/* THE PADDING AND TRACKING STEP DOWN ON PHONES BECAUSE THE COPY IS
+                TRANSLATED. This capsule is `shrink-0`, so the flanking rules
+                collapse first and then it simply overflows — measured at 320
+                in English, which is below the width this project supports, so
+                it was left alone. German moved it into range: "Sicherheit und
+                Vertrauen" is eight characters longer than "Security and Trust"
+                and overflowed the page by 17px at 414.
+
+                `tracking-widest` is the expensive half, not the font size:
+                0.1em across 24 uppercase characters is ~43px of pure letter
+                spacing, so `tracking-wider` and `px-4` recover more than
+                padding alone could. That was enough for 414 and not for 390 or
+                375, which are the two commonest phone widths there are, so the
+                size steps down as well. All three revert at `sm`, and English
+                at its designed size is what every screen above a phone gets. */}
+            <h2 className="m-0 shrink-0 rounded-full border border-slate/35 px-4 py-2 text-center text-base font-bold tracking-wider uppercase sm:px-6 sm:text-lg sm:tracking-widest">
               {t('landing.securityEyebrow')}
             </h2>
             <span className="h-px flex-1 bg-linear-to-r from-slate/55 from-60% to-transparent" />

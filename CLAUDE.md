@@ -402,6 +402,58 @@ price can no longer move" — the failure that had the socket dark for 83 minute
 Toast ids are used on the repeatable notices (`market-feed`, `market-session`, `admin-queue`), so a socket
 that flaps replaces its own notice in place instead of stacking a column of them.
 
+#### Activity toasts — `components/market/LiveGains.jsx`
+
+A trader and a gain, at random, bottom-right. It renders nothing and holds a timer, like `MarketNotices`.
+
+**EVERY FIGURE IS REAL LEADERBOARD DATA.** The name, the cash gain, the percentage and the symbol come off
+`/leaderboard` — the same source the board and Landing's panel render. Inventing them would have been
+easier and is exactly the thing not to do: a fabricated number cannot be reconciled against the board one
+click away, and the first person who compares them finds the product contradicting itself.
+
+**IT IS STILL A CLAIM THAT NAMED PEOPLE ARE MAKING MONEY RIGHT NOW**, which is a stronger statement than
+the leaderboard panel makes — the panel is static and carries a disclosure line underneath, and these
+travel to `/about` and `/faqs`, where nothing else on the page says what they are. So every toast carries
+a **Simulated** label; it is the disclosure, not decoration. The same instruction the Top investors panel
+and the partner strip already carry applies here first: **review the names before a public deploy.**
+
+**THE GAINS ARE FILTERED TO 0.05–25%, AND THAT IS CORRECTING A KNOWN ARTIFACT, NOT CURATING.**
+`dayChangePct` is measured against a *seeded* `PortfolioSnapshot` while the value above it is live, so for
+US-equity accounts the difference is a one-time step rather than a day of trading — measured on this
+database at **+114%, +151% and +159% "today"**. A column showing that is one thing; a toast asserts an
+event just happened, and "up 159% today" reads as a broken feed or a lie. There is a `$5.00` floor too,
+since +$0.02 is not news and wastes a slot. Remove the band when something other than the seed extends the
+snapshot series.
+
+**The avatar is the GENERATED mark, never `investorPhoto`.** `Avatar`'s own note gives the reason —
+attaching a real person's likeness to an invented return is misrepresentation however the photo was
+sourced — and a toast claiming the gain just happened is the strongest form of that claim on this site.
+
+**`trader_094` is formatted, never renamed.** It is a seeded handle rather than a person, so it renders as
+"Trader 094" through `liveGains.trader`. Inventing a name for it would be the fabrication this whole
+component avoids.
+
+**One toast id for all of them**, so a new notice replaces the last instead of stacking — verified over 80
+seconds: **1 in the tray at any moment**. Random 18–45s gaps with a 9s delay before the first, because a
+toast on first paint reads as an error rather than as news.
+
+**IT DOES NOT RUN UNDER `prefers-reduced-motion`, AND IT IS SILENT TO SCREEN READERS.** A stream of
+unrequested, auto-dismissing popups is what that setting asks for less of, and nothing here is absent from
+`/leaderboard` — verified silent for 20s under the emulated setting. `notify.custom` defaults
+`aria-live: off`, the opposite of every other toast in the app: the rest are consequences of something the
+user just did and must be announced, whereas marketing that arrives on its own every half minute would
+interrupt a screen reader repeatedly with something nobody asked for.
+
+**MARKETING SHELL ONLY.** Mounted in `PublicLayout`, not `Root`. This is where social proof does its job;
+the signed-in dashboard is where people trade, fund and withdraw, and a toast arriving on its own lands
+bottom-right over exactly the controls they are reaching for — the Trade button, the deposit address being
+copied, the withdrawal being confirmed. Interrupting a money action to say somebody else is up $4,000 is
+the one place this does harm.
+
+**Its query key is `keys.liveGains`, deliberately not `leaderboard('monthly')`.** Landing holds that key
+for a five-row panel; sharing it would mean two components registering different `queryFn`s against one
+cache entry, so the panel would sometimes get 50 rows and the pool sometimes get 5 and repeat itself.
+
 **`Exchange.code` must not be uppercased.** `Stock.exchange` stores the design's casing (`Euronext`), so
 forcing `EURONEXT` silently breaks every join between the two collections. There is a comment on the field.
 
@@ -1528,11 +1580,20 @@ branches in one div is what gives the signed-in fragment (`InvestmentPill` + `Ac
 hang that margin on; it repeats the header's own `gap-3 sm:gap-4` so nothing moves visually.
 
 Audited across **22 routes × 7 widths (1920 → 360), 154 combinations, zero horizontal overflow**, public
-anonymously and the six authenticated routes with a fresh login each. Two overflows exist at **320px only**,
-both pre-existing and below the 414 floor this file sets: Landing's `rounded-full` security capsule is
-299px against 256px of container (it is `shrink-0` by design so the flanking rules collapse first, but the
-capsule itself then cannot fit — `text-base` would bring it to 249px at the cost of shrinking the heading
-on every phone), and `/leaderboard` rows overflow 6px.
+anonymously and the six authenticated routes with a fresh login each. Re-audited on four languages after
+Spanish and German landed: **10 routes × 7 widths × 4 languages, 280 combinations, zero overflow.**
+
+**THE SECURITY CAPSULE IS FIXED, AND TRANSLATION IS WHAT FORCED IT.** Landing's `rounded-full` capsule is
+`shrink-0`, so the flanking rules collapse first and then it simply overflows. In English that happened
+only at 320, below the floor this file sets, and it was left alone. German moved it into range:
+"Sicherheit und Vertrauen" is eight characters longer than "Security and Trust" and overflowed the page by
+**17px at 414**. It now steps down under `sm` — `px-4`, `tracking-wider` and `text-base` — and reverts
+above it, so nothing changes on a desktop. `tracking-widest` was the expensive half rather than the font
+size: 0.1em across 24 uppercase characters is ~43px of pure letter spacing. Measured after: the capsule is
+195/228/250/202px (en/es/de/uk) and **fits at every width down to 320 in all four languages**, which also
+closes the English 320 case that was previously accepted.
+
+`/leaderboard` rows still overflow 6px at 320 only, and remain accepted.
 
 **Auditing an authenticated route needs A FRESH LOGIN PER ROUTE, and one login per *navigation* trips the
 auth limiter** — measured, `429 RATE_LIMITED` at 20/15min. Each load calls `/auth/refresh`, which rotates
@@ -1629,6 +1690,35 @@ Verified: 0 animated frames on the router's scroll, 28 on an ordinary `scrollTo`
 called once per navigation, Back restoring to 1399px, and under `prefers-reduced-motion: reduce`
 `scroll-behavior` computing to `auto` with the transitions off.
 
+### Punctuation: no long dashes, and the minus sign is not one
+
+**EM AND EN DASHES ARE OUT OF EVERY RENDERED STRING, by request.** Prose uses a plain `-`. The sweep
+covered the four locale bundles, JSX and JS string literals, server strings that reach a browser, the
+email templates, and the `<title>`: **120 removed across 30 files, from 124 to 4**. The four that
+remain are correct — two in `seed.js`'s `console.log` of the demo accounts, which is operator terminal
+output rather than the website, and two inside the `[—–]` character class in `news.service.js` that does
+the stripping.
+
+**THE U+2212 MINUS (−) IN `lib/format.js` IS NOT A LONG DASH AND MUST NOT BE SWEPT.** It is a different
+codepoint and a mathematical sign on a number, not punctuation in a sentence, and the note below explains
+why it is there. Any future pass must match `[\u2014\u2013]` specifically, never a broad "dash" class.
+
+**CODE COMMENTS WERE LEFT ALONE** — this file included. They are not the website, and rewriting the
+rationale prose in ~40 source files would have buried the actual change in the diff.
+
+**VENDOR NEWS IS NORMALISED AT THE CACHE BOUNDARY**, in `news.service.js` rather than in each adapter.
+That is a deliberate departure from the rule that cleaning happens in the adapter: it runs immediately
+before the cache write so the records are still clean, and it means a third adapter cannot inherit the
+obligation silently. It touches `headline` and `summary` only — a dash in a `url` is part of an address,
+and rewriting it 404s the story.
+
+**Seeded announcements carry their text in the DATABASE.** `seed.js` is fixed, but `seedAnnouncements`
+only runs on `npm run seed`, so an already-seeded database keeps the old string until it is re-run. That
+is the one place a long dash can still be on screen without the source being wrong.
+
+**The `<title>` is `HyperStocks` alone.** It used to carry the hero tagline; a title is a name, not a
+pitch, and it is what a bookmark and a browser tab show.
+
 **Formatting has single owners.** `PriceChange` is the only component allowed to render a signed
 percentage, and `Money` the only one to render currency — both delegate to `lib/format.js`. The design uses
 a real **U+2212 minus (−)**, not an ASCII hyphen; they render at different widths and mixing them makes
@@ -1661,11 +1751,37 @@ above them.
 `lib/monogram.js` exists because the design system's `symbol.slice(0,2)` turns `600519`, `601398` and
 `601899` into three identical "60" avatars; numeric tickers fall back to company initials.
 
-### Internationalisation — English and Ukrainian
+### Internationalisation — English, Spanish, German and Ukrainian
 
-`i18n/` holds the config and two bundles; `react-i18next` + `i18next-browser-languagedetector`. The
-switcher is in `TopNav`, the choice persists to `localStorage` under `hs_lang`, and `<html lang>` follows
-it — screen readers, `:lang()` and font matching all key off that attribute and nothing else would set it.
+`i18n/` holds the config and four bundles of three files each; `react-i18next` +
+`i18next-browser-languagedetector`. The switcher is in `TopNav` **and in `MobileDrawer`**, the choice
+persists to `localStorage` under `hs_lang`, and `<html lang>` follows it — screen readers, `:lang()` and
+font matching all key off that attribute and nothing else would set it.
+
+**IT WAS DESKTOP-ONLY UNTIL SPANISH AND GERMAN LANDED.** `TopNav`'s switcher is `hidden md:block` and the
+drawer had none, so below 768px there was no language control anywhere in the product — four languages
+and no way to reach three of them on the device most likely to want one. The drawer's copy is full width,
+so it shows the language's own name where the nav slot shows a code.
+
+**SPANISH IS PINNED TO `es-ES`, NOT `es-419`**, and the regional tag is load-bearing: Latin American
+Spanish groups digits like English, so the wrong tag silently renders every figure in the other
+convention. The flag on the control is Spain's, which is what settles it. One consequence looks like a
+bug and is not — `es-ES` prints a FOUR-DIGIT number with no group separator, so `1000` is "1000,00" while
+`12220.64` is "12.220,64". That is the Real Academia's rule; alignment is unaffected because the tabular
+figures line up on the decimal mark.
+
+**POPPINS COVERS SPANISH AND GERMAN, so neither needed the Montserrat treatment Cyrillic did.** Measured
+on the rendered page at 40px/700: "Märkten Kürzel Größe" is 446.9px in the app stack and 446.9px in
+Poppins against 402.7px in system-ui, and "Español acción más" is 411.1px in both. The accents and
+umlauts resolve to Poppins itself through its latin-ext subset — the failure mode the Cyrillic note below
+describes simply does not arise here.
+
+**FLAGS ARE DECORATION, NOT IDENTITY.** A flag names a country and a language is not one: German is also
+Austria and Switzerland, Spanish is twenty countries, and English here flies the UK's. So every flag is
+`aria-hidden` with an empty `alt`, and the accessible name comes from the language's own name. The assets
+follow the project's PNG-source/webp-build convention — `assets/brand/*.png` at 512px down to
+`assets/icons/flag-*.webp` at 96px, 66KB of source to 10KB — and they are **named for the language, not
+the country**, since the switcher keys on an i18n code and `flag-uk` here is Ukrainian, not British.
 
 **Not a translate widget, and the reason is specific to this product.** A Google-Translate-style embed
 rewrites text nodes in place, which fights React's reconciler, and — far worse here — **rewrites numbers**.
@@ -1683,7 +1799,14 @@ Poppins **357.2** exactly. Geist Mono already ships Cyrillic, so the mono face n
 
 **`format.js` localises the DIGITS ONLY, and that boundary is the point.** The group separator and decimal
 mark are locale-driven — Ukrainian writes `$17 103,75` where English writes `$17,103.75`, and reading a
-balance in the wrong convention is a real misreading. The **sign and the symbol position are not**:
+balance in the wrong convention is a real misreading.
+
+**`pct()` DID NOT DO THIS AND NOW DOES.** It was `toFixed(2)`, which is hardcoded English whatever the
+interface language, so `money()` localised and the percentage beside it did not — a German leaderboard row
+read `$184.250,00` next to `+24.50%`, with the decimal mark disagreeing with itself inside a single row.
+It had been wrong for Ukrainian since that language shipped and was only caught when Spanish and German
+landed. Verified across all four after the fix: `+61.20% / $184,250.00` (en), `+61,20% / $184.250,00`
+(de, es), `+61,20% / $184 250,00` (uk). A percentage above 1000 now groups as well. The **sign and the symbol position are not**:
 `pct()` emits a real U+2212 because the design does and because it aligns with tabular digits, and `Intl`'s
 own currency mode would replace it with the locale's minus and move `$` behind the number for `uk-UA` —
 breaking the column rule this module exists to own. So the parts are assembled here and only the digits go
@@ -1705,13 +1828,48 @@ rather than a verb with a quantity appended: Ukrainian puts them in a different 
 "Українська" — somebody who cannot read the current interface cannot read "Ukrainian" either — while the
 nav slot fits about three characters. Without it the trigger rendered "У…", which names nothing.
 
+**AND THEN `menuToContent`, because `triggerLabel` was only half the mechanism.** The listbox was locked
+to `w-full`, so at the nav's 112px the OPEN list truncated too — measured with four languages, it read
+"E…", "Deuts…" and "Украї…". The one menu that has to be readable by somebody who cannot read the current
+language was the one cutting the names off. `w-max min-w-full` grows it to the longest label and `right-0`
+grows it leftward from a control on the right of the bar, so it cannot run off screen. It is opt-in: a
+form select is already as wide as its content and must not reflow, so `/fund` and `/withdraw` are
+untouched.
+
+**THE NAV LANGUAGE TRIGGER IS `w-32`, AND THE LAST PIXEL OF THAT WAS A REAL BUG.** It was `w-24` before
+the flags; the flag costs 20px plus a 12px gap, so the code beside it truncated and it went to `w-28`.
+That was still one pixel short: measured, "УКР" needs **27px** of label and `w-28` leaves **26**, which is
+enough to trip `text-overflow: ellipsis` and render **"У…"** — a control naming nothing, in exactly the
+language whose reader depends on it.
+
+**Do not test this with `scrollWidth > clientWidth`.** Once ellipsis is applied the two are EQUAL, so the
+check reports "not clipped" on a visibly clipped label — which is how the first pass missed it, and it was
+only caught by looking at a screenshot. Measure the string's natural width against the box: render it into
+a hidden span at the same computed `font` and compare.
+
 **Nav items carry `key` separately from `label`.** A key derived from the English label would change the
 moment anyone reworded it, silently orphaning every other language's translation with nothing to report it.
 
-**EVERY ROUTE IS TRANSLATED.** Nav (both shells), Portfolio, the trade ticket and receipt, the whole
-Withdraw and Fund flows, Markets, News, Leaderboard, Auth, the FAQ (all nineteen answers), Landing, About
-and the shared marketing footer. Verified by reloading each route with `hs_lang=uk` stored and measuring
-the Cyrillic share of the rendered text.
+**EVERY ROUTE IS TRANSLATED, AND THAT CLAIM USED TO BE WRONG.** Adding two languages is what surfaced
+it: rendering each route in German and diffing the text against English line by line found chrome still
+in English on six surfaces — the Auth tabs and submit button, the mobile drawer's Get Started / Login /
+Total Investment, Portfolio's holdings rail and position cards, the instrument rail's entire Details list
+(Open / High / Low / Last / Currency / Exchange / Sector / About), Markets' per-tab coverage note,
+Leaderboard's "Ranked by…" line, and News's relative timestamps. All now keyed. The measurement is the
+method: an untranslated string does not throw, it silently falls back to English, so the only way to find
+one is to compare rendered output.
+
+**The Auth tabs were a bug, not just a gap.** `MODES = ['Sign in', 'Create account']` was doing double
+duty as label AND state, so `mode === MODES[1]` compared a stored English string against the displayed
+one. Translating in place would have made that comparison fail the moment somebody changed language with
+the form open — silently dropping back to Sign in with the typed details gone. The value is `'signin'` /
+`'signup'` now and the label is translated separately, the same split `navItems.js` already makes.
+Verified: switching language on the signup tab keeps the tab and the username field.
+
+Coverage is measured per route, not asserted. Against English, lines still identical in Spanish and
+German: `/about` **0**, `/faqs` **0**, `/auth` **0**, `/leaderboard` **1**, `/` **10**, `/markets` **28**,
+`/news` **40** — and everything remaining is DATA. Trader names, company names, vendor headlines, seeded
+announcement bodies and the `Exchange` collection's venue rows are correctly left alone.
 
 **A low Cyrillic ratio is not a gap on the data-heavy screens.** Markets reads 8%, News 3%, Leaderboard 5%
 — those pages are mostly tickers, company names, vendor headlines and trader usernames, which are DATA and
@@ -1728,8 +1886,16 @@ identical in every language while only sentences are translated. Numerals stay o
 on Landing's security cards and About's `$3B+` are composed in JSX, because a numeral is the same in every
 language and baking it in means translating it four times.
 
-**Both bundles are asserted key-identical** — a one-line node check over the flattened key sets, ignoring
-plural suffixes, since `uk` legitimately has `_few`/`_many` where `en` does not.
+**THE PARITY CHECK IS A TEST NOW (`server/test/locales.test.js`), NOT A ONE-LINE NODE COMMAND.** Two
+bundles can be diffed by hand; four cannot, and every failure here is silent — a missing key falls back to
+English mid-paragraph, a mistyped `{{count}}` renders the braces on screen. It asserts five things across
+all four languages: identical key sets (ignoring plural suffixes, since `uk` legitimately has
+`_few`/`_many`), identical interpolation placeholders per key, every plural form each language's
+`Intl.PluralRules` will ask for, no em or en dashes, and nothing blank. Each assertion was mutation-tested
+by breaking it and confirming a failure.
+
+It lives in the server suite because that is the only test runner this repo has and `npm run check` is the
+gate. It imports no client runtime — it reads twelve JSON files as data.
 
 ### The legal pages and cookie consent
 
@@ -1935,6 +2101,28 @@ transition spends most of its duration crossing empty space — these answers ru
 The `+` rotates 135° into a `×` rather than swapping two icons: a swap has no in-between state, so the
 control would change on one frame while the panel takes 300ms.
 
+**ITS THREE ACCOUNT CTAs ARE AUTH-AWARE NOW, VIA `hooks/useAccountCta.js`.** All three — the hero, the
+inline button inside "How do I open an account?", and the closing section — were hardcoded to
+`/auth?mode=signup`, so a signed-in trader reading the FAQ was told three times to create the account they
+were already holding. `/faqs` is a top-level nav link, so that is not an edge case.
+
+**The hook was already written and living in the wrong place.** `About.jsx` had it as a local function and
+`/faqs` simply did not, which is how one page ended up correct and the other wrong. It is shared now, and
+the labels came with it: `about.openAccount` and `faq.openAccount` were two near-identical strings for one
+action, translated separately into four languages and free to drift. `common.openAccount` /
+`common.goToDashboard` own the pair; the three orphaned keys are deleted.
+
+**It waits on `authReady`** for the reason About's version already documented: before the session resolves,
+`user` is null and indistinguishable from a genuine anonymous visit, so acting early would flicker the
+page's primary button from "Open an account" to "Go to dashboard" a moment after paint.
+
+**The inline answer keeps its own label when signed out** — "Create an account", which reads better inside
+that specific answer than the generic CTA does — and only swaps when signed in. The answer's prose still
+describes the signup process either way, which is correct: it is reference material, not a step being
+asked for. Verified live: signed out, three buttons to `/auth?mode=signup` reading "Open an account",
+"Create an account", "Open an account"; signed in, three to `/dashboard` reading "Go to dashboard", and
+translated in all four languages.
+
 **The closing CTA is light, and the first version was not.** On ink it butted straight into the marketing
 footer, which is also ink — two dark bands with nothing between them read as one shapeless block with a
 hole in the middle, and the closing ask disappeared into the site furniture below it.
@@ -2121,6 +2309,82 @@ approximate a trademark by hand and never hotlink one.
 `test/handle.test.js` pins the generation rules. Verified live with a test client id: the endpoint builds a
 real `accounts.google.com/o/oauth2/v2/auth` URL carrying the right `redirect_uri`, `prompt` and
 `email profile openid` scope.
+
+#### The /auth screen
+
+A single centred card on the mist canvas, `max-w-105`. **A two-panel version with an ink showcase and the
+Landing hero artwork was built and then removed by request** — the card is the screen.
+
+**`rounded-xl` + `shadow-panel`, not `rounded-md` + `shadow-card`.** The latter pair is for a card that is
+one of twenty on a dashboard; this is a single object on an empty field, and the tighter pairing read as a
+widget that had lost its page. Padding went 24 -> 32/40 with it.
+
+**The mark sits ABOVE the card, not inside it.** Inside, it competed with the heading for the top of the
+card and pushed the form down. The disclaimer moved outside for the mirror reason: it qualifies the whole
+screen rather than the form, and inside it was the last thing read before the submit button.
+
+**THE DEMO-FILL BUTTON IS A TINTED STRIP, NOT A BORDERED ONE.** With a border it carried the same weight
+as Continue with Google and sat directly under the primary action, so the card ended in three controls
+that all looked equally like the thing to press.
+
+**`Input` gained `icon` and `revealable`, as PROPS.** Both change the field's own padding, and a
+conflicting padding utility passed through `className` is resolved by stylesheet position rather than
+attribute order — the same trap `code` and `Button`'s `pill` already exist to avoid.
+
+**The reveal toggle is a usability fix, not decoration.** A password typed blind is the commonest reason a
+correct credential gets rejected on a phone, and it matters most on signup and on the reset field, where a
+typo creates or locks the account with no second chance to notice. It swaps `type` rather than using
+`-webkit-text-security`, so password managers still recognise the field, and it is `tabIndex={-1}` —
+tabbing out of the password field should reach the submit button, not a display toggle.
+
+**Every field in the product now takes a focus RING as well as the border.** A 1px colour change is the
+only signal saying where the keyboard is pointed, and it is easy to miss.
+
+**IT IS THE ONE ROUTE ON A BARE MARKETING SHELL.** `PublicLayout` takes `chrome={false}` and the router
+gives `/auth` its own entry with it. That drops the footer and the activity toasts and keeps the nav —
+which carries the language switcher, and somebody who cannot read the current interface needs that before
+they can sign in. A five-column footer of legal and support links puts a wall of exits directly beneath
+the one action the page exists for, and an unrequested toast arriving bottom-right while a password is
+being typed is an interruption at the worst possible moment.
+
+**It is a PROP, not a pathname check inside the layout.** A shell that knows the names of the routes it
+renders collects one more `if` per exception until nobody can say what it does. The router chooses.
+
+**THE TERMS NOTICE USES `<Trans>`, and this is the one sentence in the product that justifies it.** It
+carries TWO links, so the pre/post split used elsewhere would need three fragments whose order is fixed by
+the JSX — and that order is not fixed across languages. German is the proof: *"Mit dem Fortfahren stimmen
+Sie unseren <terms>Nutzungsbedingungen</terms> und unserer <privacy>Datenschutzerklärung</privacy> **zu**"*,
+where the verb's particle lands after both links. No concatenation can express that. The components are
+**named, not indexed** — `<0>`/`<1>` keys break silently when anyone reorders the JSX, and the failure is a
+link pointing at the wrong document on a consent line. Verified in all four languages: links resolve to
+`/terms` and `/privacy`, no tags leak into the text.
+
+**SIGNING IN LANDS ON `/`, NOT `/portfolio`.** The default changed by request; `?next=` still wins, which
+is the half that matters — `ProtectedRoute` attaches the page somebody was bounced from, so a user who
+clicked `/withdraw` while signed out still arrives at `/withdraw` afterwards. Verified both:
+`/withdraw` → `/auth?next=%2Fwithdraw` → `/withdraw`, and a plain sign-in → `/`.
+`signInWithGoogle`'s default parameter was moved to match, though every caller passes one explicitly.
+
+##### Smoothness, all CSS
+
+- **`--animate-swap`** (4px/180ms) is a THIRD token beside `rise` and `reveal`, not a reuse. This content
+  does not arrive from below — it replaces content that was in the same place a frame ago, and `rise`'s
+  8px reads as a panel landing when the panel did not move. Same easing, so it stays one system.
+- **The heading block is keyed on `mode`.** Without the key React reuses the nodes and only swaps their
+  text, and a CSS animation on an element that never remounts runs exactly once: the first switch would
+  animate and every one after it would snap.
+- **The username field opens on `grid-template-rows: 0fr -> 1fr`**, the technique the FAQ accordion uses,
+  because `height: auto` is not animatable and the `max-height` workaround opens every field at the speed
+  of whatever maximum was guessed. Measured: 0 -> 69px over 11 frames on a proper ease-out.
+- **Collapsed, the field is `invisible` AND `disabled`** rather than unmounted — it has to leave the tab
+  order and the form's required set while it is closed, but it must keep its element for the transition to
+  have something to animate. Verified: `focus()` does not take, `required` is false, `disabled` is true.
+- **`prefers-reduced-motion` kills both halves.** `.animate-swap` joins the animation kill list, and
+  `[data-auth-collapse]` needed its own entry because the grid-rows technique is a TRANSITION, which the
+  animation rules do not reach. Verified: `transition-duration: 0s`, `animation: none`, height jumps
+  straight to 69px with nothing stranded.
+
+Audited across **4 languages x 5 widths x 2 modes, 40 combinations, zero horizontal overflow.**
 
 #### Email — Resend, and codes rather than links
 

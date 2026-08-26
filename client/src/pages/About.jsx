@@ -1,61 +1,13 @@
 import { FiArrowRight, FiCheck } from "react-icons/fi";
 import { useTranslation } from 'react-i18next';
 
-import { useAuth } from "../auth/AuthProvider";
+import { useAccountCta } from "../hooks/useAccountCta";
 import Button from "../components/ui/Button";
 import CountUp from "../components/ui/CountUp";
 import Eyebrow from "../components/ui/Eyebrow";
 import Reveal from "../components/ui/Reveal";
 import VideoBackdrop from "../components/ui/VideoBackdrop";
 import { assets } from "../assets/assets";
-
-/**
- * The "Learn more" destination, reached from the Landing hero and the footer's
- * Company column. Structured from the supplied consulting-site reference, which
- * has exactly three section archetypes; the page reuses them rather than
- * inventing a fourth per section:
- *
- *   A  hero card — mist ground, copy left, photo right, counters beneath a rule
- *   B  split    — photo one side, copy the other, alternating down the page
- *   C  grid     — eyebrow, heading, then cards with the first one filled
- *
- * Two sections opt out, each for a stated reason: Security is centred because
- * there is no sixth photograph and reusing one would read as a mistake, and the
- * closing section runs video.
- *
- * The copy is the client's, normalised only in that "Hyperstock" is written
- * "HyperStocks" to match the wordmark it sits under.
- *
- * NOTE ON CLAIMS. This copy positions the product as a multi-asset platform
- * covering stocks, crypto, gold and mutual funds. The app trades equities and
- * nothing else — there is no crypto, commodity or fund model anywhere in
- * server/src/models. Three of the four cards in "Access the Markets That
- * Matter" describe things that do not exist yet.
- */
-
-/**
- * The page's two calls to action, resolved against the session.
- *
- * Asking a signed-in visitor to open an account is the kind of thing that
- * makes a product feel like it does not know who you are, and this page is
- * reachable from the nav while logged in.
- *
- * It waits on `authReady`. `AuthProvider` calls /auth/refresh on mount, so
- * before that resolves `user` is null and is indistinguishable from a genuine
- * anonymous visit — acting on it early would show every returning user "Open
- * an Account" and then swap it a moment later. Holding the signed-out copy
- * until the answer arrives is the safe default: the overwhelming majority of
- * traffic to a marketing page is signed out, so it is right almost always and
- * briefly stale otherwise.
- */
-function useAccountCta() {
-  const { user, authReady } = useAuth();
-  const signedIn = authReady && Boolean(user);
-
-  return signedIn
-    ? { to: "/dashboard", label: "Go to dashboard" }
-    : { to: "/auth?mode=signup", label: "Open an Account" };
-}
 
 /** Landing's vertical rhythm, kept identical so the two pages agree. */
 const SECTION_Y = "py-14";
@@ -137,7 +89,7 @@ function AboutHero() {
                 <FiArrowRight size={16} aria-hidden="true" />
               </Button>
               <Button to="/markets" variant="secondary" pill>
-                Explore markets
+                {t('about.exploreMarkets')}
               </Button>
             </div>
           </Reveal>

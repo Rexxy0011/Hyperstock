@@ -1,0 +1,185 @@
+{
+  "gettingStarted": {
+    "label": "Primeros pasos",
+    "items": {
+      "whatIs": {
+        "q": "¿Qué es Hyperstock?",
+        "body": [
+          "Hyperstock es una plataforma de inversión multiactivo que da a los particulares acceso a una variedad de mercados financieros desde una única cuenta. Según la disponibilidad y la elegibilidad, los inversores pueden acceder a activos como acciones, criptomonedas, oro y fondos de inversión.",
+          "Nuestra plataforma combina el acceso al mercado, la gestión de la cartera, la financiación de la cuenta y las herramientas de inversión en una sola experiencia simplificada."
+        ]
+      },
+      "whoCanOpen": {
+        "q": "¿Quién puede abrir una cuenta de Hyperstock?",
+        "body": [
+          "Las cuentas de Hyperstock están disponibles para los particulares elegibles que cumplan nuestros requisitos de apertura y verificación.",
+          "La elegibilidad puede depender de factores como tu país o estado de residencia, tu edad, la verificación de identidad y los productos de inversión concretos a los que quieras acceder. Ciertos productos o servicios pueden estar sujetos a requisitos adicionales."
+        ]
+      },
+      "howToOpen": {
+        "q": "¿Cómo abro una cuenta?",
+        "cta": "Crear una cuenta",
+        "body": [
+          "Abrir una cuenta está pensado para ser sencillo.",
+          "Crea tu cuenta de Hyperstock, facilita la información personal requerida, completa la verificación de identidad y envía cualquier documentación adicional que se te solicite. Una vez aprobada tu solicitud, podrás añadir fondos a tu cuenta y empezar a usar la plataforma."
+        ]
+      }
+    }
+  },
+
+  "accounts": {
+    "label": "Cuentas y verificación",
+    "items": {
+      "whyVerify": {
+        "q": "¿Por qué necesita Hyperstock verificar mi identidad?",
+        "body": [
+          "La verificación de identidad nos ayuda a proteger tu cuenta y a cumplir la normativa financiera aplicable.",
+          "Como parte del proceso de alta, podemos solicitarte información como tu nombre legal, tu fecha de nacimiento, tu domicilio y un documento de identidad emitido por una administración pública. Los requisitos de verificación pueden variar según tu ubicación y los productos o servicios que uses."
+        ]
+      },
+      "documents": {
+        "q": "¿Qué documentos puede que tenga que aportar?",
+        "body": [
+          "Según tus circunstancias, es posible que se te pida un documento de identidad válido emitido por una administración pública e información que ayude a verificar tu identidad y tu domicilio.",
+          "Ocasionalmente puede requerirse documentación adicional para completar las comprobaciones regulatorias o de verificación de la cuenta."
+        ]
+      },
+      "howLong": {
+        "q": "¿Cuánto tarda la verificación de la cuenta?",
+        "body": [
+          "Muchas comprobaciones de verificación se completan con rapidez, pero los plazos pueden variar.",
+          "Si se requiere información o documentación adicional, la verificación puede tardar más. Recomendamos asegurarse de que los datos enviados durante el registro sean exactos y coincidan con tus documentos justificativos."
+        ]
+      }
+    }
+  },
+
+  "funding": {
+    "label": "Depósitos y retiradas",
+    "items": {
+      "howToFund": {
+        "q": "¿Cómo puedo añadir fondos a mi cuenta de Hyperstock?",
+        "body": [
+          "Los métodos de financiación disponibles dependen de tu ubicación y de la elegibilidad de tu cuenta.",
+          "Una vez verificada tu cuenta, los métodos de depósito disponibles se mostrarán dentro de tu cuenta de Hyperstock. Los plazos de procesamiento y los límites aplicables pueden variar según el método de financiación."
+        ]
+      },
+      "depositTime": {
+        "q": "¿Cuánto tarda en llegar mi depósito?",
+        "body": [
+          "Los plazos de depósito dependen del método de pago utilizado.",
+          "Algunos métodos de financiación pueden reflejarse rápidamente en tu saldo disponible, mientras que otros pueden requerir un tiempo de procesamiento adicional. Hyperstock mostrará la información de procesamiento aplicable antes de que completes un depósito."
+        ]
+      },
+      "howToWithdraw": {
+        "q": "¿Cómo retiro dinero de mi cuenta?",
+        "body": [
+          "Puedes solicitar una retirada desde tu cuenta de Hyperstock usando un método de retirada disponible.",
+          "Por motivos de seguridad y cumplimiento normativo, las retiradas pueden estar sujetas a verificación, plazos de procesamiento, restricciones de cuenta y otros requisitos aplicables. Por lo general, los fondos deben retirarse conforme a los procedimientos disponibles para tu cuenta."
+        ]
+      },
+      "limits": {
+        "q": "¿Hay límites en los depósitos o las retiradas?",
+        "body": [
+          "Ciertas cuentas, métodos de pago, activos o transacciones pueden estar sujetos a mínimos, máximos u otros límites.",
+          "Cualquier límite aplicable se comunicará a través de la plataforma y puede variar según factores como el estado de la cuenta, el nivel de verificación, el método de pago y los requisitos regulatorios."
+        ]
+      }
+    }
+  },
+
+  "trading": {
+    "label": "Trading e inversiones",
+    "items": {
+      "whatCanInvest": {
+        "q": "¿En qué puedo invertir a través de Hyperstock?",
+        "body": [
+          "Hyperstock da acceso a varias clases de activos desde una sola plataforma.",
+          "Según la disponibilidad y la elegibilidad, pueden incluir:",
+          {
+            "list": [
+              "Acciones: participaciones de empresas cotizadas",
+              "Criptomonedas: activos digitales admitidos",
+              "Oro: exposición al mercado del oro",
+              "Fondos de inversión: fondos diversificados gestionados por profesionales"
+            ]
+          },
+          "La disponibilidad de activos y productos concretos puede variar según la jurisdicción y el tipo de cuenta."
+        ]
+      },
+      "sameAccount": {
+        "q": "¿Puedo operar con acciones y criptomonedas desde la misma cuenta?",
+        "body": [
+          "Sí. Donde ambos productos estén disponibles para tu cuenta, Hyperstock está diseñada para permitirte gestionar varias clases de activos desde una plataforma conectada.",
+          "Puedes vigilar tu cartera y gestionar las inversiones elegibles sin mantener cuentas de Hyperstock separadas para cada clase de activo admitida."
+        ]
+      },
+      "fractional": {
+        "q": "¿Ofrece Hyperstock acciones fraccionadas?",
+        "body": [
+          "La disponibilidad de acciones fraccionadas depende del valor concreto y de la oferta de producto.",
+          "Donde se admita la inversión fraccionada, los inversores podrán comprar una parte de una acción elegible en lugar de una acción entera. La disponibilidad, los importes mínimos de inversión y las restricciones aplicables pueden variar."
+        ]
+      },
+      "anyTime": {
+        "q": "¿Puedo comprar y vender inversiones en cualquier momento?",
+        "body": [
+          "La disponibilidad para operar depende del activo y del horario de mercado aplicable.",
+          "Las acciones suelen negociarse durante el horario establecido de la bolsa, mientras que algunos mercados, como los de criptomonedas, pueden funcionar con horarios distintos. Las órdenes también pueden estar sujetas a las condiciones del mercado, la liquidez, las reglas de la bolsa y las restricciones aplicables."
+        ]
+      },
+      "advice": {
+        "q": "¿Ofrece Hyperstock asesoramiento de inversión?",
+        "body": [
+          "Hyperstock ofrece herramientas de inversión, información de mercado y acceso a productos financieros, pero la información facilitada a través de la plataforma no debe considerarse automáticamente asesoramiento de inversión personalizado.",
+          "Invertir conlleva riesgo, y conviene tener en cuenta tus circunstancias financieras, tus objetivos y tu tolerancia al riesgo antes de tomar decisiones de inversión. Si necesitas asesoramiento financiero personalizado, plantéate consultar a un profesional cualificado."
+        ]
+      }
+    }
+  },
+
+  "security": {
+    "label": "Seguridad y confianza",
+    "items": {
+      "howProtected": {
+        "q": "¿Cómo protege Hyperstock mi cuenta?",
+        "body": [
+          "La seguridad está integrada en cada capa de la experiencia de Hyperstock.",
+          "Usamos controles de seguridad diseñados para proteger tu cuenta, tu información personal y tu actividad de trading. Según el servicio y la configuración de la cuenta, pueden incluir cifrado, controles de autenticación, sistemas de supervisión y medidas diseñadas para detectar actividad sospechosa.",
+          "También recomendamos activar todas las funciones de seguridad disponibles y mantener en privado tus credenciales de acceso."
+        ]
+      },
+      "suspicious": {
+        "q": "¿Qué debo hacer si detecto actividad sospechosa?",
+        "body": [
+          "Contacta de inmediato con el soporte de Hyperstock y asegura tu cuenta.",
+          "Si detectas un inicio de sesión, una transacción, una retirada u otra actividad sospechosa que no reconoces, cambia tu contraseña y sigue las instrucciones de seguridad disponibles dentro de tu cuenta. Nuestro equipo de soporte puede ayudarte a determinar los siguientes pasos adecuados.",
+          "No compartas nunca tu contraseña, tus códigos de autenticación ni información de seguridad privada con nadie que diga representar a Hyperstock."
+        ]
+      }
+    }
+  },
+
+  "fees": {
+    "label": "Comisiones y precios",
+    "items": {
+      "whatFees": {
+        "q": "¿Qué comisiones cobra Hyperstock?",
+        "body": [
+          "Las comisiones dependen del producto, la transacción, el método de financiación y el servicio de que se trate.",
+          "Las comisiones y los cargos aplicables se presentan a través de la plataforma y de la información legal correspondiente. Pueden incluir cargos ligados a la negociación, gastos del fondo, diferenciales, comisiones de retirada o de procesamiento de pagos, u otros costes aplicables.",
+          "Revisa siempre la información de comisiones aplicable antes de completar una transacción."
+        ]
+      },
+      "riskFree": {
+        "q": "¿Invertir con Hyperstock está libre de riesgo?",
+        "body": [
+          "No. Invertir siempre conlleva riesgo.",
+          "El valor de las inversiones puede subir o bajar, y puedes perder parte o la totalidad del dinero que inviertas. Distintas clases de activos conllevan niveles y tipos de riesgo distintos. Las criptomonedas, las acciones individuales, las materias primas y otras inversiones pueden sufrir fluctuaciones de precio significativas.",
+          "La rentabilidad pasada no garantiza resultados futuros.",
+          "Antes de invertir, ten en cuenta tus objetivos de inversión, tus circunstancias financieras y tu tolerancia al riesgo."
+        ]
+      }
+    }
+  }
+}

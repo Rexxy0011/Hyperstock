@@ -98,10 +98,10 @@
           "Depending on availability and eligibility, these may include:",
           {
             "list": [
-              "Stocks — shares of publicly traded companies",
-              "Cryptocurrencies — supported digital assets",
-              "Gold — exposure to the gold market",
-              "Mutual Funds — diversified professionally managed investment funds"
+              "Stocks - shares of publicly traded companies",
+              "Cryptocurrencies - supported digital assets",
+              "Gold - exposure to the gold market",
+              "Mutual Funds - diversified professionally managed investment funds"
             ]
           },
           "The availability of specific assets and products may vary by jurisdiction and account type."
@@ -125,7 +125,7 @@
         "q": "Can I buy and sell investments at any time?",
         "body": [
           "Trading availability depends on the asset and the applicable market hours.",
-          "Stocks generally trade during established exchange hours, while some markets — such as cryptocurrency markets — may operate on different schedules. Orders may also be subject to market conditions, liquidity, exchange rules, and applicable restrictions."
+          "Stocks generally trade during established exchange hours, while some markets - such as cryptocurrency markets - may operate on different schedules. Orders may also be subject to market conditions, liquidity, exchange rules, and applicable restrictions."
         ]
       },
       "advice": {

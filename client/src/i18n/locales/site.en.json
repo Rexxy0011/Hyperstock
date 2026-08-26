@@ -27,7 +27,7 @@
     "colHours": "Trading hours",
     "colStocks": "Stocks",
     "closingTitle": "Market updates, straight to your inbox.",
-    "closingBody": "Subscribe for our newsletter and product updates — market moves worth knowing about, new features as they ship, and the occasional note on how the platform works. No noise, and nothing you did not ask for.",
+    "closingBody": "Subscribe for our newsletter and product updates - market moves worth knowing about, new features as they ship, and the occasional note on how the platform works. No noise, and nothing you did not ask for.",
     "emailAddress": "Email address",
     "emailPlaceholder": "Enter your email address",
     "subscribe": "Subscribe",
@@ -37,7 +37,7 @@
     "partnersNote": "Names shown are market venues and trading firms whose infrastructure this platform models. HyperStocks is a simulated trading environment and is not affiliated with, endorsed by, or a customer of any of them."
   },
   "footer": {
-    "blurb": "HyperStocks gives traders live prices and virtual capital — making global markets easier to learn, practise, and master without risk.",
+    "blurb": "HyperStocks gives traders live prices and virtual capital - making global markets easier to learn, practise, and master without risk.",
     "support": "Support",
     "about": "About",
     "rights": "© {{year}} HyperStocks. All rights reserved.",
@@ -60,7 +60,6 @@
     "lead1": "HyperStocks is a modern multi-asset investment platform designed to give individuals access to a broad range of global financial markets from one secure account.",
     "lead2": "From stocks and mutual funds to digital assets and gold, HyperStocks brings multiple investment opportunities together in one intuitive platform, giving investors the flexibility to build, manage, and diversify their portfolios on their own terms.",
     "lead3": "Our goal is simple: make investing more accessible, more transparent, and easier to manage.",
-    "openAccount": "Open an Account",
     "exploreMarkets": "Explore markets",
     "statVolume": "Trading Volume",
     "statVolumeSub": "Total value of transactions across supported markets.",

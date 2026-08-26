@@ -28,9 +28,9 @@ const ASSET_TABS = [
  * line that would have to be vague enough to cover all of them.
  */
 const BLURB = {
-  stocks: 'Live quotes on NYSE and NASDAQ. The other six exchanges are delayed reference prices.',
-  crypto: 'Live prices for the top 50 by market capitalisation.',
-  forex: 'Live OANDA rates. The daily change is measured against the ECB reference publication.',
+  stocks: 'markets.blurbStocks',
+  crypto: 'markets.blurbCrypto',
+  forex: 'markets.blurbForex',
 };
 
 /** Only equities have a listing venue and a sector; the other tabs would show blanks. */
@@ -107,7 +107,7 @@ export default function Markets() {
             <h1 className="m-0 text-xl font-bold">{t('markets.title')}</h1>
             <LivePill connected={connected} sessions={data?.sessions} />
           </div>
-          <p className="mt-2 max-w-2xl text-sm text-text-muted">{BLURB[assetClass]}</p>
+          <p className="mt-2 max-w-2xl text-sm text-text-muted">{t(BLURB[assetClass])}</p>
         </div>
 
         <Input
@@ -473,10 +473,10 @@ function Row({ row, index, assetClass, tick }) {
       {assetClass !== 'forex' && (
         <>
           <td className={`${td} hidden text-right font-numeric text-text-muted tabular-nums lg:table-cell`}>
-            {row.marketCap ? compact(row.marketCap, { prefix: '$' }) : '—'}
+            {row.marketCap ? compact(row.marketCap, { prefix: '$' }) : '-'}
           </td>
           <td className={`${td} hidden text-right font-numeric text-text-muted tabular-nums xl:table-cell`}>
-            {row.volume ? compact(row.volume) : '—'}
+            {row.volume ? compact(row.volume) : '-'}
           </td>
         </>
       )}
@@ -593,8 +593,8 @@ function Empty({ onlyWatched, signedIn, assetClass }) {
       <div className="px-6 py-16 text-center">
         <div className="text-base font-medium">{t('markets.watchlistEmpty')}</div>
         <div className="mt-2 text-sm text-text-muted">
-          Use the <Icon name="plus" size={12} className="inline align-middle" /> on any row to add
-          it to your watchlist.
+          {t('markets.addHintPre')} <Icon name="plus" size={12} className="inline align-middle" />{' '}
+          {t('markets.addHint')}
         </div>
       </div>
     );

@@ -1,4 +1,5 @@
 import Link from './Link';
+import { useTranslation } from 'react-i18next';
 import { assets } from '../../assets/assets';
 
 /**
@@ -16,6 +17,7 @@ export default function Logo({
   to = '/',
   className = '',
 }) {
+  const { t } = useTranslation();
   const content = (
     <>
       <img
@@ -43,7 +45,7 @@ export default function Logo({
   if (!to) return <span className={classes}>{content}</span>;
 
   return (
-    <Link to={to} className={classes} aria-label="HyperStocks home">
+    <Link to={to} className={classes} aria-label={t('common.homeAria')}>
       {content}
     </Link>
   );

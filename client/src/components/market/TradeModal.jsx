@@ -370,7 +370,7 @@ export default function TradeModal({
 
       <p className="mt-4 mb-0 text-2xs text-text-muted">
         Market order, filled immediately at the price above. HyperStocks trades
-        virtual capital — no real money moves.
+        virtual capital - no real money moves.
       </p>
 
     </Modal>

@@ -227,6 +227,27 @@
     }
   }
 
+  /* The auth form swapping between Sign in and Create account.
+     A THIRD TOKEN RATHER THAN `rise`, and the difference is the distance: this
+     content does not arrive from below, it replaces content that was in the
+     same place a frame ago. 4px and 180ms reads as the words changing; `rise`'s
+     8px over 240ms reads as a panel landing, which is wrong when the panel did
+     not move. Same easing, so it stays one system.
+     Note there is no exit half — React has already removed the old copy by the
+     time this runs, which is exactly why it is a fade IN and not a crossfade. */
+  --animate-swap: swap 180ms cubic-bezier(0.16, 1, 0.3, 1) both;
+
+  @keyframes swap {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
   /* The marketing scroll-reveal, driven by `components/ui/Reveal`.
      A SEPARATE TOKEN FROM `rise`, not a reuse of it. `rise` is a panel
      replacing another one in place — 8px and 240ms, sized so it reads as the
@@ -324,8 +345,17 @@
        cannot be stranded at `opacity: 0`. */
     .animate-hourglass,
     .animate-rise,
-    .animate-reveal {
+    .animate-reveal,
+    .animate-swap {
       animation: none !important;
+    }
+
+    /* The auth form's height change when the username field appears. The
+       grid-rows technique animates a `1fr` track, which is a transition rather
+       than an animation, so the kill list above does not reach it. The field
+       still opens and closes — it simply arrives at its size immediately. */
+    [data-auth-collapse] {
+      transition: none !important;
     }
 
     /* Dialogs appear and leave instantly. The transition below is the only
