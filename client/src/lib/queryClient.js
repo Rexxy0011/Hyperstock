@@ -93,6 +93,9 @@ export const keys = {
    * key costs one request a session, since this list has no reason to be fresh.
    */
   liveGains: ['leaderboard', 'live-gains'],
+  /** The live chat's boot config. Keyed by user, so signing in as somebody
+   *  else cannot hand the widget the previous account's identity. */
+  supportChat: (userId) => ['support-chat', userId ?? ''],
   news: (symbol) => ['news', symbol ?? ''],
   announcements: ['announcements'],
   orders: (filters) => ['orders', filters],
