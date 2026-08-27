@@ -414,7 +414,6 @@
       "linkPlaceholder": "Search by username or name",
       "activeLabel": "Show on the leaderboard",
       "wouldLead": "This figure would place first on the board.",
-      "wouldPlace": "This figure would place {{rank}} - the current leader is {{top}}.",
       "col": {
         "trader": "Trader",
         "value": "Value",
@@ -422,7 +421,8 @@
         "trades": "Trades",
         "status": "Status",
         "actions": "Actions"
-      }
+      },
+      "wouldRank": "Would rank {{rank}} of {{total}} traders."
     },
     "approvals": {
       "title": "Approvals",
@@ -565,7 +565,9 @@
       "uploading": "Uploading…",
       "photoHint": "PNG, JPEG, WebP or GIF, up to 600KB. Without one the generated mark is used.",
       "bestPerformer": "best performing",
-      "notHeld": "available, not held"
+      "notHeld": "available, not held",
+      "availableOnly_one": "{{count}} instrument available",
+      "availableOnly_other": "{{count}} instruments available"
     }
   },
   "notices": {

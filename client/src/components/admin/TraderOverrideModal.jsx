@@ -1,14 +1,14 @@
-import { useEffect, useId, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { del, get, post, put } from '../../lib/api';
-import { useDebouncedValue } from '../../hooks/useDebouncedValue';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { del, post, put } from '../../lib/api';
 import { money, pct } from '../../lib/format';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
-import Select from '../ui/Select';
 import Avatar from '../ui/Avatar';
+import BestPositionField from './BestPositionField';
+import { useRankPreview } from '../../hooks/useRankPreview';
 import notify from '../../lib/toast';
 
 /**
@@ -42,7 +42,6 @@ export default function TraderOverrideModal({ trader, open, onClose }) {
   const override = trader?.override ?? null;
 
   const [form, setForm] = useState(blank);
-  const bestId = useId();
 
   /**
    * PRE-FILLED FROM THE OVERRIDE IF THERE IS ONE, OTHERWISE FROM REALITY.
@@ -78,135 +77,25 @@ export default function TraderOverrideModal({ trader, open, onClose }) {
     });
   }, [open, trader?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const typedCents = useMemo(() => {
-    const n = Math.round(Number(form.value) * 100);
-    return Number.isFinite(n) && n >= 0 ? n : null;
-  }, [form.value]);
-
-  /**
-   * WHERE THIS FIGURE WOULD LAND, ANSWERED BY THE SERVER.
-   *
-   * Counting it here from the leaderboard the admin already has is the obvious
-   * version and it is wrong: `/leaderboard` caps `limit` at 100, so a trader
-   * ranked 190 gets measured against a list that stops at 100 and the preview
-   * reports 101. Measured exactly that before moving it — every account below
-   * the cut produced the same meaningless number. The server has the whole
-   * board and already has it memoised.
-   *
-   * Debounced, because this fires per keystroke on a numeric field where every
-   * intermediate value is a different query.
-   */
-  const debouncedCents = useDebouncedValue(typedCents, 350);
-
-  const { data: preview } = useQuery({
-    queryKey: ['admin', 'rank-preview', debouncedCents, trader?.id],
-    queryFn: () =>
-      get(`/admin/rank-preview?valueCents=${debouncedCents}&userId=${trader.id}`),
-    enabled: open && debouncedCents != null && Boolean(trader?.id),
-    staleTime: 15_000,
-    meta: { silent: true },
-  });
-
-  const previewRank = preview?.rank ?? null;
-
-  /**
-   * What this trader actually holds. Fetched only when the editor opens.
-   */
-  const { data: positionData } = useQuery({
-    queryKey: ['admin', 'positions', trader?.id],
-    queryFn: () => get(`/admin/users/${trader.id}/positions`),
-    enabled: open && Boolean(trader?.id),
-    staleTime: 60_000,
-    meta: { silent: true },
+  // Both shared with the featured-trader editor — see the hook and the field.
+  const { rank: previewRank } = useRankPreview(form.value, {
+    userId: trader?.id,
+    enabled: open,
   });
 
   /**
-   * Memoised so the `?? []` fallback is not a NEW array every render — that
-   * identity change alone would rebuild the options below on every keystroke in
-   * the value field, which is the one thing the memo exists to avoid.
+   * Picking a HELD position copies its real return across, so the two figures
+   * start out consistent and the common case needs no second edit. An unheld
+   * symbol has no measured return, so the field is left alone rather than
+   * zeroed — a zero would render on the board as a real figure that happened to
+   * be flat. It stays editable either way: this is a curated row.
    */
-  const held = useMemo(() => positionData?.held ?? [], [positionData]);
-  const available = useMemo(() => positionData?.available ?? [], [positionData]);
-
-  /** Both groups, for the lookups that do not care which side a symbol is on. */
-  const positions = useMemo(() => [...held, ...available], [held, available]);
-
-  /**
-   * A DROPDOWN OF REAL POSITIONS, NOT A TEXT BOX. "Best position" names a
-   * holding, and free text lets an operator publish a symbol the trader has
-   * never owned — or a typo, which renders as a ticker that does not exist
-   * beside a return nothing can be checked against.
-   *
-   * Two things the list has to carry beyond the holdings themselves:
-   *
-   * - "None" IS AN OPTION, because it is a real state. The board renders an em
-   *   dash for a row with no best position, and a picker that cannot express
-   *   that would force every curated row to claim one.
-   * - A STORED SYMBOL THE TRADER NO LONGER HOLDS STAYS ON THE LIST. `Select`
-   *   shows a blank trigger for a value it has no option for, so a position
-   *   closed since the override was written would silently read as "None" and
-   *   be erased by the next save. The same reason `listWatchlist` returns rows
-   *   it can no longer resolve rather than dropping them.
-   */
-  const positionOptions = useMemo(() => {
-    const opts = [
-      { value: '', label: t('admin.override.bestNone') },
-
-      /**
-       * HELD FIRST, AND THE BEST PERFORMER IS THE FIRST OF THOSE. The server
-       * sorts this group by return rather than by market value, because "best
-       * position" means best PERFORMING — the largest holding is routinely not
-       * the best one, and an operator taking the top entry would otherwise have
-       * been taking the biggest.
-       */
-      ...held.map((p, i) => ({
-        value: p.symbol,
-        label: p.symbol,
-        sublabel:
-          i === 0
-            ? `${p.name} · ${pct(p.returnPct)} · ${t('admin.override.bestPerformer')}`
-            : `${p.name} · ${pct(p.returnPct)}`,
-      })),
-
-      /**
-       * Then everything else the platform lists. A curated row's figures are
-       * invented by definition, so restricting its best position to what this
-       * account happens to own imposed a consistency the rest of the row does
-       * not have. These carry NO return: an unheld symbol has no measured
-       * performance for this trader, and printing one would put an invented
-       * figure in the same shape as a real one.
-       */
-      ...available.map((p) => ({
-        value: p.symbol,
-        label: p.symbol,
-        sublabel: `${p.name} · ${t('admin.override.notHeld')}`,
-      })),
-    ];
-
-    const chosen = form.bestSymbol;
-    if (chosen && !opts.some((o) => o.value === chosen)) {
-      opts.push({ value: chosen, label: chosen, sublabel: t('admin.override.bestNotHeld') });
-    }
-    return opts;
-  }, [held, available, form.bestSymbol, t]);
-
-  /**
-   * Picking a position fills in its REAL return alongside it, so the common
-   * case needs no second edit and the two figures start out consistent. It
-   * stays editable — the field is a curated one, and the operator may want a
-   * different number than the one the holding actually made.
-   */
-  const pickPosition = (symbol) => {
-    const hit = positions.find((p) => p.symbol === symbol);
+  const pickPosition = (symbol, returnPct) =>
     setForm((f) => ({
       ...f,
       bestSymbol: symbol,
-      // Only a HELD symbol carries a measured return. An unheld one leaves the
-      // field alone rather than writing a zero, which would read on the board
-      // as a real figure that happened to be flat.
-      bestReturnPct: hit && hit.returnPct != null ? String(hit.returnPct) : f.bestReturnPct,
+      bestReturnPct: returnPct != null ? String(returnPct) : f.bestReturnPct,
     }));
-  };
 
   const save = useMutation({
     mutationFn: () =>
@@ -404,27 +293,12 @@ export default function TraderOverrideModal({ trader, open, onClose }) {
             onChange={set('trades')}
           />
 
-          {/* The label is a SIBLING with `htmlFor`, never a wrapper. A `<label>`
-              around a custom listbox forwards a click on an option back to the
-              trigger, which sets the value and then immediately reopens the
-              list — the payout form's exact bug. */}
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor={bestId} className="text-xs font-medium text-text-body">
-              {t('admin.override.bestSymbol')}
-            </label>
-            <Select
-              id={bestId}
-              value={form.bestSymbol}
-              onChange={pickPosition}
-              options={positionOptions}
-              placeholder={t('admin.override.bestNone')}
-            />
-            <span className="text-2xs text-text-muted">
-              {held.length
-                ? t('admin.override.bestHint', { count: held.length })
-                : t('admin.override.noPositions')}
-            </span>
-          </div>
+          <BestPositionField
+            userId={trader?.id}
+            value={form.bestSymbol}
+            onChange={pickPosition}
+            enabled={open}
+          />
         </div>
 
         <Input

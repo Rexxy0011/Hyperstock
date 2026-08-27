@@ -414,7 +414,6 @@
       "linkPlaceholder": "Buscar por nombre de usuario o nombre",
       "activeLabel": "Mostrar en la clasificación",
       "wouldLead": "Esta cifra encabezaría la clasificación.",
-      "wouldPlace": "Esta cifra quedaría en el puesto {{rank}}. El líder actual es {{top}}.",
       "col": {
         "trader": "Trader",
         "value": "Valor",
@@ -422,7 +421,8 @@
         "trades": "Operaciones",
         "status": "Estado",
         "actions": "Acciones"
-      }
+      },
+      "wouldRank": "Ocuparia el puesto {{rank}} de {{total}} traders."
     },
     "approvals": {
       "title": "Aprobaciones",
@@ -565,7 +565,9 @@
       "uploading": "Subiendo…",
       "photoHint": "PNG, JPEG, WebP o GIF, hasta 600KB. Sin foto se usa la marca generada.",
       "bestPerformer": "mejor rendimiento",
-      "notHeld": "disponible, no en cartera"
+      "notHeld": "disponible, no en cartera",
+      "availableOnly_one": "{{count}} instrumento disponible",
+      "availableOnly_other": "{{count}} instrumentos disponibles"
     }
   },
   "notices": {

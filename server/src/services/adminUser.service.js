@@ -163,7 +163,8 @@ export async function listUsers({ q = '', page = 1, limit = PAGE_SIZE } = {}) {
 }
 
 /**
- * The positions a trader actually holds, for the Best-position picker.
+ * What the Best-position picker offers: the account's holdings, then every
+ * other equity the platform lists.
  *
  * FREE TEXT WAS THE WRONG CONTROL. "Best position" names a holding, and a typed
  * box lets an operator publish a trader's best position as a symbol they have
@@ -184,14 +185,25 @@ export async function listUsers({ q = '', page = 1, limit = PAGE_SIZE } = {}) {
  * valuations to populate a dropdown nobody may open is the per-row cost this
  * file already has a note about.
  */
-export async function listPositionsFor(userId) {
-  const user = await User.findById(userId).select('cashBalanceCents').lean();
-  if (!user) throw ApiError.notFound('No such user', 'USER_NOT_FOUND');
+export async function listPositions(userId = null) {
+  /**
+   * `userId` IS OPTIONAL, because both editors ask this question and only one
+   * of them has an account to ask it about. A standalone curated row belongs to
+   * nobody, so it has no holdings — it gets the available list and an empty
+   * `held`, rather than a second endpoint that would be this one minus four
+   * lines.
+   */
+  let holdings = [];
 
-  // `holdings`, not `positions` — the local variable inside `getPortfolio` is
-  // named `positions` but the key it returns is `holdings`, and destructuring
-  // the wrong one yields `undefined` rather than an error.
-  const { holdings } = await getPortfolio(userId, user.cashBalanceCents);
+  if (userId) {
+    const user = await User.findById(userId).select('cashBalanceCents').lean();
+    if (!user) throw ApiError.notFound('No such user', 'USER_NOT_FOUND');
+
+    // `holdings`, not `positions` — the local variable inside `getPortfolio` is
+    // named `positions` but the key it returns is `holdings`, and destructuring
+    // the wrong one yields `undefined` rather than an error.
+    ({ holdings } = await getPortfolio(userId, user.cashBalanceCents));
+  }
 
   /**
    * HELD FIRST, SORTED BY RETURN RATHER THAN BY VALUE.

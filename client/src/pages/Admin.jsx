@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { get, post, patch, del } from '../lib/api';
@@ -6,6 +6,8 @@ import { errorMessage } from '../lib/apiError';
 import notify from '../lib/toast';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
+import BestPositionField from '../components/admin/BestPositionField';
+import { useRankPreview } from '../hooks/useRankPreview';
 import Badge from '../components/ui/Badge';
 import Modal from '../components/ui/Modal';
 import Money from '../components/market/Money';
@@ -46,13 +48,6 @@ export default function Admin() {
   const { data, isLoading } = useQuery({
     queryKey: ['admin', 'featured'],
     queryFn: () => get('/admin/featured-traders'),
-  });
-
-  // The live board, so the form can say where a figure would place. Top 5 is
-  // all that is needed to answer "would this lead?".
-  const { data: board } = useQuery({
-    queryKey: ['leaderboard', 'monthly'],
-    queryFn: () => get('/leaderboard?period=monthly&limit=5'),
   });
 
   const rows = data?.items ?? [];
@@ -187,7 +182,6 @@ export default function Admin() {
       <FeaturedForm
         open={open}
         draft={editing}
-        board={board?.top ?? []}
         onClose={() => setOpen(false)}
         onSaved={invalidate}
       />
@@ -201,7 +195,7 @@ const td = 'border-b border-cool-grey px-4 py-3 text-sm';
 
 /* ------------------------------------------------------------------- the form */
 
-function FeaturedForm({ open, draft, board, onClose, onSaved }) {
+function FeaturedForm({ open, draft, onClose, onSaved }) {
   const { t } = useTranslation();
   const [form, setForm] = useState(EMPTY);
   const [error, setError] = useState('');
@@ -251,16 +245,30 @@ function FeaturedForm({ open, draft, board, onClose, onSaved }) {
   /**
    * Where this figure would actually land.
    *
-   * A curated row competes on its value rather than being pinned, so "will this
-   * be first?" is a real question with a real answer, and it is far cheaper to
-   * answer here than by publishing and looking.
+   * IT COUNTED FIVE ROWS. `board` is `/leaderboard?limit=5`, so every figure
+   * below fifth place reported rank 6 — a plausible number, which is why it
+   * went unnoticed. Answered by the server now, against the whole board, and
+   * shared with the user editor so the two screens cannot disagree about where
+   * the same value lands.
    */
-  const placement = useMemo(() => {
-    const cents = Math.round(Number(form.portfolioValue || 0) * 100);
-    if (!cents) return null;
-    const above = board.filter((r) => r.portfolioValueCents > cents).length;
-    return { rank: above + 1, leads: above === 0, topCents: board[0]?.portfolioValueCents ?? 0 };
-  }, [form.portfolioValue, board]);
+  const placement = useRankPreview(form.portfolioValue, {
+    userId: form.userId || undefined,
+    enabled: open,
+  });
+
+  /**
+   * A HELD symbol carries a measured return, so it is copied across and the two
+   * figures start out consistent. An unheld one has none — the field is left
+   * alone rather than zeroed, since a zero renders on the board as a real
+   * figure that happened to be flat. Editable either way: the percentage is the
+   * thing the operator is here to set.
+   */
+  const pickPosition = (symbol, returnPct) =>
+    setForm((f) => ({
+      ...f,
+      bestSymbol: symbol,
+      bestReturnPct: returnPct != null ? String(returnPct) : f.bestReturnPct,
+    }));
 
   const valid = form.name.trim() && Number(form.portfolioValue) > 0;
 
@@ -318,12 +326,16 @@ function FeaturedForm({ open, draft, board, onClose, onSaved }) {
             inputMode="numeric"
             placeholder="312"
           />
-          <Input
-            label={t('admin.featured.bestSymbol')}
+          {/* THE SAME CONTROL /soap/users USES, not a second one that looks
+              like it. It follows `form.userId`, so linking this row to an
+              account makes that account's holdings lead the list with its best
+              performer first; a standalone row has no holdings and simply gets
+              the available half. */}
+          <BestPositionField
+            userId={form.userId || undefined}
             value={form.bestSymbol}
-            onChange={set('bestSymbol')}
-            maxLength={12}
-            placeholder="NVDA"
+            onChange={pickPosition}
+            enabled={open}
           />
           <Input
             label={t('admin.featured.bestReturn')}
@@ -334,16 +346,13 @@ function FeaturedForm({ open, draft, board, onClose, onSaved }) {
           />
         </div>
 
-        {placement && (
+        {placement.rank && (
           <p className="m-0 rounded-md bg-mist px-3 py-2 text-xs text-text-muted">
             {placement.leads
               ? t('admin.featured.wouldLead')
-              : t('admin.featured.wouldPlace', {
+              : t('admin.featured.wouldRank', {
                   rank: placement.rank,
-                  top: (placement.topCents / 100).toLocaleString('en-US', {
-                    style: 'currency',
-                    currency: 'USD',
-                  }),
+                  total: placement.totalTraders,
                 })}
           </p>
         )}

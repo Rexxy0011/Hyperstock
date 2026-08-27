@@ -8,7 +8,7 @@ import {
   listUsers,
   userCounts,
   setUserStatus,
-  listPositionsFor,
+  listPositions,
 } from '../src/services/adminUser.service.js';
 import {
   upsertOverrideForUser,
@@ -257,7 +257,7 @@ test('admin users', async (t) => {
      * error, so the endpoint 500'd and the dropdown silently showed "None".
      */
     await t2.test('the picker lists what is held and what is available to buy', async () => {
-      const { held, available } = await listPositionsFor(jd._id);
+      const { held, available } = await listPositions(jd._id);
       assert.ok(Array.isArray(held) && Array.isArray(available), 'arrays, not undefined');
       assert.ok(held.length > 0, 'jd_trader holds positions');
       assert.ok(available.length > 0, 'the rest of the listed universe is offered too');
@@ -275,14 +275,14 @@ test('admin users', async (t) => {
      * entry would have been taking the biggest.
      */
     await t2.test('held positions lead with the best performer', async () => {
-      const { held } = await listPositionsFor(jd._id);
+      const { held } = await listPositions(jd._id);
       const returns = held.map((p) => p.returnPct);
       assert.deepEqual(returns, [...returns].sort((a, b) => b - a), 'sorted by return, descending');
       assert.equal(held[0].returnPct, Math.max(...returns));
     });
 
     await t2.test('an available row carries no return, and no duplicates', async () => {
-      const { held, available } = await listPositionsFor(jd._id);
+      const { held, available } = await listPositions(jd._id);
 
       for (const p of available) {
         // An unheld symbol has no measured performance for this trader, and a
@@ -305,7 +305,7 @@ test('admin users', async (t) => {
       const r = await row();
       if (!r.computed?.best?.symbol) return;
 
-      const { held, available } = await listPositionsFor(jd._id);
+      const { held, available } = await listPositions(jd._id);
       assert.ok(
         [...held, ...available].some((p) => p.symbol === r.computed.best.symbol),
         `the board's best (${r.computed.best.symbol}) is on the list`,
@@ -314,7 +314,7 @@ test('admin users', async (t) => {
 
     await t2.test('positions for an unknown account are a 404', async () => {
       await assert.rejects(
-        () => listPositionsFor(new mongoose.Types.ObjectId()),
+        () => listPositions(new mongoose.Types.ObjectId()),
         (err) => /** @type {any} */ (err).code === 'USER_NOT_FOUND',
       );
     });

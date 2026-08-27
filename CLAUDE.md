@@ -311,6 +311,26 @@ the same account race in the index instead of both succeeding.
 typed — two independently entered numbers on one row is precisely how a value and its own percentage come
 to disagree, which this project already shipped once on the ticker tape.
 
+**BOTH EDITORS SHARE ONE PICKER AND ONE RANK PREVIEW** — `components/admin/BestPositionField.jsx` and
+`hooks/useRankPreview.js`, used by `/soap/featured-traders` and by the user editor alike. Two copies of a
+control that answers the same question drift, and on this one drifting means one screen offering symbols
+the other refuses. `GET /api/admin/positions` takes `userId` as an OPTIONAL query param for exactly that
+reason: a standalone curated row belongs to nobody and has no holdings, so it gets the available half and
+an empty held group rather than a second endpoint that would be this one minus four lines.
+
+**THE FEATURED FORM'S PLACEMENT COUNTED FIVE ROWS.** It measured against `/leaderboard?limit=5`, so every
+figure below fifth place reported **rank 6** — a plausible number, which is why nobody noticed. The user
+editor had the same defect at 100. Both now ask `rankForValue` against the whole memoised board: measured
+after the fix, a $4,200 standalone row reads *"Would rank 197 of 209 traders"* where it previously read 6.
+The five-row leaderboard fetch that existed only to feed that count is gone.
+
+**NONE OF THIS STOPS THE AUTOMATED BOARD, and it is worth having measured rather than assumed.** Real
+accounts are still aggregated, still repriced by the quote job and still re-ranked; a curated row is merged
+into that result and the whole list re-ranks together. Verified live with an override active: **97 computed
+rows beside 3 curated ones**, and over a 70-second window **4 computed rows moved value** while the curated
+row stayed exactly as typed, with the quote job reporting live and a 16s-old refresh. Removing the override
+returned that trader to their computed figures on the next poll.
+
 **Merged after the memo, before the slice.** After, because the 60s memo covers the aggregation over real
 accounts and an admin edit must show on the next poll rather than a minute later — the collection is tiny
 and indexed, so a per-request read beats invalidating a 208-row pipeline on every keystroke. Before,

@@ -414,7 +414,6 @@
       "linkPlaceholder": "Nach Benutzername oder Name suchen",
       "activeLabel": "In der Bestenliste anzeigen",
       "wouldLead": "Dieser Wert stünde auf Platz eins.",
-      "wouldPlace": "Dieser Wert käme auf Platz {{rank}}. Aktuell führt {{top}}.",
       "col": {
         "trader": "Trader",
         "value": "Wert",
@@ -422,7 +421,8 @@
         "trades": "Trades",
         "status": "Status",
         "actions": "Aktionen"
-      }
+      },
+      "wouldRank": "Ware Platz {{rank}} von {{total}} Tradern."
     },
     "approvals": {
       "title": "Freigaben",
@@ -565,7 +565,9 @@
       "uploading": "Wird hochgeladen…",
       "photoHint": "PNG, JPEG, WebP oder GIF, bis 600KB. Ohne Foto wird die generierte Marke verwendet.",
       "bestPerformer": "beste Wertentwicklung",
-      "notHeld": "verfugbar, nicht im Bestand"
+      "notHeld": "verfugbar, nicht im Bestand",
+      "availableOnly_one": "{{count}} Instrument verfugbar",
+      "availableOnly_other": "{{count}} Instrumente verfugbar"
     }
   },
   "notices": {

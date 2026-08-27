@@ -418,7 +418,6 @@
       "linkPlaceholder": "Пошук за логіном або імʼям",
       "activeLabel": "Показувати в рейтингу",
       "wouldLead": "Із цією сумою рядок очолить рейтинг.",
-      "wouldPlace": "Із цією сумою рядок займе {{rank}} місце - зараз лідирує {{top}}.",
       "col": {
         "trader": "Трейдер",
         "value": "Вартість",
@@ -426,7 +425,8 @@
         "trades": "Угоди",
         "status": "Статус",
         "actions": "Дії"
-      }
+      },
+      "wouldRank": "Посів би {{rank}} місце з {{total}} трейдерів."
     },
     "approvals": {
       "title": "Підтвердження",
@@ -573,7 +573,11 @@
       "uploading": "Завантаження…",
       "photoHint": "PNG, JPEG, WebP або GIF, до 600KB. Без фото використовується згенерований знак.",
       "bestPerformer": "найкраща дохідність",
-      "notHeld": "доступна, не в портфелі"
+      "notHeld": "доступна, не в портфелі",
+      "availableOnly_one": "{{count}} інструмент доступний",
+      "availableOnly_few": "{{count}} інструменти доступні",
+      "availableOnly_many": "{{count}} інструментів доступно",
+      "availableOnly_other": "{{count}} інструментів доступно"
     }
   },
   "notices": {

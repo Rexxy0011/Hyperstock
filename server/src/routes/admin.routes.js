@@ -20,7 +20,7 @@ import {
   listUsers,
   userCounts,
   setUserStatus,
-  listPositionsFor,
+  listPositions,
 } from '../services/adminUser.service.js';
 
 /**
@@ -192,17 +192,25 @@ router.get(
 );
 
 /**
- * What this trader actually holds, for the Best-position picker.
+ * What the Best-position picker offers, for BOTH editors.
  *
- * Its own request rather than a field on the listing: valuing twenty-five
+ * `userId` IS A QUERY PARAM RATHER THAN A PATH SEGMENT precisely because it is
+ * optional. The featured-trader form composes rows that belong to nobody, and
+ * those have no holdings to list — one endpoint answering both cases is what
+ * keeps the two pickers identical rather than merely similar, which is the
+ * whole point of sharing the control.
+ *
+ * Its own request rather than a field on the user listing: valuing twenty-five
  * portfolios to fill a dropdown nobody may open is the per-row cost this
  * codebase keeps writing notes about.
  */
 router.get(
-  '/users/:id/positions',
-  validate({ params: idParam }),
+  '/positions',
+  validate({
+    query: z.object({ userId: z.string().regex(/^[a-f0-9]{24}$/i).optional() }),
+  }),
   asyncHandler(async (req, res) => {
-    res.json(await listPositionsFor(req.params.id));
+    res.json(await listPositions(req.validatedQuery.userId ?? null));
   }),
 );
 
