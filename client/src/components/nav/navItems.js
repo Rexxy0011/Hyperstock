@@ -23,9 +23,18 @@ export const NAV = [
   { to: '/faqs', key: 'faqs', icon: 'help', label: 'FAQs' },
 ];
 
+/**
+ * SETTINGS IS GONE FROM THIS LIST, and it took a fake number with it. It
+ * pointed at a `ComingSoon` stub — there is no settings screen and nothing in
+ * the product needs one yet — and it carried `badge: '6'`, a count of nothing,
+ * transcribed from the design's mockup. A badge is a claim that six things are
+ * waiting; on a page that does not exist it is the same defect as a footer link
+ * that 404s, which is that it teaches the reader the chrome is decoration.
+ * Restore the entry when there is a screen behind it, and derive the badge from
+ * something real or leave it off.
+ */
 export const SECONDARY = [
   { to: '/leaderboard', key: 'community', icon: 'community', label: 'Our community' },
-  { to: '/settings', key: 'settings', icon: 'settings', label: 'Settings', badge: '6' },
   { to: '/contact', key: 'contact', icon: 'phone', label: 'Contact us' },
 ];
 
@@ -73,6 +82,9 @@ export const ADMIN = [
   // it is the only screen that says which of them can actually sign in.
   { to: `${ADMIN_BASE}/users`, key: 'users', icon: 'community', label: 'Users' },
   { to: `${ADMIN_BASE}/subscribers`, key: 'subscribers', icon: 'news', label: 'Subscribers' },
+  // Enquiries from the public contact form. Last because it is the only queue
+  // whose backlog nobody's money is sitting in.
+  { to: `${ADMIN_BASE}/messages`, key: 'messages', icon: 'mail', label: 'Messages' },
 ];
 
 /** Where an operator is sent on sign-in, and the target of the bare prefix. */

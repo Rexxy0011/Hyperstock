@@ -16,6 +16,7 @@ import { rankForValue } from '../services/leaderboard.service.js';
 import { queueCounts } from '../services/adminQueue.service.js';
 import { storeImage, MAX_BYTES } from '../services/media.service.js';
 import { listSubscribers, subscriberCounts } from '../services/subscriber.service.js';
+import { listMessages, messageCounts, setHandled } from '../services/contact.service.js';
 import {
   listUsers,
   userCounts,
@@ -249,6 +250,30 @@ router.get(
   asyncHandler(async (req, res) => {
     const [items, counts] = await Promise.all([listSubscribers(), subscriberCounts()]);
     res.json({ items, ...counts });
+  }),
+);
+
+/**
+ * Messages left on the contact form.
+ *
+ * THIS SCREEN IS THE REASON THE FORM POSTS HERE RATHER THAN TO A FORM BACKEND.
+ * Without somewhere to read them, the endpoint is write-only and the page is
+ * making a promise nothing keeps — which is precisely the objection this repo
+ * raised against EmailJS and Basin for the newsletter capture.
+ */
+router.get(
+  '/contact-messages',
+  asyncHandler(async (req, res) => {
+    const [items, counts] = await Promise.all([listMessages(), messageCounts()]);
+    res.json({ items, ...counts });
+  }),
+);
+
+router.patch(
+  '/contact-messages/:id',
+  validate({ params: idParam, body: z.object({ handled: z.boolean() }) }),
+  asyncHandler(async (req, res) => {
+    res.json(await setHandled(req.params.id, req.body.handled, req.user.id));
   }),
 );
 

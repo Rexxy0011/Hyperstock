@@ -10,6 +10,7 @@ import withdrawalRoutes, { adminWithdrawalRouter } from './withdrawals.routes.js
 import newsRoutes, { announcementRouter } from './news.routes.js';
 import adminRoutes from './admin.routes.js';
 import subscriberRoutes from './subscribers.routes.js';
+import contactRoutes from './contact.routes.js';
 import supportRoutes from './support.routes.js';
 import mediaRoutes from './media.routes.js';
 import { optionalAuth } from '../middleware/requireAuth.js';
@@ -58,6 +59,10 @@ router.use('/leaderboard', optionalAuth, leaderboardRoutes);
 // Public and unauthenticated: it backs the landing page's call to action, which
 // runs before anyone has an account. Rate-limited at its own router.
 router.use('/subscribers', subscriberRoutes);
+// Public for the same reason, and on the same shell: `/contact` is reachable
+// signed out, so somebody asking a question before they open an account can.
+// Its limiter is tighter than the subscriber one — see the note there.
+router.use('/contact', contactRoutes);
 // The live chat's boot config. Authenticated at its own router, which is what
 // actually enforces "signed-in only" — the component deciding not to render is
 // a convenience, this is the rule.

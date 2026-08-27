@@ -46,6 +46,18 @@ import iconShield from "./icons/shield.webp";
 // build actually shipped, ~5.8KB against 16KB, same alpha.
 import iconHourglass from "./icons/hourglass.webp";
 
+// The contact page's four information rows. Sources are 512px PNGs in ./brand
+// (miss-call, email, clock, placeholder); these are the webp builds actually
+// shipped - 154KB of source down to 18.6KB, built at 128px because they render
+// at 40 and never need more than 3x. Normalised the way the asset-class icons
+// are: cropped to the alpha bbox, scaled so the LONG edge is 116, re-centred on
+// 128. Without that the pin fills 70% of its canvas where the three round marks
+// fill 100%, and it would render visibly smaller in the same box.
+import iconContactPhone from "./icons/contact-phone.webp";
+import iconContactMail from "./icons/contact-mail.webp";
+import iconContactClock from "./icons/contact-clock.webp";
+import iconContactPin from "./icons/contact-pin.webp";
+
 // The footer's social row. Sources are 512px PNGs in ./brand; these are the
 // webp builds actually shipped — 68KB of source down to 6.3KB, built at 96px
 // because they render at 22 and never need more than 3x. They replaced Feather
@@ -110,6 +122,11 @@ export const assets = {
     funds: iconFunds,
     shield: iconShield,
     hourglass: iconHourglass,
+
+    contactPhone: iconContactPhone,
+    contactMail: iconContactMail,
+    contactClock: iconContactClock,
+    contactPin: iconContactPin,
   },
 
   investors: {

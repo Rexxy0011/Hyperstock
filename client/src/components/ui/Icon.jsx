@@ -27,6 +27,12 @@ const PATHS = {
   // stroked circle — at 20px a ring reads as a second, smaller glyph.
   help: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM9.3 9.3a2.8 2.8 0 1 1 3.7 2.6c-.6.2-1 .8-1 1.5v.6M12 16.8v.4',
   phone: 'M6 3h3l1.5 4.5-2 1.5a12 12 0 0 0 6.5 6.5l1.5-2L21 15v3a2 2 0 0 1-2.2 2A17 17 0 0 1 4 5.2 2 2 0 0 1 6 3z',
+  // The flap is a separate subpath rather than a closed triangle, so it reads
+  // as a fold in the envelope instead of a filled wedge at small sizes. Used by
+  // the admin nav's Messages entry; the contact page's own four rows render the
+  // brand artwork in `assets/icons/contact-*.webp` instead, so there are
+  // deliberately no `clock` or `pin` glyphs here to go stale beside them.
+  mail: 'M3 6.5a1.5 1.5 0 0 1 1.5-1.5h15A1.5 1.5 0 0 1 21 6.5v11a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5zM3.5 7l8.5 6 8.5-6',
   logout: 'M9 5H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h3M15.5 12H9M13 8.5l3.5 3.5-3.5 3.5',
   trash: 'M4 7h16M9.5 7V5h5v2M6.5 7l.8 12a1 1 0 0 0 1 .9h7.4a1 1 0 0 0 1-.9L18 7',
 };

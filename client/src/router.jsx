@@ -23,6 +23,7 @@ import AdaptiveLayout from './layouts/AdaptiveLayout';
 import Landing from './pages/Landing';
 import About from './pages/About';
 import Faqs from './pages/Faqs';
+import Contact from './pages/Contact';
 import LegalDocument from './pages/legal/LegalDocument';
 import Auth from './pages/Auth';
 import Markets from './pages/Markets';
@@ -33,6 +34,7 @@ import Portfolio from './pages/Portfolio';
 import Admin from './pages/Admin';
 import Approvals from './pages/Approvals';
 import Subscribers from './pages/Subscribers';
+import Messages from './pages/Messages';
 import Users from './pages/Users';
 import Unsubscribe from './pages/Unsubscribe';
 import ComingSoon from './pages/ComingSoon';
@@ -118,6 +120,12 @@ export const router = createBrowserRouter([
           // asking how withdrawals work wants the same page as a visitor, and
           // the footer that carries support and legal links with it.
           { path: '/faqs', element: <Faqs /> },
+          /* PUBLIC, AND IT WAS BEHIND THE SESSION UNTIL NOW. `/faqs` is public
+             and carries two buttons pointing here, so an anonymous reader
+             following "Contact support" was bounced to `/auth` — which inverts
+             what a contact page is for, since the people most likely to need
+             one have not signed up yet. */
+          { path: '/contact', element: <Contact /> },
           /* Linked from every newsletter, so it is public and must never sit
              behind a session — somebody unsubscribing is by definition not
              signing in to do it. */
@@ -235,8 +243,18 @@ export const router = createBrowserRouter([
               </ProtectedRoute>
             ),
           },
-          { path: '/settings', element: <ComingSoon title="Settings" /> },
-          { path: '/contact', element: <ComingSoon title="Contact us" /> },
+          /* Where the contact form's messages are read. Without this the
+             endpoint is write-only and `/contact` makes a promise nothing
+             keeps — the same objection this repo raised against posting the
+             newsletter capture to a third-party form backend. */
+          {
+            path: `${ADMIN_BASE}/messages`,
+            element: (
+              <ProtectedRoute adminOnly>
+                <Messages />
+              </ProtectedRoute>
+            ),
+          },
         ],
       },
     ],

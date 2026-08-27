@@ -10,7 +10,6 @@
     "market": "Market",
     "faqs": "FAQs",
     "community": "Our community",
-    "settings": "Settings",
     "contact": "Contact us",
     "login": "Login",
     "getStarted": "Get Started",
@@ -23,7 +22,8 @@
     "featuredTraders": "Featured traders",
     "approvals": "Approvals",
     "subscribers": "Subscribers",
-    "users": "Users"
+    "users": "Users",
+    "messages": "Messages"
   },
   "common": {
     "back": "Back",
@@ -568,6 +568,21 @@
       "notHeld": "available, not held",
       "availableOnly_one": "{{count}} instrument available",
       "availableOnly_other": "{{count}} instruments available"
+    },
+    "messages": {
+      "title": "Messages",
+      "intro": "Enquiries left on the public contact form. Stored here rather than at a form service, so a message cannot be lost between the person who sent it and somebody who can answer it.",
+      "outstanding": "Outstanding",
+      "total": "Total",
+      "empty": "No messages yet.",
+      "new": "New",
+      "handled": "Handled",
+      "hasAccount": "Has an account",
+      "markHandled": "Mark handled",
+      "reopen": "Reopen",
+      "showMore": "Show more",
+      "showLess": "Show less",
+      "replySubject": "Re: your message to HyperStocks"
     }
   },
   "notices": {
@@ -631,5 +646,48 @@
   "liveGains": {
     "summary": "{{amount}} on {{symbol}}",
     "trader": "Trader {{id}}"
+  },
+  "contact": {
+    "title": "Contact Us",
+    "breadcrumb": "Breadcrumb",
+    "breadcrumbHome": "Home",
+    "infoTitle": "Contact Information",
+    "infoBody": "Questions about funding, an order that did not fill, or how any of this works? Our team reads every message and replies as quickly as we can.",
+    "phoneLabel": "Phone Number",
+    "emailLabel": "Email Address",
+    "hoursLabel": "Opening Hours",
+    "locationLabel": "Our Location",
+    "days": {
+      "monFri": "Mon - Fri"
+    },
+    "hoursValue": "{{days}}: {{from}} - {{to}} {{zone}}",
+    "eyebrow": "Get In Touch",
+    "formTitle": "Get In Touch",
+    "formBody": "Tell us what you need help with and we will come back to you with the clearest answer we have. Nothing here is a ticket you have to chase.",
+    "fieldName": "Name",
+    "fieldEmail": "Email Address",
+    "fieldPhone": "Phone Number",
+    "fieldTopic": "What is it about?",
+    "fieldMessage": "Message",
+    "optional": "Optional",
+    "topicPlaceholder": "Choose a topic",
+    "topic": {
+      "account": "Account and sign-in",
+      "funding": "Deposits and withdrawals",
+      "trading": "Trading and orders",
+      "partnership": "Partnerships and press",
+      "other": "Something else"
+    },
+    "send": "Send Message",
+    "sending": "Sending",
+    "sendFailed": "That message did not send. Try again in a moment.",
+    "sentTitle": "Message received",
+    "sentBody": "Thank you. We have your message and will reply to the address you gave us.",
+    "sentRef": "Reference {{id}}",
+    "sendAnother": "Send another message",
+    "locationEyebrow": "Our Location",
+    "locationTitle": "Visit our office for in-person meetings and consultations",
+    "mapTitle": "Map showing our office location",
+    "viewLarger": "View a larger map"
   }
 }

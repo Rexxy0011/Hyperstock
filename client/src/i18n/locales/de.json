@@ -10,7 +10,6 @@
     "market": "Markt",
     "faqs": "Häufige Fragen",
     "community": "Unsere Community",
-    "settings": "Einstellungen",
     "contact": "Kontakt",
     "login": "Anmelden",
     "getStarted": "Loslegen",
@@ -23,7 +22,8 @@
     "featuredTraders": "Ausgewählte Trader",
     "approvals": "Freigaben",
     "subscribers": "Abonnenten",
-    "users": "Nutzer"
+    "users": "Nutzer",
+    "messages": "Nachrichten"
   },
   "common": {
     "back": "Zurück",
@@ -568,6 +568,21 @@
       "notHeld": "verfugbar, nicht im Bestand",
       "availableOnly_one": "{{count}} Instrument verfugbar",
       "availableOnly_other": "{{count}} Instrumente verfugbar"
+    },
+    "messages": {
+      "title": "Nachrichten",
+      "intro": "Anfragen aus dem öffentlichen Kontaktformular. Sie liegen hier und nicht bei einem Formulardienst, damit keine Nachricht zwischen dem Absender und jemandem, der antworten kann, verloren geht.",
+      "outstanding": "Offen",
+      "total": "Gesamt",
+      "empty": "Noch keine Nachrichten.",
+      "new": "Neu",
+      "handled": "Erledigt",
+      "hasAccount": "Hat ein Konto",
+      "markHandled": "Als erledigt markieren",
+      "reopen": "Wieder öffnen",
+      "showMore": "Mehr anzeigen",
+      "showLess": "Weniger anzeigen",
+      "replySubject": "Re: Ihre Nachricht an HyperStocks"
     }
   },
   "notices": {
@@ -631,5 +646,48 @@
   "liveGains": {
     "summary": "{{amount}} mit {{symbol}}",
     "trader": "Trader {{id}}"
+  },
+  "contact": {
+    "title": "Kontakt",
+    "breadcrumb": "Navigationspfad",
+    "breadcrumbHome": "Startseite",
+    "infoTitle": "Kontaktinformationen",
+    "infoBody": "Fragen zu Einzahlungen, zu einer Order, die nicht ausgeführt wurde, oder dazu, wie das alles funktioniert? Unser Team liest jede Nachricht und antwortet so schnell wie möglich.",
+    "phoneLabel": "Telefonnummer",
+    "emailLabel": "E-Mail-Adresse",
+    "hoursLabel": "Öffnungszeiten",
+    "locationLabel": "Unser Standort",
+    "days": {
+      "monFri": "Mo - Fr"
+    },
+    "hoursValue": "{{days}}: {{from}} - {{to}} {{zone}}",
+    "eyebrow": "Kontakt aufnehmen",
+    "formTitle": "Kontakt aufnehmen",
+    "formBody": "Sagen Sie uns, wobei Sie Hilfe brauchen, und wir melden uns mit der klarsten Antwort, die wir haben. Das hier ist kein Ticket, dem Sie hinterherlaufen müssen.",
+    "fieldName": "Name",
+    "fieldEmail": "E-Mail-Adresse",
+    "fieldPhone": "Telefonnummer",
+    "fieldTopic": "Worum geht es?",
+    "fieldMessage": "Nachricht",
+    "optional": "Optional",
+    "topicPlaceholder": "Thema wählen",
+    "topic": {
+      "account": "Konto und Anmeldung",
+      "funding": "Ein- und Auszahlungen",
+      "trading": "Handel und Orders",
+      "partnership": "Partnerschaften und Presse",
+      "other": "Etwas anderes"
+    },
+    "send": "Nachricht senden",
+    "sending": "Wird gesendet",
+    "sendFailed": "Die Nachricht konnte nicht gesendet werden. Versuchen Sie es gleich noch einmal.",
+    "sentTitle": "Nachricht erhalten",
+    "sentBody": "Vielen Dank. Wir haben Ihre Nachricht und antworten an die angegebene Adresse.",
+    "sentRef": "Referenz {{id}}",
+    "sendAnother": "Weitere Nachricht senden",
+    "locationEyebrow": "Unser Standort",
+    "locationTitle": "Besuchen Sie unser Büro für persönliche Gespräche und Beratungen",
+    "mapTitle": "Karte mit dem Standort unseres Büros",
+    "viewLarger": "Größere Karte ansehen"
   }
 }
