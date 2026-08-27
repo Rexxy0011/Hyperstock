@@ -20,10 +20,11 @@ import Avatar from '../ui/Avatar';
  * reconciled against the board a click away, and the first person to compare
  * them finds the product contradicting itself.
  *
- * THE ACCOUNTS ARE STILL SIMULATED, so every toast carries the word. The
- * leaderboard panel has a disclosure line under it and this does not travel
- * with one — these appear on /about and /faqs, where nothing else on the page
- * says what they are. The label is the disclosure.
+ * THESE TOASTS NOW CARRY NO DISCLOSURE OF THEIR OWN. The "Simulated" label was
+ * removed by request along with every other sentence naming the word. The
+ * accounts behind these figures are still not real ones, and these notices
+ * appear on /about and /faqs where nothing else on the page says so — worth
+ * knowing before this ships anywhere public.
  */
 
 /**
@@ -148,11 +149,6 @@ export default function LiveGains() {
               </div>
             </div>
 
-            {/* Not decoration. These travel to pages carrying no other
-                disclosure, so the toast has to say what it is by itself. */}
-            <span className="ml-auto shrink-0 self-start rounded-md bg-mist px-1.5 py-0.5 text-2xs font-medium text-text-muted">
-              {t('liveGains.simulated')}
-            </span>
           </div>
         ),
         { id: 'live-gain' },

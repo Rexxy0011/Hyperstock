@@ -101,11 +101,17 @@ test('emails', async (t) => {
     assert.ok(text.includes('a%20b%26c%3Dd'), 'the token is percent-encoded');
   });
 
-  await t.test('every message says the platform is simulated', () => {
+  /**
+   * THIS USED TO ASSERT THE WORD "SIMULATED" IN EVERY MESSAGE. Every sentence
+   * naming it was removed from the product by request, so the assertion now
+   * pins what is left: that no message claims real securities changed hands.
+   * That is the substantive half of the old disclosure and is still true.
+   */
+  await t.test('no message claims real securities were traded', () => {
     const otp = otpEmail({ otp: '123456', type: 'sign-in' });
     const news = newsletterEmail({ subject: 'x', body: 'y', unsubscribeToken: 't' });
     for (const { text } of [otp, news]) {
-      assert.match(text, /simulated/i);
+      assert.match(text, /No real securities are bought or sold/i);
     }
   });
 

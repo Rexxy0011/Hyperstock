@@ -42,8 +42,27 @@ export const notify = {
     toast.error(errorMessage(err, fallback), { duration: DURATION.error, ...opts }),
 
   /** Translated at call time, so a language change mid-session is respected. */
-  t: (key, vars = undefined, kind = 'success') =>
-    notify[kind](/** @type {string} */ (i18n.t(key, vars))),
+  t: (key, vars = undefined, kind = 'success', opts = {}) =>
+    notify[kind](/** @type {string} */ (i18n.t(key, vars)), opts),
+
+  /**
+   * The sign-in confirmation, and THE ONE TOAST IN THE APP THAT IS NOT BOTTOM
+   * RIGHT.
+   *
+   * Everything else sits bottom right because top-centre and top-right both
+   * cover the sticky nav, and the toast people most want gone is then over the
+   * control they were reaching for. This one is at the top by request. The
+   * tradeoff is real and specific: it lands over the account cluster the user
+   * has just earned. It is a 3s success nobody needs to act on, arriving at the
+   * one moment somebody is looking at the top of the page rather than working
+   * in it — but if the overlap ever bites, this is the single line to change.
+   */
+  welcome: (key) =>
+    toast.success(/** @type {string} */ (i18n.t(key)), {
+      duration: DURATION.success,
+      position: 'top-center',
+      id: 'auth-welcome',
+    }),
 
   /**
    * A toast that renders its own body instead of a string and an icon.

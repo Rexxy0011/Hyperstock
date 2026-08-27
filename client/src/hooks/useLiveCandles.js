@@ -29,7 +29,7 @@ const CAPTION = {
   // NASDAQ. Finnhub 403s candles everywhere and Twelve Data's free plan is
   // US-only, so the other six venues have no free source at all.
   simulated:
-    'Simulated series, generated backwards from the live price. No free provider sells candles for this venue.',
+    'No free provider sells candles for this venue.',
 };
 
 /**
