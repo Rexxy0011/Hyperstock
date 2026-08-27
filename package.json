@@ -14,6 +14,7 @@
     "dev:client": "npm run dev -w client",
     "seed": "npm run seed -w server",
     "seed:fresh": "npm run seed:fresh -w server",
+    "admin:sync": "npm run admin:sync -w server",
     "market:probe": "npm run market:probe -w server",
     "test": "npm run test -w server",
     "build": "npm run build -w client",

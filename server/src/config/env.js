@@ -42,6 +42,31 @@ const schema = z.object({
     .default('dev-better-auth-secret-change-me-0123456789'),
 
   /**
+   * THE OPERATOR ACCOUNT. The one seeded user with `role: 'admin'`, and so the
+   * only credential in this database that can reach `/admin/*` — the approvals
+   * queues, the user list, the featured-trader board.
+   *
+   * IT IS CONFIGURATION RATHER THAN A LITERAL IN `seed.js` because an admin
+   * password committed to a repository is an admin password on every clone,
+   * every fork and every screenshot of the file. The seed still has to run on a
+   * machine that has never been configured, so both carry the previous
+   * hardcoded values as DEFAULTS — the zero-config path is unchanged and
+   * `npm run seed` on a fresh clone still produces a usable operator.
+   *
+   * The default password is refused in production by the `isProd` block below,
+   * which is the same treatment `BETTER_AUTH_SECRET` gets and for the same
+   * reason: a development default that survives a deploy is not a warning
+   * anybody reads, it is an open door.
+   *
+   * CHANGING `ADMIN_EMAIL` AFTER SEEDING DOES NOT MOVE THE EXISTING ACCOUNT.
+   * The seed upserts on `username: 'admin'`, so the address is updated in
+   * place on the next run — but a database seeded under the old address keeps
+   * it until `npm run seed` runs again.
+   */
+  ADMIN_EMAIL: z.string().trim().toLowerCase().default('admin@hyperstocks.app'),
+  ADMIN_PASSWORD: z.string().min(8).default('password123'),
+
+  /**
    * GOOGLE OAUTH. Both halves are optional and default to empty: the provider
    * is registered only when both are present, so a clone with no Google project
    * boots normally and simply does not offer the button. Registering it with an
@@ -156,6 +181,37 @@ const schema = z.object({
   DEPOSIT_TTL_MINUTES: z.coerce.number().int().positive().default(30),
   /** Shown on the payment screen for an amount that does not match the quote. */
   SUPPORT_EMAIL: z.string().trim().default('support@hyperstocks.app'),
+
+  /**
+   * Tawk.to live chat. Empty property id means no chat, and the client asks
+   * before it renders anything — the same shape as `googleEnabled`, for the
+   * same reason: a control that cannot work must not be drawn.
+   *
+   * NEITHER OF THESE TWO IS A SECRET. They sit in the embed URL that every
+   * visitor's browser fetches, so there is nothing to protect and they are
+   * handed to the client deliberately. They live here rather than in a
+   * `client/.env` because that would be a SECOND place to configure one
+   * feature, which is the failure `DEPOSIT_DESTINATIONS` records under ONE
+   * SOURCE, AND THAT IS DELIBERATE.
+   */
+  TAWK_PROPERTY_ID: z.string().trim().default(''),
+  /** Tawk's own default widget is literally named `default`. */
+  TAWK_WIDGET_ID: z.string().trim().default('default'),
+
+  /**
+   * OPTIONAL, AND OFF BY DEFAULT. Tawk's "secure mode" key, from
+   * Administration -> Channels -> Chat Widget.
+   *
+   * Chat works fully without it. What it changes is whether the operator may
+   * TRUST the name beside the conversation: `setAttributes` runs in the
+   * browser, so unsigned attributes are self-asserted and somebody could open a
+   * console and claim another account's address. With a key set the server
+   * HMACs the address and Tawk refuses an unsigned one.
+   *
+   * Left empty the config response says `verified: false`, so which mode is
+   * running is reported rather than guessed.
+   */
+  TAWK_API_KEY: z.string().trim().default(''),
 
   /**
    * WITHDRAWALS ARE OFF UNLESS AN OPERATOR TURNS THEM ON, and the default is
@@ -273,6 +329,21 @@ if (isProd) {
       console.error(`Refusing to start: ${key} is still the development default.`);
       process.exit(1);
     }
+  }
+
+  /**
+   * THE SEEDED ADMIN PASSWORD IS PUBLISHED IN THIS REPOSITORY — it is in
+   * CLAUDE.md, in the seed's own terminal output and in every clone. Shipping
+   * it to production means the approvals queues, the user list and the featured
+   * board are reachable by anybody who has read the source.
+   *
+   * Checked by VALUE rather than by a `dev-` prefix, because unlike the auth
+   * secret this default is an ordinary-looking password and nothing about it
+   * announces itself as a placeholder.
+   */
+  if (env.ADMIN_PASSWORD === 'password123') {
+    console.error('Refusing to start: ADMIN_PASSWORD is still the development default.');
+    process.exit(1);
   }
 
   /**

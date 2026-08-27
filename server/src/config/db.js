@@ -224,10 +224,20 @@ export async function migrateLegacyCredentials() {
   const users = mongoose.connection.collection('users');
   const accounts = mongoose.connection.collection('accounts');
 
+  /**
+   * The admin's address is CONFIGURED, so it is read rather than written out
+   * here. A database seeded under the old scheme keeps its `passwordHash` on
+   * the user document, and missing it in this filter means that account has no
+   * `accounts` row and cannot sign in at all — which presents as a wrong
+   * password on the one login that can reach `/admin/*`.
+   *
+   * `jd@hyperstocks.app` stays a literal: it is the demo trader the mockups
+   * depict, not something a deployment configures.
+   */
   const legacy = await users
     .find({
       passwordHash: { $exists: true, $ne: null },
-      email: { $in: ['jd@hyperstocks.app', 'admin@hyperstocks.app'] },
+      email: { $in: ['jd@hyperstocks.app', env.ADMIN_EMAIL] },
     })
     .project({ _id: 1, passwordHash: 1 })
     .toArray();

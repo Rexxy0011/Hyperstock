@@ -17,8 +17,8 @@
  */
 
 import mongoose from "mongoose";
-import bcrypt from "bcryptjs";
-import { SEED_CASH_CENTS } from "../config/env.js";
+import { SEED_CASH_CENTS, env } from "../config/env.js";
+import { hashPassword, writeCredential } from "../lib/credential.js";
 import { connectDb, disconnectDb } from "../config/db.js";
 import { makeRng, rngInt, rngFloat, rngPick } from "../lib/prng.js";
 import { toCents, multiplyCents } from "../lib/money.js";
@@ -40,7 +40,19 @@ import { stocks as stockData } from "./data/stocks.js";
 import { SEED_FX } from "./data/fx.js";
 
 const FRESH = process.argv.includes("--fresh");
+
+/**
+ * The DEMO password, for `jd_trader` and nothing else that matters.
+ *
+ * It stays a literal deliberately: it is published in CLAUDE.md, printed by
+ * this script and depicted in the mockups, and an account holding virtual
+ * capital on a fixture is not a credential worth protecting. The OPERATOR
+ * account is the one that reaches `/admin/*`, and it reads from the
+ * environment instead — see `ADMIN_PASSWORD` in `config/env.js`.
+ */
 const PASSWORD = "password123";
+
+const { ADMIN_EMAIL, ADMIN_PASSWORD } = env;
 
 /* ------------------------------------------------------------------------ *
  * RECONCILIATION
@@ -265,24 +277,27 @@ let sharedPasswordHash = null;
  * a row that is close but not identical fails at sign-in, which reads as a
  * wrong password.
  */
-async function giveCredential(user) {
-  const password = (sharedPasswordHash ??= await bcrypt.hash(PASSWORD, 12));
-  const now = new Date();
-  await mongoose.connection.collection("accounts").updateOne(
-    { userId: user._id, providerId: "credential" },
-    {
-      $set: {
-        issuer: "local:credential",
-        accountId: String(user._id),
-        providerId: "credential",
-        userId: user._id,
-        password,
-        updatedAt: now,
-      },
-      $setOnInsert: { createdAt: now },
-    },
-    { upsert: true },
-  );
+/**
+ * @param {Record<string, any>} user the Mongoose document, loosely typed —
+ *   only `_id` is read off it here.
+ * @param {string} [plaintext] defaults to the shared demo password. The admin
+ *   passes its own, so the operator credential is not the one printed in the
+ *   README and every screenshot of this file.
+ */
+async function giveCredential(user, plaintext = PASSWORD) {
+  /**
+   * The shared hash is memoised because bcrypt at cost 12 is deliberately slow
+   * and the demo password is written to more than one account. A DIFFERENT
+   * password must not reuse it — hence the branch rather than an unconditional
+   * `??=`, which would have silently given the admin the demo password's hash
+   * and made `ADMIN_PASSWORD` do nothing at all.
+   */
+  const password =
+    plaintext === PASSWORD
+      ? (sharedPasswordHash ??= await hashPassword(PASSWORD))
+      : await hashPassword(plaintext);
+
+  await writeCredential(user._id, password);
 }
 
 async function makeUser({
@@ -295,6 +310,7 @@ async function makeUser({
   status = "Active",
   createdAt = null,
   credentials = false,
+  password = PASSWORD,
 }) {
   const user = await User.findOneAndUpdate(
     { username },
@@ -327,7 +343,7 @@ async function makeUser({
     }
   );
 
-  if (credentials) await giveCredential(user);
+  if (credentials) await giveCredential(user, password);
   return user;
 }
 
@@ -715,15 +731,28 @@ export async function runSeed({ fresh = false } = {}) {
   const stocks = await Stock.find().lean();
   const stockBySymbol = new Map(stocks.map((s) => [s.symbol, s]));
 
+  /**
+   * THE OPERATOR ACCOUNT, and the only credential here that is not a demo one.
+   * Its address and password come from the environment so they are not a
+   * literal in a file that ships to every clone — see `ADMIN_EMAIL` in
+   * `config/env.js`. Both default to the previous hardcoded values, so a fresh
+   * clone with no `.env` seeds exactly as it always did.
+   *
+   * Upserted on `username: "admin"`, never on the address: keying on the email
+   * would make changing `ADMIN_EMAIL` create a SECOND admin rather than rename
+   * the one that exists, and two operator accounts where the old password still
+   * works is the opposite of what rotating it is for.
+   */
   const admin = await makeUser({
     username: "admin",
-    email: "admin@hyperstocks.app",
+    email: ADMIN_EMAIL,
     cashBalanceCents: SEED_CASH_CENTS,
     role: "admin",
     credentials: true,
+    password: ADMIN_PASSWORD,
   });
 
-  log("admin", "admin@hyperstocks.app");
+  log("admin", ADMIN_EMAIL);
 
   const userValues = [];
 
@@ -886,13 +915,29 @@ export async function runSeed({ fresh = false } = {}) {
     `    users ${totals[0]} · stocks ${totals[1]} · holdings ${totals[2]} · orders ${totals[3]} · transactions ${totals[4]}`
   );
 
-  console.log(`\n  Sign in as any user with password: ${PASSWORD}`);
+  console.log(`\n  Demo account, password ${PASSWORD}:`);
 
   console.log(
     "    jd@hyperstocks.app     jd_trader — the account every mockup depicts"
   );
 
-  console.log("    admin@hyperstocks.app  admin — role: admin\n");
+  /**
+   * THE ADMIN'S PASSWORD IS NOT PRINTED. It comes from the environment now and
+   * may be a real one, and this output is a terminal log that gets scrolled
+   * through, screenshotted and pasted into issues. Naming the variable tells
+   * whoever ran the seed where to look without putting the secret on screen.
+   *
+   * The two lines are separated for the same reason the old single line was
+   * wrong: "sign in as any user with password X" stopped being true the moment
+   * the operator got its own.
+   */
+  console.log(
+    `\n  Operator account, password from ADMIN_PASSWORD${
+      ADMIN_PASSWORD === PASSWORD ? " (still the default)" : ""
+    }:`
+  );
+
+  console.log(`    ${ADMIN_EMAIL.padEnd(22)} admin — role: admin\n`);
 
   return {
     users: totals[0],

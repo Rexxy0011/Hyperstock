@@ -9,8 +9,9 @@
     "start": "node --env-file-if-exists=.env src/index.js",
     "seed": "node --env-file-if-exists=.env src/seed/seed.js",
     "seed:fresh": "node --env-file-if-exists=.env src/seed/seed.js --fresh",
+    "admin:sync": "node --env-file-if-exists=.env src/seed/syncAdmin.js",
     "market:probe": "node --env-file-if-exists=.env src/market/probe.js",
-    "test": "MONGODB_URI= DEPOSIT_DESTINATIONS=[] WITHDRAWAL_NETWORKS=[] WITHDRAWALS_ENABLED=false RESEND_API_KEY= GOOGLE_CLIENT_ID= GOOGLE_CLIENT_SECRET= node --test --env-file-if-exists=.env test/**/*.test.js"
+    "test": "MONGODB_URI= DEPOSIT_DESTINATIONS=[] WITHDRAWAL_NETWORKS=[] WITHDRAWALS_ENABLED=false RESEND_API_KEY= GOOGLE_CLIENT_ID= GOOGLE_CLIENT_SECRET= TAWK_PROPERTY_ID= TAWK_API_KEY= ADMIN_EMAIL=admin@hyperstocks.app ADMIN_PASSWORD=password123 node --test --env-file-if-exists=.env test/**/*.test.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",
