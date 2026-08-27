@@ -4,6 +4,7 @@ import { ApiError } from '../lib/ApiError.js';
 import { computedRowsFor } from './leaderboard.service.js';
 import { overridesForUsers } from './featuredTrader.service.js';
 import { getPortfolio } from './portfolio.service.js';
+import { Stock } from '../models/Stock.js';
 
 /**
  * The user listing behind /admin/users.
@@ -174,6 +175,11 @@ export async function listUsers({ q = '', page = 1, limit = PAGE_SIZE } = {}) {
  * shows. A second valuation path would eventually disagree with the first, and
  * the disagreement would surface on a public board.
  *
+ * Returns TWO groups, and keeping them apart is the point: `held` carries a
+ * real return that reconciles with the trader's own portfolio screen, while
+ * `available` carries none. Flattening them would put an invented figure and a
+ * measured one in the same shape.
+ *
  * Fetched when the editor opens, not with the listing: twenty-five portfolio
  * valuations to populate a dropdown nobody may open is the per-row cost this
  * file already has a note about.
@@ -187,13 +193,62 @@ export async function listPositionsFor(userId) {
   // the wrong one yields `undefined` rather than an error.
   const { holdings } = await getPortfolio(userId, user.cashBalanceCents);
 
-  return holdings.map((p) => ({
-    symbol: p.symbol,
-    assetClass: p.assetClass,
-    name: p.name,
-    returnPct: p.totalReturnPct,
-    valueCents: p.marketValueCents,
-  }));
+  /**
+   * HELD FIRST, SORTED BY RETURN RATHER THAN BY VALUE.
+   *
+   * "Best position" means the best PERFORMING one, so the list has to put it
+   * where the eye lands. `getPortfolio` sorts by market value, which is the
+   * right order for a portfolio table and the wrong one here — the largest
+   * holding is routinely not the best one, and an operator picking the top
+   * entry would have been picking the biggest.
+   */
+  const held = holdings
+    .map((p) => ({
+      symbol: p.symbol,
+      assetClass: p.assetClass,
+      name: p.name,
+      returnPct: p.totalReturnPct,
+      valueCents: p.marketValueCents,
+      held: true,
+    }))
+    .sort((a, b) => b.returnPct - a.returnPct);
+
+  /**
+   * EVERYTHING ELSE THE PLATFORM LISTS, so the picker is not limited to what
+   * this trader happens to own.
+   *
+   * A curated row's figures are invented by definition — restricting its best
+   * position to the account's real holdings imposed a consistency the rest of
+   * the row does not have, and left an operator unable to name a symbol they
+   * had a reason to feature. The two groups stay DISTINGUISHABLE rather than
+   * merged: a held row carries a real return that can be checked against the
+   * trader's own portfolio screen, and an unheld one carries none, so
+   * flattening them would present an invented figure and a measured one in the
+   * same shape.
+   *
+   * Equities only for the unheld half. They are the universe this database
+   * actually models — crypto and forex exist solely in the vendor cache — and
+   * anything of those classes the trader owns is already in `held` above.
+   */
+  const owned = new Set(held.map((p) => p.symbol));
+  const listed = await Stock.find({ status: { $ne: 'Halted' } })
+    .select('symbol name exchange')
+    .lean();
+
+  const available = listed
+    .filter((s) => !owned.has(s.symbol))
+    .map((s) => ({
+      symbol: s.symbol,
+      assetClass: 'stocks',
+      name: s.name,
+      exchange: s.exchange,
+      returnPct: null,
+      valueCents: 0,
+      held: false,
+    }))
+    .sort((a, b) => a.symbol.localeCompare(b.symbol));
+
+  return { held, available };
 }
 
 /**

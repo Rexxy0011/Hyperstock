@@ -563,7 +563,9 @@
       "replacePhoto": "Cambiar foto",
       "removePhoto": "Quitar",
       "uploading": "Subiendo…",
-      "photoHint": "PNG, JPEG, WebP o GIF, hasta 600KB. Sin foto se usa la marca generada."
+      "photoHint": "PNG, JPEG, WebP o GIF, hasta 600KB. Sin foto se usa la marca generada.",
+      "bestPerformer": "mejor rendimiento",
+      "notHeld": "disponible, no en cartera"
     }
   },
   "notices": {

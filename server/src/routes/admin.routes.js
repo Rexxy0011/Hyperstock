@@ -202,7 +202,7 @@ router.get(
   '/users/:id/positions',
   validate({ params: idParam }),
   asyncHandler(async (req, res) => {
-    res.json({ items: await listPositionsFor(req.params.id) });
+    res.json(await listPositionsFor(req.params.id));
   }),
 );
 

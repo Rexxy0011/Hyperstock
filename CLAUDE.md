@@ -365,13 +365,31 @@ MERGED board — measured at **187 against 188**, differing by the standalone cu
 on one small panel disagreeing by one is a defect, not a detail, so the actual line dropped its rank and
 the preview owns the number; for an unchanged value it already states the current position.
 
-**BEST POSITION IS A DROPDOWN OF WHAT THE TRADER ACTUALLY HOLDS**, via `GET /api/admin/users/:id/positions`.
-Free text let an operator publish a best position in a symbol the account never owned — or a typo, which
-renders as a ticker that does not exist beside a return nothing can be checked against. It resolves through
-`getPortfolio`, so the returns offered are the same numbers the trader's own portfolio screen shows, and
-picking one fills in its real return alongside it. Fetched when the editor opens, never with the listing:
+**BEST POSITION IS A DROPDOWN, IN TWO GROUPS** — what the trader holds, then everything else the platform
+lists — via `GET /api/admin/users/:id/positions`. Free text let an operator publish a best position in a
+symbol the account never owned, or a typo, which renders as a ticker that does not exist beside a return
+nothing can be checked against. It resolves through `getPortfolio`, so the returns offered are the same
+numbers the trader's own portfolio screen shows. Fetched when the editor opens, never with the listing:
 twenty-five portfolio valuations for a dropdown nobody may open is the per-row cost this file keeps warning
 about.
+
+**HELD FIRST, SORTED BY RETURN AND NOT BY VALUE.** "Best position" means the best PERFORMING one, so the
+list has to put it where the eye lands, and the first entry is labelled *best performing*. `getPortfolio`
+sorts by market value — right for a portfolio table, wrong here, because the largest holding is routinely
+not the best one and an operator taking the top entry would have been taking the biggest. Measured on
+jd_trader: TSM +124.54% leads, ahead of NVDA, AAPL, 7203 and ASML.
+
+**IT IS NOT LIMITED TO WHAT THE ACCOUNT OWNS.** A curated row's figures are invented by definition, so
+restricting its best position to real holdings imposed a consistency the rest of the row does not have and
+left an operator unable to name a symbol they had a reason to feature. The other 46 listed equities follow,
+alphabetically — 52 options in total on the seeded database.
+
+**THE TWO GROUPS STAY DISTINGUISHABLE RATHER THAN MERGED, and that is the whole reason they are separate
+arrays.** A held row carries a real return that reconciles against the trader's own portfolio screen; an
+unheld one carries `returnPct: null` and reads *available, not held*. Picking a held symbol copies its real
+return into the field; picking an unheld one leaves the field alone rather than writing a zero, which would
+render on the board as a measured figure that happened to be flat. A test asserts no available row ever
+claims a return and that a held symbol is never offered twice.
 
 Two options exist beyond the holdings. **"None" is a real state** — the board renders an em dash for a row
 with no best position, and a picker that cannot express it would force every curated row to claim one. And

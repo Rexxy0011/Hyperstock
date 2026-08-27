@@ -256,25 +256,60 @@ test('admin users', async (t) => {
      * `positions` — destructuring the wrong name yields `undefined`, not an
      * error, so the endpoint 500'd and the dropdown silently showed "None".
      */
-    await t2.test('the position picker lists what the trader actually holds', async () => {
-      const items = await listPositionsFor(jd._id);
-      assert.ok(Array.isArray(items), 'an array, not undefined');
-      assert.ok(items.length > 0, 'jd_trader holds positions');
+    await t2.test('the picker lists what is held and what is available to buy', async () => {
+      const { held, available } = await listPositionsFor(jd._id);
+      assert.ok(Array.isArray(held) && Array.isArray(available), 'arrays, not undefined');
+      assert.ok(held.length > 0, 'jd_trader holds positions');
+      assert.ok(available.length > 0, 'the rest of the listed universe is offered too');
 
-      for (const p of items) {
+      for (const p of held) {
         assert.ok(p.symbol, 'every option has a symbol to select');
-        assert.equal(typeof p.returnPct, 'number');
+        assert.equal(typeof p.returnPct, 'number', 'a held position has a measured return');
+      }
+    });
+
+    /**
+     * "Best position" means the best PERFORMING one. `getPortfolio` sorts by
+     * market value, which is right for a portfolio table and wrong here — the
+     * largest holding is routinely not the best, so an operator taking the top
+     * entry would have been taking the biggest.
+     */
+    await t2.test('held positions lead with the best performer', async () => {
+      const { held } = await listPositionsFor(jd._id);
+      const returns = held.map((p) => p.returnPct);
+      assert.deepEqual(returns, [...returns].sort((a, b) => b - a), 'sorted by return, descending');
+      assert.equal(held[0].returnPct, Math.max(...returns));
+    });
+
+    await t2.test('an available row carries no return, and no duplicates', async () => {
+      const { held, available } = await listPositionsFor(jd._id);
+
+      for (const p of available) {
+        // An unheld symbol has no measured performance for this trader, and a
+        // zero would render on the board as a real figure that happened to be
+        // flat.
+        assert.equal(p.returnPct, null, `${p.symbol} must not claim a return`);
+        assert.equal(p.held, false);
       }
 
-      // The picker must offer the SAME best position the board reports, or
-      // selecting the trader's actual best would be impossible from the list.
+      const owned = new Set(held.map((p) => p.symbol));
+      assert.ok(
+        !available.some((p) => owned.has(p.symbol)),
+        'a held symbol is never offered twice',
+      );
+    });
+
+    await t2.test("the board's reported best is selectable", async () => {
+      // Otherwise naming the trader's actual best position would be impossible
+      // from the control that exists to name it.
       const r = await row();
-      if (r.computed?.best?.symbol) {
-        assert.ok(
-          items.some((p) => p.symbol === r.computed.best.symbol),
-          `the board's best (${r.computed.best.symbol}) is on the list`,
-        );
-      }
+      if (!r.computed?.best?.symbol) return;
+
+      const { held, available } = await listPositionsFor(jd._id);
+      assert.ok(
+        [...held, ...available].some((p) => p.symbol === r.computed.best.symbol),
+        `the board's best (${r.computed.best.symbol}) is on the list`,
+      );
     });
 
     await t2.test('positions for an unknown account are a 404', async () => {

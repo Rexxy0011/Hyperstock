@@ -125,7 +125,11 @@ export default function TraderOverrideModal({ trader, open, onClose }) {
    * identity change alone would rebuild the options below on every keystroke in
    * the value field, which is the one thing the memo exists to avoid.
    */
-  const positions = useMemo(() => positionData?.items ?? [], [positionData]);
+  const held = useMemo(() => positionData?.held ?? [], [positionData]);
+  const available = useMemo(() => positionData?.available ?? [], [positionData]);
+
+  /** Both groups, for the lookups that do not care which side a symbol is on. */
+  const positions = useMemo(() => [...held, ...available], [held, available]);
 
   /**
    * A DROPDOWN OF REAL POSITIONS, NOT A TEXT BOX. "Best position" names a
@@ -147,19 +151,44 @@ export default function TraderOverrideModal({ trader, open, onClose }) {
   const positionOptions = useMemo(() => {
     const opts = [
       { value: '', label: t('admin.override.bestNone') },
-      ...positions.map((p) => ({
+
+      /**
+       * HELD FIRST, AND THE BEST PERFORMER IS THE FIRST OF THOSE. The server
+       * sorts this group by return rather than by market value, because "best
+       * position" means best PERFORMING — the largest holding is routinely not
+       * the best one, and an operator taking the top entry would otherwise have
+       * been taking the biggest.
+       */
+      ...held.map((p, i) => ({
         value: p.symbol,
         label: p.symbol,
-        sublabel: `${p.name} · ${pct(p.returnPct)}`,
+        sublabel:
+          i === 0
+            ? `${p.name} · ${pct(p.returnPct)} · ${t('admin.override.bestPerformer')}`
+            : `${p.name} · ${pct(p.returnPct)}`,
+      })),
+
+      /**
+       * Then everything else the platform lists. A curated row's figures are
+       * invented by definition, so restricting its best position to what this
+       * account happens to own imposed a consistency the rest of the row does
+       * not have. These carry NO return: an unheld symbol has no measured
+       * performance for this trader, and printing one would put an invented
+       * figure in the same shape as a real one.
+       */
+      ...available.map((p) => ({
+        value: p.symbol,
+        label: p.symbol,
+        sublabel: `${p.name} · ${t('admin.override.notHeld')}`,
       })),
     ];
 
-    const held = form.bestSymbol;
-    if (held && !opts.some((o) => o.value === held)) {
-      opts.push({ value: held, label: held, sublabel: t('admin.override.bestNotHeld') });
+    const chosen = form.bestSymbol;
+    if (chosen && !opts.some((o) => o.value === chosen)) {
+      opts.push({ value: chosen, label: chosen, sublabel: t('admin.override.bestNotHeld') });
     }
     return opts;
-  }, [positions, form.bestSymbol, t]);
+  }, [held, available, form.bestSymbol, t]);
 
   /**
    * Picking a position fills in its REAL return alongside it, so the common
@@ -172,7 +201,10 @@ export default function TraderOverrideModal({ trader, open, onClose }) {
     setForm((f) => ({
       ...f,
       bestSymbol: symbol,
-      bestReturnPct: hit ? String(hit.returnPct) : f.bestReturnPct,
+      // Only a HELD symbol carries a measured return. An unheld one leaves the
+      // field alone rather than writing a zero, which would read on the board
+      // as a real figure that happened to be flat.
+      bestReturnPct: hit && hit.returnPct != null ? String(hit.returnPct) : f.bestReturnPct,
     }));
   };
 
@@ -388,8 +420,8 @@ export default function TraderOverrideModal({ trader, open, onClose }) {
               placeholder={t('admin.override.bestNone')}
             />
             <span className="text-2xs text-text-muted">
-              {positions.length
-                ? t('admin.override.bestHint', { count: positions.length })
+              {held.length
+                ? t('admin.override.bestHint', { count: held.length })
                 : t('admin.override.noPositions')}
             </span>
           </div>

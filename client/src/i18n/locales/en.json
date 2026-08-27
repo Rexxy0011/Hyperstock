@@ -563,7 +563,9 @@
       "replacePhoto": "Replace photo",
       "removePhoto": "Remove",
       "uploading": "Uploading…",
-      "photoHint": "PNG, JPEG, WebP or GIF, up to 600KB. Without one the generated mark is used."
+      "photoHint": "PNG, JPEG, WebP or GIF, up to 600KB. Without one the generated mark is used.",
+      "bestPerformer": "best performing",
+      "notHeld": "available, not held"
     }
   },
   "notices": {

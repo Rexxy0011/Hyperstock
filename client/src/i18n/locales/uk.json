@@ -571,7 +571,9 @@
       "replacePhoto": "Замінити фото",
       "removePhoto": "Видалити",
       "uploading": "Завантаження…",
-      "photoHint": "PNG, JPEG, WebP або GIF, до 600KB. Без фото використовується згенерований знак."
+      "photoHint": "PNG, JPEG, WebP або GIF, до 600KB. Без фото використовується згенерований знак.",
+      "bestPerformer": "найкраща дохідність",
+      "notHeld": "доступна, не в портфелі"
     }
   },
   "notices": {
