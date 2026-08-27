@@ -5,13 +5,15 @@ import { FcGoogle } from 'react-icons/fc';
 import { FiLock, FiMail, FiUser } from 'react-icons/fi';
 import { get } from '../lib/api';
 import CodeForm from '../components/auth/CodeForm';
-import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
+import { Navigate, useSearchParams } from 'react-router-dom';
 import Link from '../components/ui/Link';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import SegmentedControl from '../components/ui/SegmentedControl';
 import Logo from '../components/ui/Logo';
 import { useAuth } from '../auth/AuthProvider';
+import { WELCOME, withWelcome } from '../components/auth/WelcomeNotice';
+import { ADMIN_HOME } from '../components/nav/navItems';
 
 /**
  * THE VALUE IS STABLE, THE LABEL IS TRANSLATED, and separating them was a fix
@@ -32,7 +34,6 @@ const SIGNUP = 'signup';
 export default function Auth() {
   const { t } = useTranslation();
   const [params] = useSearchParams();
-  const navigate = useNavigate();
   const { user, authReady, login, register, signInWithGoogle } = useAuth();
 
   const [mode, setMode] = useState(params.get('mode') === 'signup' ? SIGNUP : SIGNIN);
@@ -46,6 +47,8 @@ export default function Auth() {
   });
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
+  /** Which confirmation to raise once the session lands, or null. */
+  const [welcomeKind, setWelcomeKind] = useState(/** @type {string | null} */ (null));
 
   const isSignup = mode === SIGNUP;
   /**
@@ -58,7 +61,8 @@ export default function Auth() {
    * arrives at `/withdraw` afterwards — changing the fallback must not break
    * the case where the destination was actually known.
    */
-  const next = params.get('next') || '/';
+  const explicitNext = params.get('next');
+  const next = explicitNext || '/';
 
   const field = (name) => ({
     value: form[name],
@@ -81,8 +85,43 @@ export default function Auth() {
     staleTime: Infinity,
   });
 
-  // Already signed in? Don't show the form at all.
-  if (authReady && user) return <Navigate to={next} replace />;
+  /**
+   * ALREADY SIGNED IN? DON'T SHOW THE FORM AT ALL — and this redirect is also
+   * what carries a fresh sign-in to its destination.
+   *
+   * It has to be, because it WINS THE RACE. `login()` resolving sets `user` in
+   * the provider, which re-renders this component and fires this `<Navigate>`
+   * before the `navigate()` after the await ever runs — so a marker appended
+   * there was silently dropped and the toast never fired. `welcomeKind` is set
+   * BEFORE the await, so by the time `user` lands it is already here.
+   *
+   * Null when somebody merely arrives on /auth with a live session: that is not
+   * a sign-in and must not announce one.
+   */
+  if (authReady && user) {
+    /**
+     * AN OPERATOR LANDS IN THE ADMIN SECTION, everybody else on the landing
+     * page. The role is only knowable HERE — `next` is computed before anyone
+     * has signed in, while this branch runs with `user` already resolved.
+     *
+     * `?next=` still outranks both. `ProtectedRoute` attaches the page somebody
+     * was bounced from, and an admin who clicked `/withdraw` meant `/withdraw`;
+     * a convenience default must never override a destination that was actually
+     * known.
+     *
+     * THE GOOGLE LEG CANNOT DO THIS and deliberately does not try. Its
+     * `callbackURL` is fixed before the round trip, when there is no session to
+     * read a role from — so an admin signing in with Google lands on `/` and
+     * reaches the section from the nav, which renders for them either way.
+     */
+    const destination = explicitNext || (user.role === 'admin' ? ADMIN_HOME : '/');
+    return (
+      <Navigate
+        to={welcomeKind ? withWelcome(destination, welcomeKind) : destination}
+        replace
+      />
+    );
+  }
 
   const onGoogle = async () => {
     setError(null);
@@ -90,7 +129,7 @@ export default function Auth() {
     try {
       // Does not return — it navigates to Google. `busy` stays true so the
       // button cannot be pressed twice while the redirect is in flight.
-      await signInWithGoogle(next);
+      await signInWithGoogle(withWelcome(next, WELCOME.signIn));
     } catch (err) {
       setError(err.message ?? 'Could not start Google sign-in.');
       setBusy(false);
@@ -102,13 +141,16 @@ export default function Auth() {
     setError(null);
     setBusy(true);
     try {
+      // Set before the await: the redirect above fires the instant `user`
+      // lands, which is sooner than anything after this line.
+      setWelcomeKind(isSignup ? WELCOME.signUp : WELCOME.signIn);
       if (isSignup) {
         await register({ username: form.username, email: form.email, password: form.password });
       } else {
         await login({ email: form.email, password: form.password });
       }
-      navigate(next, { replace: true });
     } catch (err) {
+      setWelcomeKind(null);
       setError(err.message ?? 'Something went wrong. Try again.');
     } finally {
       setBusy(false);
@@ -144,7 +186,7 @@ export default function Auth() {
                  that makes a recovery flow feel like a punishment. */
               initialEmail={form.email}
               onCancel={() => setCodeFlow(null)}
-              onSuccess={() => navigate(next, { replace: true })}
+              onSuccess={() => setWelcomeKind(WELCOME.signIn)}
             />
           ) : (
           <>

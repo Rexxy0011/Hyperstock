@@ -1,14 +1,18 @@
 import { useLayoutEffect } from 'react';
 import {
   createBrowserRouter,
+  Navigate,
   Outlet,
   ScrollRestoration,
   useLocation,
 } from 'react-router-dom';
+import { ADMIN_BASE, ADMIN_HOME } from './components/nav/navItems';
 import { AuthProvider } from './auth/AuthProvider';
 import ProtectedRoute from './auth/ProtectedRoute';
 import Toasts from './components/ui/Toasts';
 import MarketNotices from './components/market/MarketNotices';
+import WelcomeNotice from './components/auth/WelcomeNotice';
+import LiveChat from './components/support/LiveChat';
 import Fund from './pages/Fund';
 import Withdraw from './pages/Withdraw';
 
@@ -85,6 +89,13 @@ function Root() {
           must survive navigating to another — remounting the container would
           dismiss it mid-read. */}
       <MarketNotices />
+      {/* Global, not per-route: sign-in can land anywhere `?next=` pointed. */}
+      <WelcomeNotice />
+      {/* Also renders nothing. It loads the support widget for a signed-in
+          user and takes it away on sign-out. Here rather than in a layout for
+          the same reason as the rest: an open conversation must survive a
+          route change, and remounting would drop it. */}
+      <LiveChat />
       <Toasts />
     </AuthProvider>
   );
@@ -173,13 +184,27 @@ export const router = createBrowserRouter([
           { path: '/dashboard', element: <Portfolio /> },
           { path: '/wallet', element: <ComingSoon title="Wallet" /> },
           /**
+           * THE ADMIN SECTION, MOUNTED UNDER `ADMIN_BASE` RATHER THAN `/admin`.
+           * The prefix is deliberately unguessable and `navItems.js` owns the
+           * string — see the note there for what that does and does not buy.
+           * Every path below is BUILT from it, so the section cannot be renamed
+           * into a set of dead links.
+           *
            * Its own ProtectedRoute rather than a check inside the page: an
            * admin-only screen guarded by an early return still MOUNTS for a
            * signed-in user, so its queries fire and 403 before the redirect.
            * `adminOnly` decides before the element exists.
            */
           {
-            path: '/admin/featured-traders',
+            /* The bare prefix is a real route, because it is where sign-in
+               sends an operator and what a person types from memory. Without
+               it, `/soap` falls through to the catch-all and the section
+               appears not to exist to the one user who is allowed in. */
+            path: ADMIN_BASE,
+            element: <Navigate to={ADMIN_HOME} replace />,
+          },
+          {
+            path: `${ADMIN_BASE}/featured-traders`,
             element: (
               <ProtectedRoute adminOnly>
                 <Admin />
@@ -187,7 +212,7 @@ export const router = createBrowserRouter([
             ),
           },
           {
-            path: '/admin/approvals',
+            path: `${ADMIN_BASE}/approvals`,
             element: (
               <ProtectedRoute adminOnly>
                 <Approvals />
@@ -195,7 +220,7 @@ export const router = createBrowserRouter([
             ),
           },
           {
-            path: '/admin/users',
+            path: `${ADMIN_BASE}/users`,
             element: (
               <ProtectedRoute adminOnly>
                 <Users />
@@ -203,7 +228,7 @@ export const router = createBrowserRouter([
             ),
           },
           {
-            path: '/admin/subscribers',
+            path: `${ADMIN_BASE}/subscribers`,
             element: (
               <ProtectedRoute adminOnly>
                 <Subscribers />
