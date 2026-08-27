@@ -436,9 +436,22 @@ function LocationBand() {
               title={t('contact.mapTitle')}
               src={officeMapSrc()}
               loading="lazy"
-              // The map is decorative-adjacent: it cannot navigate the parent,
-              // and nothing in it needs our origin's storage.
-              referrerPolicy="no-referrer-when-downgrade"
+              /**
+               * SANDBOXED TO THE THREE THINGS A MAP NEEDS. Without the
+               * attribute an embedded document may run script, submit forms,
+               * open popups AND navigate the top-level page — that last one is
+               * the dangerous default, because a third-party frame can then
+               * redirect the whole tab away from a page that has a session on
+               * it. `allow-scripts` and `allow-same-origin` are what make the
+               * tiles pan; `allow-popups` is what lets the OSM link open. It
+               * has `allow-scripts` and `allow-same-origin` together, which for
+               * a SAME-origin frame would let it remove its own sandbox — this
+               * one is cross-origin, where that does not apply.
+               */
+              sandbox="allow-scripts allow-same-origin allow-popups"
+              // Send no path or query to the map host; the coordinates are
+              // already in the URL it is being asked for.
+              referrerPolicy="no-referrer"
               className="block h-80 w-full border-0 sm:h-105 lg:h-120"
             />
           </div>
