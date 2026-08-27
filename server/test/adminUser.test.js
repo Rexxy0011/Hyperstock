@@ -4,7 +4,18 @@ import mongoose from 'mongoose';
 import { connectDb, disconnectDb, isEphemeral } from '../src/config/db.js';
 import { runSeed } from '../src/seed/seed.js';
 import { User } from '../src/models/User.js';
-import { listUsers, userCounts, setUserStatus } from '../src/services/adminUser.service.js';
+import {
+  listUsers,
+  userCounts,
+  setUserStatus,
+  listPositionsFor,
+} from '../src/services/adminUser.service.js';
+import {
+  upsertOverrideForUser,
+  removeOverrideForUser,
+} from '../src/services/featuredTrader.service.js';
+import { getLeaderboard, invalidateLeaderboard } from '../src/services/leaderboard.service.js';
+import { FeaturedTrader } from '../src/models/FeaturedTrader.js';
 
 /**
  * The user admin.
@@ -28,6 +39,12 @@ test('admin users', async (t) => {
   const admin = await User.findOne({ role: 'admin' }).lean();
   const jd = await User.findOne({ username: 'jd_trader' }).lean();
   const fixture = await User.findOne({ username: 'denise_coates' }).lean();
+
+  // Captured BEFORE anything in this suite moves, so the "moves no money" case
+  // below compares against a real opening figure rather than one derived at
+  // check time — the tautology the reconciliation tests already had once.
+  const jdCashBefore = jd.cashBalanceCents;
+  const jdTradesBefore = jd.tradeCount;
 
   await t.test('counts separate real accounts from leaderboard fixtures', async () => {
     const counts = await userCounts();
@@ -160,5 +177,134 @@ test('admin users', async (t) => {
     assert.equal(after.cashBalanceCents, before.cashBalanceCents);
     assert.equal(after.tradeCount, before.tradeCount);
     await setUserStatus(jd._id, 'Active', admin._id);
+  });
+
+  /**
+   * Editing a trader's board figures.
+   *
+   * The write is a curated row, never the account — so the cases that matter
+   * are that the board moves, the account does not, and that the two figures
+   * stay independently readable so an edit can be undone.
+   */
+  await t.test('editing a trader', async (t2) => {
+    const row = async () => (await listUsers({ q: 'jd_trader' })).items[0];
+
+    await t2.test('the listing carries the real computed figures', async () => {
+      const r = await row();
+      assert.equal(r.override, null, 'starts un-edited');
+      assert.ok(r.computed, 'jd_trader is ranked');
+      assert.ok(Number.isInteger(r.computed.portfolioValueCents));
+      assert.ok(r.computed.rank >= 1);
+    });
+
+    await t2.test('an override replaces the computed row on the board', async () => {
+      await upsertOverrideForUser(jd._id, { portfolioValueCents: 99_000_000, changePct: 42 }, admin._id);
+      invalidateLeaderboard();
+
+      const board = await getLeaderboard({ period: 'alltime', limit: 200 });
+      const mine = board.top.filter((b) => String(b.userId) === String(jd._id));
+
+      // Exactly one. A curated row sitting BESIDE the computed one would put a
+      // single account on the board twice at two different values, which is the
+      // one outcome that reads as a bug rather than as curation.
+      assert.equal(mine.length, 0, 'the computed row is gone');
+      const curated = board.top.find((b) => b.featured && b.portfolioValueCents === 99_000_000);
+      assert.ok(curated, 'the curated row is on the board');
+      assert.equal(curated.rank, 1, 'a large enough figure ranks first');
+      assert.equal(curated.username, jd.displayName || jd.username, 'named from the account');
+    });
+
+    await t2.test('the typed figure ranks, it is not pinned', async () => {
+      // The same trader with a tiny figure must fall down the table. A pin would
+      // put $10 above $58,000 and the board would contradict its own ordering.
+      await upsertOverrideForUser(jd._id, { portfolioValueCents: 1_000, changePct: -5 }, admin._id);
+      invalidateLeaderboard();
+
+      const board = await getLeaderboard({ period: 'alltime', limit: 300 });
+      const curated = board.top.find((b) => b.featured && b.portfolioValueCents === 1_000);
+      assert.ok(curated, 'still on the board');
+      assert.ok(curated.rank > 1, `a small figure does not lead (rank ${curated.rank})`);
+    });
+
+    await t2.test('it moves no money and leaves the real figures readable', async () => {
+      const user = await User.findById(jd._id).lean();
+      assert.equal(user.cashBalanceCents, jdCashBefore);
+      assert.equal(user.tradeCount, jdTradesBefore);
+
+      // The listing must still expose reality alongside the override, or a
+      // second edit would compound on the first and the original value would be
+      // unrecoverable.
+      const r = await row();
+      assert.equal(r.override.portfolioValueCents, 1_000);
+      assert.notEqual(r.computed.portfolioValueCents, 1_000);
+    });
+
+    await t2.test('upserting twice edits rather than colliding', async () => {
+      // Addressed by the ACCOUNT, so a second save is an edit — not the
+      // `ALREADY_FEATURED` a create-then-create would raise.
+      await upsertOverrideForUser(jd._id, { portfolioValueCents: 5_000, changePct: 1 }, admin._id);
+      const all = await FeaturedTrader.find({ userId: jd._id }).lean();
+      assert.equal(all.length, 1, 'one curated row per account');
+      assert.equal(all[0].portfolioValueCents, 5_000);
+    });
+
+    /**
+     * The Best-position picker's options.
+     *
+     * This shipped broken for ten minutes because `getPortfolio` returns its
+     * position array under `holdings` while its local variable is called
+     * `positions` — destructuring the wrong name yields `undefined`, not an
+     * error, so the endpoint 500'd and the dropdown silently showed "None".
+     */
+    await t2.test('the position picker lists what the trader actually holds', async () => {
+      const items = await listPositionsFor(jd._id);
+      assert.ok(Array.isArray(items), 'an array, not undefined');
+      assert.ok(items.length > 0, 'jd_trader holds positions');
+
+      for (const p of items) {
+        assert.ok(p.symbol, 'every option has a symbol to select');
+        assert.equal(typeof p.returnPct, 'number');
+      }
+
+      // The picker must offer the SAME best position the board reports, or
+      // selecting the trader's actual best would be impossible from the list.
+      const r = await row();
+      if (r.computed?.best?.symbol) {
+        assert.ok(
+          items.some((p) => p.symbol === r.computed.best.symbol),
+          `the board's best (${r.computed.best.symbol}) is on the list`,
+        );
+      }
+    });
+
+    await t2.test('positions for an unknown account are a 404', async () => {
+      await assert.rejects(
+        () => listPositionsFor(new mongoose.Types.ObjectId()),
+        (err) => /** @type {any} */ (err).code === 'USER_NOT_FOUND',
+      );
+    });
+
+    await t2.test('an override on a non-existent account is refused', async () => {
+      // A row keyed on a stale id silently does nothing: it appears, and so
+      // does the user it was meant to replace.
+      await assert.rejects(
+        () => upsertOverrideForUser(new mongoose.Types.ObjectId(), { portfolioValueCents: 1, changePct: 0 }, admin._id),
+        /NO_SUCH_USER|does not exist/i,
+      );
+    });
+
+    await t2.test('removing restores the computed row, and replays cleanly', async () => {
+      assert.deepEqual(await removeOverrideForUser(jd._id), { removed: true });
+      // Not an error the second time: the caller wanted "show real figures",
+      // and that is satisfied either way.
+      assert.deepEqual(await removeOverrideForUser(jd._id), { removed: false });
+
+      invalidateLeaderboard();
+      const board = await getLeaderboard({ period: 'alltime', limit: 300 });
+      assert.ok(
+        board.top.some((b) => String(b.userId) === String(jd._id) && !b.featured),
+        'the real row is back',
+      );
+    });
   });
 });

@@ -331,7 +331,7 @@
     "emailPlaceholder": "tu@ejemplo.com",
     "forgot": "¿Has olvidado la contraseña?",
     "fillDemo": "Rellenar con la cuenta de demostración (jd_trader)",
-    "disclaimer": "HyperStocks es una plataforma de simulación. No se invierte dinero real.",
+    "disclaimer": "No se invierte dinero real.",
     "haveAccount": "¿Ya tienes una cuenta?",
     "noAccount": "¿Eres nuevo por aquí?",
     "grant": "Tus primeros {{amount}} corren de nuestra cuenta.",
@@ -378,7 +378,9 @@
     "periodAlltime": "histórico",
     "tabWeekly": "Semanal",
     "tabMonthly": "Mensual",
-    "tabAlltime": "Histórico"
+    "tabAlltime": "Histórico",
+    "trades": "Operaciones",
+    "bestPosition": "Mejor posición"
   },
   "news": {
     "title": "Noticias",
@@ -527,8 +529,41 @@
         "status": "Estado",
         "cash": "Efectivo",
         "trades": "Operaciones",
-        "joined": "Alta"
-      }
+        "joined": "Alta",
+        "board": "En la tabla"
+      },
+      "curated": "Editado",
+      "rankShort": "puesto {{rank}}",
+      "notRanked": "Sin clasificar",
+      "edit": "Editar"
+    },
+    "override": {
+      "title": "Cifras de la tabla - {{name}}",
+      "actual": "Real, calculado a partir de sus posiciones",
+      "notRanked": "Esta cuenta no aparece en la clasificacion.",
+      "value": "Valor de la cartera (USD)",
+      "valueHint": "Lo que la clasificacion mostrara para este trader.",
+      "willRank": "Esta cifra lo situaria en el puesto {{rank}}.",
+      "changePct": "Rentabilidad (%)",
+      "changeHint": "La ganancia en efectivo que aparece al lado se deriva de esto, nunca se escribe aparte.",
+      "trades": "Operaciones",
+      "bestSymbol": "Mejor posicion",
+      "bestReturn": "Rentabilidad de la mejor posicion (%)",
+      "note": "Esto solo cambia lo que muestra la clasificacion. Su efectivo, sus posiciones y su pagina de cartera no se tocan, y no se mueve dinero.",
+      "save": "Guardar cifras",
+      "saved": "Cifras de la tabla actualizadas",
+      "resetAction": "Mostrar cifras reales",
+      "reset": "Restaurado a sus cifras reales",
+      "bestNone": "Ninguna",
+      "bestNotHeld": "ya no la posee",
+      "bestHint_one": "{{count}} posicion abierta",
+      "bestHint_other": "{{count}} posiciones abiertas",
+      "noPositions": "Este trader no tiene posiciones.",
+      "addPhoto": "Anadir foto",
+      "replacePhoto": "Cambiar foto",
+      "removePhoto": "Quitar",
+      "uploading": "Subiendo…",
+      "photoHint": "PNG, JPEG, WebP o GIF, hasta 600KB. Sin foto se usa la marca generada."
     }
   },
   "notices": {
@@ -547,7 +582,9 @@
     "rejected": "Solicitud rechazada.",
     "declined": "Solicitud denegada.",
     "claimed": "Asignada. Ya puedes confirmarla o rechazarla.",
-    "subscribed": "Suscrito. Ya estás en la lista."
+    "subscribed": "Suscrito. Ya estás en la lista.",
+    "loginSuccess": "Inicio de sesión correcto",
+    "signupSuccess": "Cuenta creada"
   },
   "legal": {
     "lastUpdated": "Última actualización",
@@ -589,7 +626,6 @@
   },
   "liveGains": {
     "summary": "{{amount}} en {{symbol}}",
-    "simulated": "Simulado",
     "trader": "Trader {{id}}"
   }
 }

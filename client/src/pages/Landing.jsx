@@ -260,7 +260,11 @@ function TopInvestors({ rows, loading = false }) {
 
               <Avatar
                 name={r.name ?? r.username}
-                src={investorPhoto(r.username)}
+                /* An operator-uploaded portrait outranks the bundled one: it
+                   is the more recent decision, and the bundled photos are keyed
+                   by seeded username so a curated row would otherwise fall back
+                   to a face chosen for somebody else. */
+                src={r.avatarUrl || investorPhoto(r.username)}
                 size={40}
               />
 

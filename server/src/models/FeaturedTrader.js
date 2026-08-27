@@ -67,6 +67,21 @@ const featuredTraderSchema = new mongoose.Schema(
      */
     changePct: { type: Number, required: true, min: -100, max: 100_000 },
 
+    /**
+     * An uploaded portrait for this row, or empty for the generated mark.
+     *
+     * A PATH INTO OUR OWN MEDIA STORE, never a third-party URL — see the note
+     * on `Media`. Stored on the row rather than on the user because it is part
+     * of the CURATION: it says what this leaderboard row displays, and clearing
+     * the override must take the picture with it rather than leave a portrait
+     * attached to an account that never chose one.
+     *
+     * `Avatar` already prefers `src` over its generated artwork and falls back
+     * on the image's own error event, so an empty value and a dead one both
+     * degrade to the mark rather than to a broken frame.
+     */
+    avatarUrl: { type: String, default: '', trim: true, maxlength: 120 },
+
     /** Displayed in the Trades column. Counts nothing; it is a display figure. */
     trades: { type: Number, default: 0, min: 0 },
 

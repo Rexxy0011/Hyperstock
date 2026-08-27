@@ -6,6 +6,8 @@ import { useAuth } from '../auth/AuthProvider';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import Badge, { statusVariant } from '../components/ui/Badge';
 import Money from '../components/market/Money';
+import TraderOverrideModal from '../components/admin/TraderOverrideModal';
+import { money } from '../lib/format';
 import notify from '../lib/toast';
 
 /**
@@ -56,9 +58,24 @@ export default function Users() {
     },
   });
 
+  /**
+   * The trader whose board figures are being edited.
+   *
+   * The SELECTION outlives the close and a separate `open` flag drives the
+   * dialog, because `{editing && <Modal …>}` unmounts on close and the exit
+   * transition never runs — the panel just disappears. The same split every
+   * other dialog in this app makes.
+   */
+  const [editing, setEditing] = useState(/** @type {any} */ (null));
+  const [editOpen, setEditOpen] = useState(false);
+
   const rows = data?.items ?? [];
   const counts = data?.counts;
   const pages = data?.pages ?? 1;
+
+  // Re-read the row from the freshest page data, so saving an override and
+  // reopening shows the new values rather than the snapshot taken on click.
+  const editingRow = editing ? (rows.find((r) => r.id === editing.id) ?? editing) : null;
 
   return (
     <div className="w-full px-4 py-10 sm:px-5 lg:px-7 2xl:px-9">
@@ -94,18 +111,20 @@ export default function Users() {
         <table className="w-full border-collapse">
           <thead>
             <tr>
-              {['account', 'signIn', 'role', 'status', 'cash', 'trades', 'joined'].map((k) => (
-                <th key={k} className={th}>
-                  {t(`admin.users.col.${k}`)}
-                </th>
-              ))}
+              {['account', 'signIn', 'role', 'status', 'board', 'cash', 'trades', 'joined'].map(
+                (k) => (
+                  <th key={k} className={th}>
+                    {t(`admin.users.col.${k}`)}
+                  </th>
+                ),
+              )}
               <th className={th} />
             </tr>
           </thead>
           <tbody>
             {isLoading && (
               <tr>
-                <td className={td} colSpan={8}>
+                <td className={td} colSpan={9}>
                   <span className="block h-4 w-48 animate-pulse rounded-sm bg-mist" />
                 </td>
               </tr>
@@ -115,7 +134,7 @@ export default function Users() {
                 subscribers table makes, and for the same measured reason. */}
             {isError && (
               <tr>
-                <td className={`${td} py-10 text-center`} colSpan={8}>
+                <td className={`${td} py-10 text-center`} colSpan={9}>
                   <p className="m-0 text-text-muted">{t('common.loadFailed')}</p>
                   <button
                     type="button"
@@ -130,7 +149,7 @@ export default function Users() {
 
             {!isLoading && !isError && !rows.length && (
               <tr>
-                <td className={`${td} py-10 text-center text-text-muted`} colSpan={8}>
+                <td className={`${td} py-10 text-center text-text-muted`} colSpan={9}>
                   {t('admin.users.empty')}
                 </td>
               </tr>
@@ -176,6 +195,35 @@ export default function Users() {
                     <Badge variant={statusVariant(r.status)}>{r.status}</Badge>
                   </td>
 
+                  {/* WHAT THE LEADERBOARD SHOWS FOR THIS TRADER, which is not
+                      necessarily what they are worth. An overridden row is
+                      marked and the real figure printed beneath it — the one
+                      question an operator has on this screen is which of these
+                      numbers are real, and a curated value that looked exactly
+                      like a computed one would make that unanswerable. */}
+                  <td className={`${td} text-right whitespace-nowrap`}>
+                    {r.override ? (
+                      <>
+                        <Money value={r.override.portfolioValueCents} size={13} />
+                        <span className="mt-0.5 block text-2xs text-amber">
+                          {t('admin.users.curated')} ·{' '}
+                          <span className="font-numeric tabular-nums text-text-muted">
+                            {money(r.computed?.portfolioValueCents ?? 0)}
+                          </span>
+                        </span>
+                      </>
+                    ) : r.computed ? (
+                      <>
+                        <Money value={r.computed.portfolioValueCents} size={13} />
+                        <span className="mt-0.5 block font-numeric text-2xs tabular-nums text-text-muted">
+                          {t('admin.users.rankShort', { rank: r.computed.rank })}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-xs text-text-muted">{t('admin.users.notRanked')}</span>
+                    )}
+                  </td>
+
                   <td className={`${td} text-right`}>
                     <Money value={r.cashBalanceCents} size={13} />
                   </td>
@@ -189,6 +237,23 @@ export default function Users() {
                   </td>
 
                   <td className={`${td} text-right whitespace-nowrap`}>
+                    {/* ONLY FOR TRADERS. Administrators are excluded from the
+                        board's `role: 'user'` aggregation, so an override on
+                        one would write a row for an account the leaderboard
+                        never ranks — a control that silently does nothing. */}
+                    {r.role !== 'admin' && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditing(r);
+                          setEditOpen(true);
+                        }}
+                        className="mr-4 cursor-pointer text-sm font-medium text-void underline underline-offset-2"
+                      >
+                        {t('admin.users.edit')}
+                      </button>
+                    )}
+
                     {/* Hidden entirely on your own row rather than disabled: the
                         server refuses it (SELF_STATUS_CHANGE), and a control
                         that exists only to reject you is worse than no control.
@@ -244,6 +309,12 @@ export default function Users() {
           </button>
         </div>
       )}
+
+      <TraderOverrideModal
+        trader={editingRow}
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+      />
     </div>
   );
 }

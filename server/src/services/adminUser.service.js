@@ -1,6 +1,9 @@
 import mongoose from 'mongoose';
 import { User } from '../models/User.js';
 import { ApiError } from '../lib/ApiError.js';
+import { computedRowsFor } from './leaderboard.service.js';
+import { overridesForUsers } from './featuredTrader.service.js';
+import { getPortfolio } from './portfolio.service.js';
 
 /**
  * The user listing behind /admin/users.
@@ -32,7 +35,7 @@ const literal = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
  * shape: an admin listing needs to know that a credential EXISTS, never what it
  * is.
  */
-const publicRow = (user, canSignIn) => ({
+const publicRow = (user, canSignIn, computed = null, override = null) => ({
   id: String(user._id),
   username: user.username,
   displayName: user.displayName ?? null,
@@ -45,6 +48,48 @@ const publicRow = (user, canSignIn) => ({
   emailVerified: Boolean(user.emailVerified),
   createdAt: user.createdAt,
   canSignIn,
+
+  /**
+   * WHAT THE BOARD WOULD SHOW FOR THIS ACCOUNT ON ITS OWN, so the edit form
+   * opens on reality instead of an empty box. Null for anybody the board does
+   * not rank — administrators, and any account the pipeline's `role: 'user'`
+   * filter excludes.
+   *
+   * Deliberately the PRE-MERGE figures. An already-overridden trader must still
+   * be editable against their real numbers, or each edit would compound on the
+   * last and the original would become unrecoverable.
+   */
+  computed: computed
+    ? {
+        rank: computed.rank,
+        portfolioValueCents: computed.portfolioValueCents,
+        returnPct: computed.returnPct,
+        trades: computed.trades,
+        best: computed.best ?? null,
+      }
+    : null,
+
+  /**
+   * The curated row standing in for this account, if one exists.
+   *
+   * Present on the listing rather than fetched per row when a modal opens: the
+   * table has to mark which traders are overridden BEFORE anybody clicks, or
+   * the screen cannot answer the one question an operator has when they arrive
+   * — which of these numbers are real.
+   */
+  override: override
+    ? {
+        id: String(override._id),
+        portfolioValueCents: override.portfolioValueCents,
+        changePct: override.changePct,
+        trades: override.trades ?? 0,
+        bestSymbol: override.bestSymbol || '',
+        bestReturnPct: override.bestReturnPct ?? 0,
+        avatarUrl: override.avatarUrl || '',
+        active: override.active !== false,
+        updatedAt: override.updatedAt,
+      }
+    : null,
 });
 
 /**
@@ -80,22 +125,75 @@ export async function listUsers({ q = '', page = 1, limit = PAGE_SIZE } = {}) {
    * database and is not — the same note `/admin/queues` carries about counting
    * with `.length`.
    */
-  const withCredentials = new Set(
-    (
-      await mongoose.connection
-        .collection('accounts')
-        .find({ userId: { $in: rows.map((r) => r._id) } })
-        .project({ userId: 1 })
-        .toArray()
-    ).map((a) => String(a.userId)),
-  );
+  const ids = rows.map((r) => r._id);
+
+  /**
+   * THREE LOOKUPS FOR THE WHOLE PAGE, and the same rule governs all of them.
+   * Per-row would be 75 round trips for 25 rows, which looks free on a seeded
+   * database and is not. The board read is a memo hit in the ordinary case, so
+   * it costs nothing beyond a filter over rows already in memory.
+   */
+  const [credentialRows, computed, overrides] = await Promise.all([
+    mongoose.connection
+      .collection('accounts')
+      .find({ userId: { $in: ids } })
+      .project({ userId: 1 })
+      .toArray(),
+    computedRowsFor(ids),
+    overridesForUsers(ids),
+  ]);
+
+  const withCredentials = new Set(credentialRows.map((a) => String(a.userId)));
 
   return {
-    items: rows.map((r) => publicRow(r, withCredentials.has(String(r._id)))),
+    items: rows.map((r) => {
+      const key = String(r._id);
+      return publicRow(
+        r,
+        withCredentials.has(key),
+        computed.get(key) ?? null,
+        overrides.get(key) ?? null,
+      );
+    }),
     total,
     page: current,
     pages: Math.max(1, Math.ceil(total / size)),
   };
+}
+
+/**
+ * The positions a trader actually holds, for the Best-position picker.
+ *
+ * FREE TEXT WAS THE WRONG CONTROL. "Best position" names a holding, and a typed
+ * box lets an operator publish a trader's best position as a symbol they have
+ * never owned — or as a typo, which renders as a ticker that does not exist
+ * beside a return that cannot be checked against anything.
+ *
+ * It goes through `getPortfolio` rather than reading `Holding` directly, so the
+ * returns offered here are the same numbers the trader's own portfolio screen
+ * shows. A second valuation path would eventually disagree with the first, and
+ * the disagreement would surface on a public board.
+ *
+ * Fetched when the editor opens, not with the listing: twenty-five portfolio
+ * valuations to populate a dropdown nobody may open is the per-row cost this
+ * file already has a note about.
+ */
+export async function listPositionsFor(userId) {
+  const user = await User.findById(userId).select('cashBalanceCents').lean();
+  if (!user) throw ApiError.notFound('No such user', 'USER_NOT_FOUND');
+
+  // `holdings`, not `positions` — the local variable inside `getPortfolio` is
+  // named `positions` but the key it returns is `holdings`, and destructuring
+  // the wrong one yields `undefined` rather than an error.
+  const { holdings } = await getPortfolio(userId, user.cashBalanceCents);
+
+  return holdings.map((p) => ({
+    symbol: p.symbol,
+    assetClass: p.assetClass,
+    name: p.name,
+    returnPct: p.totalReturnPct,
+    valueCents: p.marketValueCents,
+  }));
 }
 
 /**

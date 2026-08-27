@@ -144,7 +144,100 @@ and "5 positions / 4 exchanges" was false in the mockup (we seed 5 positions gen
 $12,220.64** and **leaderboard rank exactly 128**. Changing stock anchor prices, `JD_HOLDINGS`, or the
 synthetic-user counts will break those; update the fixtures together.
 
-Demo accounts: `jd@hyperstocks.app` and `admin@hyperstocks.app`, password `password123`.
+Demo account: `jd@hyperstocks.app`, password `password123`. It is the trader every mockup depicts, and it
+stays a literal in `seed.js` on purpose — it is published here, printed by the seed and drawn in the
+design, and a fixture holding virtual capital is not a credential worth protecting.
+
+**THE OPERATOR ACCOUNT IS NOT.** `admin` is the only `role: 'admin'` row in the database and therefore the
+only credential that reaches `/soap/*` — the approvals queues, the user list, the featured board. Its
+address and password come from **`ADMIN_EMAIL` and `ADMIN_PASSWORD`**, because an admin password committed
+to a repository is an admin password on every clone, fork and screenshot of the file. Both default to the
+previous hardcoded values (`admin@hyperstocks.app` / `password123`), so a fresh clone with no `.env` seeds
+exactly as it always did — and **`config/env.js` refuses to boot in production while `ADMIN_PASSWORD` is
+still that default**, checked by value rather than by a `dev-` prefix, since nothing about it announces
+itself as a placeholder.
+
+Three consequences worth knowing:
+
+- **The seed prints the variable name, never the value.** That output gets scrolled through, screenshotted
+  and pasted into issues. It appends *(still the default)* when it is, which is the one case where saying
+  so costs nothing.
+- **`giveCredential` memoises the bcrypt hash, and a different password must not reuse it.** Cost 12 is
+  deliberately slow and the demo password is written to more than one account, so the shared hash is cached
+  — but an unconditional `??=` would have handed the admin the demo password's hash and made
+  `ADMIN_PASSWORD` do nothing at all, silently. It branches instead. Verified on an ephemeral seed with a
+  custom password: the admin matches its own and **not** `password123`, jd_trader matches `password123` and
+  **not** the admin's.
+- **Changing `ADMIN_EMAIL` renames the existing operator, it does not mint a second one.** The upsert keys
+  on `username: 'admin'`, never on the address — keying on the email would leave the old account in place
+  with the old password still working, which is the opposite of what rotating it is for.
+
+**EDITING `.env` DOES NOTHING ON ITS OWN — RUN `npm run admin:sync`.** The credentials live in the
+database, so a configured address with no sync is a login that does not exist; the symptom is signing in as
+some other account and finding `/soap` redirects to `/portfolio`, which is the correct behaviour for a
+non-admin and says nothing about the cause. `autoSeedIfNeeded()` returns early unless `isEphemeral()`, so
+the persistent local instance never picks it up by itself.
+
+**`npm run seed` WOULD ALSO WORK AND IS THE WRONG TOOL.** It is idempotent, and that is precisely the
+problem: rerunning it restores jd_trader's holdings, orders and snapshots to the design's figures, so
+rotating a password would silently revert every trade made on that database. Before `syncAdmin.js` existed
+that was the *only* way to change the admin password — which on a production database nobody should be
+willing to do, so in practice it could not be rotated at all.
+
+**IT REVOKES THE OPERATOR'S SESSIONS, and without that the rotation rotates nothing that matters.** Better
+Auth sessions are ROWS, not self-contained tokens, so a cookie stays valid until its row is deleted —
+entirely independently of the password that created it. Writing a new hash and stopping there leaves
+whoever held the old password still signed in, on the one account that reaches the admin section. Same
+mechanism and same stated reason as `adminUser.service.js` on suspension: leaving the rows means the
+account is refused at the next sign-in while a live session sits there working, which is two answers to "is
+this person signed in". It is also what makes this a recovery tool — an operator who believes a session has
+been taken can rotate and know every existing cookie is dead. Measured on the development database: **11
+revoked**.
+
+`syncAdmin.js` touches the operator row and its credential and nothing else, is safe to run repeatedly, and
+**refuses when `ADMIN_EMAIL` belongs to a different username** rather than promoting that account.
+Granting `admin` to somebody else's registered account because of a line in a config file is the quietest
+privilege escalation available, and it is the same reasoning that keeps role uneditable from the user
+admin's table rows. `lib/credential.js` now owns the `accounts` row shape, because the seed and the sync
+must write it identically — a row that is close but not identical does not error, it fails at sign-in,
+which reads as a wrong password.
+
+Verified live against the development database: `admin` moved from the seeded address to the configured one,
+the configured pair signs in **200 `role: admin`**, both the old address and the old password are **401**,
+and `jd_trader` still signs in with `password123` untouched.
+
+**THE ADMIN SECTION IS MOUNTED AT `/soap`, NOT `/admin`, AND `components/nav/navItems.js` OWNS THE
+STRING.** `ADMIN_BASE` is the single definition; `router.jsx` builds all four paths from it, the nav
+derives every `to` from it, and `ADMIN_HOME` is where a signed-in operator lands. Renaming the section is
+one edit, which is the point — the alternative is eight literals and a stale link that 404s for the one
+person allowed through it.
+
+**It is obscurity and it is described as obscurity.** `/admin` is the first path anybody scanning a site
+tries, and a route that merely redirects on the wrong role still *confirms the screen exists*. Under an
+unguessable prefix a prober gets the ordinary Not-found page. The actual protection has not changed and
+does not care what the string says: `ProtectedRoute adminOnly` on the client, `requireAdmin` on the server.
+
+**WHAT IT DOES NOT HIDE: the API is still `/api/admin/*`**, and those endpoints answer **401**, not 404, to
+an anonymous request — so they confirm an admin API exists to anyone who asks. Renaming the client route is
+the half a visitor can see. Matching the server is a separate change and has not been made.
+
+**Signing in as an operator lands on `ADMIN_HOME`; everyone else lands on `/`.** The role is only knowable
+inside `Auth.jsx`'s early `<Navigate>`, since `next` is computed before anybody has signed in — and
+`?next=` still outranks both, because `ProtectedRoute` attaches the page somebody was bounced from and an
+admin who clicked `/withdraw` meant `/withdraw`. **The Google leg cannot do this and does not try**: its
+`callbackURL` is fixed before the round trip, when there is no session to read a role from, so an admin
+signing in with Google lands on `/` and reaches the section from the nav.
+
+Verified in the browser across three sessions: as admin, `/soap` redirects to `/soap/approvals` and all
+four screens render; as an ordinary trader every `/soap/*` path bounces to `/portfolio`; anonymously they
+bounce to `/auth`; and `/admin` and `/admin/approvals` are **Not found for everybody, the admin included**.
+Signing in through the form as the operator lands on `/soap/approvals`, and the account menu's four links
+all read `/soap/…`.
+
+`migrateLegacyCredentials()` reads `env.ADMIN_EMAIL` for the same reason — a database seeded under the old
+scheme keeps its hash on the user document, and missing that address in the filter leaves the operator with
+no `accounts` row at all, which presents as a wrong password on the one login that can reach the admin
+section.
 
 ## Server architecture
 
@@ -156,6 +249,20 @@ starting from holdings silently drops cash-only traders off the board. Weekly an
 *mathematically impossible* from current state alone, so `PortfolioSnapshot` is load-bearing: the seed
 backfills 90 daily marks per user, and the same series feeds the performance chart. Results are memoised
 60s per period; call `invalidateLeaderboard()` after a fill.
+
+**THE TABLE IS `table-fixed` WITH PERCENTAGE COLUMNS, AND AUTO LAYOUT IS WHY.** Auto sizes each column to
+its content and then dumps the LEFTOVER between two of them: measured at 1600px, **~350px of nothing** sat
+between "Best position" and "Portfolio value" while the trader names stopped short, so a table that was
+genuinely full width still read as unfinished. Giving one column `w-full` only moves it — at 1920 that
+left **1188px** of empty space after the name. Six short columns cannot fill 1846px however the slack is
+assigned, so it is SPREAD (7/30/9/19/19/16) rather than pooled, which keeps a row reading as one unit
+instead of two clusters either side of a canyon. Largest empty run after: 477px at 1920, 251px at 1280,
+174px at 1024. `min-w-200` hands narrow screens to the wrapper's existing `overflow-x-auto`, since fixed
+layout would otherwise crush the columns rather than let the table scroll.
+
+**Its headers were hardcoded English** — `['Rank', 'Trader', 'Trades', 'Best position']` as a literal
+array — and the earlier translation sweep missed them because that sweep compared whole-page text and
+these four words also appear in the English source. Keyed now.
 
 **RANK IS ALWAYS BY CURRENT PORTFOLIO VALUE — the period tabs do not re-rank.** `$setWindowFields` sorts on
 `portfolioValueCents` whatever the period; Weekly/Monthly/All-time only change the `returnPct` *column*.
@@ -187,7 +294,7 @@ reproducible while the running app drifts.
 #### Featured traders — the operator's lever on the board
 
 `models/FeaturedTrader.js`, `services/featuredTrader.service.js`, `/api/admin/featured-traders`, and
-`pages/Admin.jsx` at `/admin/featured-traders` — **the first admin screen in the product**. An admin writes
+`pages/Admin.jsx` at `/soap/featured-traders` — **the first admin screen in the product**. An admin writes
 a name, a value and a percentage, and the row takes its place on the leaderboard.
 
 **It is merged, not pinned, and that is the design.** A curated row is ranked against the live board on the
@@ -218,7 +325,129 @@ disclosure on that surface.
 Both leaderboard surfaces now key their lists on `userId`, not `username`: a curated name is free text and
 may collide with a real trader's, and two rows sharing a React key silently drop one.
 
-### The user admin — `/admin/users`
+##### Editing a trader from `/soap/users`
+
+`components/admin/TraderOverrideModal.jsx`, `PUT`/`DELETE /api/admin/users/:id/override`. Every row in the
+user table has an **Edit** button that writes the override above — so the operator edits a PERSON rather
+than managing a curated row, which is the same object seen from the other end.
+
+**`PUT`, ADDRESSED BY THE ACCOUNT, NOT `POST` ADDRESSED BY THE ROW.** Whether a curated row already exists
+for this trader is an implementation detail the screen should never make anybody discover, and making the
+client choose the verb loses the race: two operators opening the same trader both see "no override", both
+POST, and one gets `ALREADY_FEATURED` for a form that looked fine. `setDefaultsOnInsert` is load-bearing —
+without it an upserted row is created without `active: true` and silently never appears.
+
+**The name is taken from the account, never typed.** An override on a real trader corrects their FIGURES;
+renaming them as well is what the standalone curated row is for, and offering both in one dialog is how a
+real account gets published under an invented identity. `userId` is likewise rejected in the body because
+it is in the PATH — two sources for the one thing deciding whose row this replaces means a mismatch
+silently overrides the wrong trader.
+
+**THE FORM OPENS ON REALITY.** The listing carries each trader's real `computed` figures beside any
+`override`, so the common case is nudging a live number rather than inventing one, and the panel keeps the
+actual value on screen while it is edited. Those figures are the PRE-MERGE ones deliberately: an
+already-edited trader must stay editable against their real numbers, or each edit compounds on the last and
+the original becomes unrecoverable. It reads the leaderboard's own memo (`computedRowsFor`) rather than
+running a second pipeline — two owners of that aggregation would drift, and the drift would surface as an
+operator "correcting" a number the board never showed.
+
+**THE RANK PREVIEW IS COMPUTED ON THE SERVER, AND THE OBVIOUS VERSION WAS WRONG.** Counting rows above the
+typed value in the leaderboard the admin already holds looks right and is not: `/leaderboard` caps `limit`
+at **100**, so a trader ranked 190 was measured against a list that stopped at 100 and the preview reported
+**101** — the same meaningless answer for every account below the cut. Measured exactly that before moving
+it to `rankForValue`. The trader being edited is excluded, and **not only by user id**: an already-overridden
+trader sits on the board as a curated row whose `userId` is the FeaturedTrader document's id, so matching
+the user id alone misses it and reports a rank one too low for precisely the traders most likely to be
+edited again.
+
+**Only one rank is printed.** The "actual" line used to show `computed.rank` above a preview counting the
+MERGED board — measured at **187 against 188**, differing by the standalone curated rows above. Two ranks
+on one small panel disagreeing by one is a defect, not a detail, so the actual line dropped its rank and
+the preview owns the number; for an unchanged value it already states the current position.
+
+**BEST POSITION IS A DROPDOWN OF WHAT THE TRADER ACTUALLY HOLDS**, via `GET /api/admin/users/:id/positions`.
+Free text let an operator publish a best position in a symbol the account never owned — or a typo, which
+renders as a ticker that does not exist beside a return nothing can be checked against. It resolves through
+`getPortfolio`, so the returns offered are the same numbers the trader's own portfolio screen shows, and
+picking one fills in its real return alongside it. Fetched when the editor opens, never with the listing:
+twenty-five portfolio valuations for a dropdown nobody may open is the per-row cost this file keeps warning
+about.
+
+Two options exist beyond the holdings. **"None" is a real state** — the board renders an em dash for a row
+with no best position, and a picker that cannot express it would force every curated row to claim one. And
+**a stored symbol the trader no longer holds stays on the list**, labelled as such: `Select` shows a blank
+trigger for a value it has no option for, so a closed position would read as "None" and be erased by the
+next save. Same reason `listWatchlist` returns rows it can no longer resolve.
+
+**That endpoint shipped broken for ten minutes and the test is the lesson.** `getPortfolio` returns its
+position array under **`holdings`** while its own local variable is called `positions` — destructuring the
+wrong name yields `undefined`, not an error, so the route 500'd and the dropdown silently showed only
+"None". `test/adminUser.test.js` now asserts the array is an array, is non-empty for jd_trader, and
+contains the symbol the board reports as that trader's best.
+
+##### The avatar — an image store, because there was none
+
+`models/Media.js`, `services/media.service.js`, `POST /api/admin/media`, `GET /api/media/:id`, and
+`FeaturedTrader.avatarUrl`. The editor's photo control adds, replaces and removes a portrait; without one
+the row keeps `Avatar`'s generated mark.
+
+**THE BYTES LIVE IN MONGO, and the alternatives were worse rather than the choice being obvious.** There is
+no object store, no disk the API can rely on across a redeploy and no CDN in this project. A pasted external
+URL was the cheap option and this codebase has already measured what happens to hotlinked images —
+Investing.com 403s every enclosure it publishes from any origin but its own — so an avatar on a public
+board would eventually be a broken frame nobody is watching. `avatarUrl` is validated against
+`^/api/media/<sha256>$` for that reason: a curated row **cannot** be pointed at a third-party host.
+
+**CONTENT-ADDRESSED: `_id` IS THE SHA-256 OF THE BYTES**, which buys three things at once. Re-uploading the
+same picture upserts one row, so a curator trying three images and settling on the first leaves one
+document; the URL can be cached `immutable` for a year because the bytes at an id cannot change by
+construction, so there is no cache to bust; and the id leaks neither who uploaded it nor when.
+
+**THE TYPE IS SNIFFED FROM THE BYTES, NEVER READ FROM THE HEADER.** `Content-Type` is supplied by the
+uploader, and we serve the result back from our own origin — trusting it lets somebody choose how a browser
+interprets a file on this domain, which is a stored-XSS shape rather than a mislabelled picture. **SVG is
+refused as a class**: it is an image format that can contain `<script>`, and nothing about an avatar needs
+vector art. Verified: an SVG posted as `image/png` is **400 `UNSUPPORTED_IMAGE`**.
+
+That sniffing immediately proved itself on this repo's own assets. **`assets/investors/*.webp` are JPEGs.**
+All ten begin `ff d8 ff e0 … JFIF` — the PNG-source/webp-build convention this file describes did not happen
+for them. Nothing is broken (browsers sniff too), but the store labels them `image/jpeg` because that is
+what they are, and any future pass over those assets should know.
+
+**RAW BODY, NOT MULTIPART, so no `multer`.** One file with no accompanying fields is precisely the case
+multipart exists to solve and this is not — the same reasoning `lib/mailer.js` gives for reaching Resend
+with `fetch` rather than taking an SDK for one POST. `express.raw` is scoped to that one route with the
+600KB cap; the global `express.json({ limit: '100kb' })` is untouched.
+
+**The upload fires on selection, not on Save**, because the response is what supplies the URL the form
+stores. That is safe on its own: an image nobody saves is an orphan row, not a changed leaderboard. The
+file input is reset after each pick, or choosing the SAME file again after a remove fires no `change` event
+and the control silently does nothing.
+
+**Both board surfaces prefer it.** Landing's panel takes `r.avatarUrl || investorPhoto(r.username)` — the
+operator's decision is the more recent one, and the bundled photos are keyed by seeded username, so a
+curated row would otherwise fall back to a face chosen for somebody else. The leaderboard's letter chip
+becomes an `Avatar` when a portrait exists, on the table row and the mobile card both.
+
+**IT IS WORTH KNOWING WHAT THIS FEATURE IS FOR.** `Avatar`'s own note says attaching a real person's
+likeness to an invented return is misrepresentation however the photo was sourced — and this control exists
+specifically to put a photograph on a row whose figures were typed by an operator. That is the whole point
+of the override, so the capability is built as asked; the note is recorded here because the two decisions
+sit in direct tension and the reasoning should not have to be rediscovered.
+
+Verified end to end: a 46,559-byte upload returns 201, serves back **byte-identical** to an anonymous
+request as `image/jpeg` with `public, max-age=31536000, immutable`, and reaches the public board on
+Denise Coates' row at rank 1. An external URL is refused **400**. In the editor the control cycles
+generated mark → *Add a photo* → uploaded `<img>` with *Replace photo* / *Remove* → back to the generated
+mark.
+
+Verified live: editing trader_022 to $987,654.32 put them at **rank 1**, on the board **exactly once**, with
+cash and `tradeCount` unmoved and their real figures still readable underneath; a small figure drops them
+down the table rather than pinning; removing restores the computed row and a replayed remove returns
+`{ removed: false }` rather than a 404. In the browser: the picker lists `9988 · Alibaba Group · +0.00%` and
+`NVDA · NVIDIA · +135.18%`, and selecting each sets the return field to `0` and `135.18` respectively.
+
+### The user admin — `/soap/users`
 
 `services/adminUser.service.js`, `GET /api/admin/users`, `PATCH /api/admin/users/:id/status`,
 `pages/Users.jsx`. It exists because Better Auth moved credentials out of the user document.
@@ -262,7 +491,7 @@ change moves no money.
 
 ### The approvals dashboard
 
-`/admin/approvals` (`pages/Approvals.jsx`) drives the three review queues that had complete APIs and no
+`/soap/approvals` (`pages/Approvals.jsx`) drives the three review queues that had complete APIs and no
 operator: `/api/admin/deposits`, `/api/admin/withdrawals` and `/api/wallet/admin/topups`. No endpoint
 changed shape to make the screen work — what changed is what they return about the requester.
 
@@ -304,7 +533,7 @@ with the balance unmoved.
 ### The marketing CTA — a newsletter subscription, and why it is not EmailJS or a form backend
 
 `POST /api/subscribers` (`models/Subscriber.js`, `services/subscriber.service.js`), listed at
-`/admin/subscribers`. Landing's closing CTA used to collect nothing: it handed the address to `/auth` as a
+`/soap/subscribers`. Landing's closing CTA used to collect nothing: it handed the address to `/auth` as a
 query param, with a comment saying a field that silently swallows an address is worse than none.
 
 **EmailJS was rejected on a specific ground, not a vague one.** Its service id, template id and public key
@@ -402,6 +631,34 @@ price can no longer move" — the failure that had the socket dark for 83 minute
 Toast ids are used on the repeatable notices (`market-feed`, `market-session`, `admin-queue`), so a socket
 that flaps replaces its own notice in place instead of stacking a column of them.
 
+#### The sign-in confirmation — `components/auth/WelcomeNotice.jsx`
+
+**THE ONE TOAST IN THE APP THAT IS NOT BOTTOM RIGHT.** It is `top-center` by request. The rule above still
+holds and the cost is specific: it lands over the account cluster the user has just earned. It is a 3s
+success nobody needs to act on, arriving at the one moment somebody is looking at the top of the page
+rather than working in it — `notify.welcome` is the single line to change if that ever bites.
+
+**IT IS DRIVEN BY A QUERY PARAM, NOT BY THE LOGIN CALL, AND GOOGLE IS WHY.** Password and code sign-in
+could raise the toast where they happen; the OAuth leg LEAVES THE APP, comes back to a cold boot, and
+nothing in memory remembers anybody signed in. Firing at the call site would have covered two of the three
+ways in and silently missed the third. Every path appends `?welcome=` to wherever it was going and one
+component consumes it — the same technique `lib/tradeIntent.js` uses, for the same reason: the URL is the
+only thing that survives a round trip through another origin.
+
+**THE PARAM IS CONSUMED, with `replace: true`.** Left in place, a reload would re-announce a sign-in that
+happened minutes ago, and a non-replacing strip would add a history entry the user has to press Back
+through twice.
+
+**`Auth.jsx`'s EARLY `<Navigate>` OWNS THE DESTINATION, and this was a real bug.** The first version
+appended the marker in the submit handler after the await, and the toast never fired: `login()` resolving
+sets `user` in the provider, which re-renders Auth and fires that redirect BEFORE anything after the await
+runs, so the marker was dropped and the plain `next` won. `welcomeKind` is now set *before* the await, and
+the redirect carries it. It is null when somebody merely arrives on `/auth` with a live session — that is
+not a sign-in and must not announce one — and a failed attempt clears it.
+
+Verified: a reload does not re-announce, arriving signed in redirects silently, `?next=/withdraw` still
+lands on `/withdraw` *with* the toast and no leftover query string, and it translates.
+
 #### Activity toasts — `components/market/LiveGains.jsx`
 
 A trader and a gain, at random, bottom-right. It renders nothing and holds a timer, like `MarketNotices`.
@@ -412,10 +669,11 @@ easier and is exactly the thing not to do: a fabricated number cannot be reconci
 click away, and the first person who compares them finds the product contradicting itself.
 
 **IT IS STILL A CLAIM THAT NAMED PEOPLE ARE MAKING MONEY RIGHT NOW**, which is a stronger statement than
-the leaderboard panel makes — the panel is static and carries a disclosure line underneath, and these
-travel to `/about` and `/faqs`, where nothing else on the page says what they are. So every toast carries
-a **Simulated** label; it is the disclosure, not decoration. The same instruction the Top investors panel
-and the partner strip already carry applies here first: **review the names before a public deploy.**
+the leaderboard panel makes, and these travel to `/about` and `/faqs` where nothing else on the page says
+what they are. They shipped with a **Simulated** badge for exactly that reason; **the badge was removed by
+request** along with every other sentence naming the word, so these notices now carry no disclosure of
+their own. The instruction the Top investors panel and the partner strip already carry applies here
+hardest: **review the names before a public deploy.**
 
 **THE GAINS ARE FILTERED TO 0.05–25%, AND THAT IS CORRECTING A KNOWN ARTIFACT, NOT CURATING.**
 `dayChangePct` is measured against a *seeded* `PortfolioSnapshot` while the value above it is live, so for
@@ -453,6 +711,102 @@ the one place this does harm.
 **Its query key is `keys.liveGains`, deliberately not `leaderboard('monthly')`.** Landing holds that key
 for a five-row panel; sharing it would mean two components registering different `queryFn`s against one
 cache entry, so the panel would sometimes get 50 rows and the pool sometimes get 5 and repeat itself.
+
+### Live chat — Tawk.to, and the corner it could not have
+
+`lib/liveChat.js` owns the vendor, `components/support/LiveChat.jsx` decides when it exists, and
+`GET /api/support/chat` (`services/support.service.js`) says who you are. The component renders nothing,
+like `MarketNotices` and `LiveGains` — the widget draws itself.
+
+**A THIRD-PARTY WIDGET WAS CHOSEN OVER BUILDING IT, which is the opposite of the call this repo made for
+the newsletter, and the trade is not free.** The subscribe endpoint rejected EmailJS and Basin on the
+grounds that there is an Express API, a Mongo instance and an admin shell here — the same argument applies
+to chat and was declined. What that costs, recorded because none of it is recoverable later: the
+conversations live on Tawk's servers, so a support history **cannot be read beside the deposit it is
+about**, is in no export this product can produce, and is not in the admin shell; the panel draws its own UI and
+does not use this design system's tokens; and it is a vendor script plus a WebSocket to another origin on
+every signed-in page load. `helmet` runs `contentSecurityPolicy: false` and guards only the API, so nothing
+blocks it today — the moment a CSP goes on whatever serves the client, `embed.tawk.to` and `wss://*.tawk.to`
+have to be on it.
+
+**BOTTOM LEFT, BECAUSE THE OTHER CORNER IS ALREADY SPOKEN FOR.** Tawk defaults to bottom right, which is
+where every toast in this app lives — and that position is itself a constraint rather than taste, since
+top-centre and top-right cover the sticky nav with the balance pill in it. Left at the default the launcher
+would sit under every order confirmation and deposit notice in the product, and the open panel would cover
+them outright at 380x560. So the newcomer moves. It is set through `Tawk_API.customStyle`, which must be
+assigned **before the script tag is inserted** — Tawk reads it at startup and a later assignment is a no-op
+that fails silently, leaving the widget in the default corner with no error anywhere.
+
+**THE CONFIG COMES FROM THE API, NOT A `client/.env`.** `VITE_TAWK_PROPERTY_ID` would be a second place to
+configure one feature, which is the exact failure `DEPOSIT_DESTINATIONS` records under ONE SOURCE, AND THAT
+IS DELIBERATE. It also could not carry the signature below. The precedent is `GET /api/auth-providers`,
+which exists so the client declines to render a control that cannot work.
+
+**TWO CONFIG LINES ARE REQUIRED AND NEITHER IS A SECRET.** `TAWK_PROPERTY_ID` and `TAWK_WIDGET_ID` are the
+two path segments of `https://embed.tawk.to/{property}/{widget}`, which every visitor's browser fetches —
+there is nothing in them to protect, which is why they are handed to the client deliberately.
+
+**`TAWK_API_KEY` IS OPTIONAL AND OFF BY DEFAULT.** Chat works completely without it. What it buys is
+whether the operator may TRUST the name beside the conversation: `setAttributes` runs in the browser, so
+unsigned attributes are self-asserted and somebody could open a console and claim another account's address
+— to an operator answering questions about that account's deposits. With a key set the server HMACs the
+address and Tawk refuses an unsigned one. The response reports `verified` rather than leaving it to be
+inferred, because the mismatch is silent in **both** directions: secure mode on at Tawk with no key here
+means every visitor shows as anonymous, and the reverse means the signature is computed and ignored.
+
+**NOTHING FINANCIAL CROSSES THE BOUNDARY.** The visitor block is an id, a handle, a name, an address and a
+language. That is the same line `adminQueue.service.js` draws for the review queues ("may see a username
+and an email and may not see a balance"), drawn harder, because this payload leaves the platform rather
+than reaching our own admin screen. `test/support.test.js` asserts the balance never appears, that
+`cashBalanceCents`/`role`/`status`/`passwordHash`/`tradeCount` are all absent, and that the API key does
+not occur anywhere in the serialised response. Both of those were mutation-tested.
+
+**IT DOES NOT APPEAR ON THE ADMIN SCREENS.** The operator is the person *answering* these chats, so a
+support launcher on their own console invites a conversation with themselves and otherwise just sits in the
+corner of the approvals queue covering a row. Gated **by route, not by role**: an administrator reading
+`/portfolio` or `/markets` is using the product like anybody else and may want support there, and hiding it
+for the whole account would mean the one person most likely to be testing the widget could never see it.
+
+It **hides rather than unloads**, because a third-party embed cannot be taken back out — once the script
+has run it owns its own iframes and sockets. The check therefore returns *before* the boot as well, so an
+operator whose sign-in lands them straight on the queues never loads it at all. Measured with the embed
+stubbed at the network layer: booting on `/portfolio` calls neither, navigating to `/soap/users` calls
+`hideWidget` **once**, and coming back calls `showWidget` **once** — and landing directly on
+`/soap/approvals` injects **zero** script tags.
+
+**Signed-in only, and the rule is `requireAuth` on the route rather than a condition in the component.** A
+client-side check decides what renders; the 401 decides what exists. Verified: anonymous gets
+`401 UNAUTHORIZED` and the browser makes **zero requests to tawk.to**. Visitors still have the footer's
+address.
+
+**IT LOADS EAGERLY, AND DEFERRING IT WOULD BREAK THE FEATURE RATHER THAN OPTIMISE IT.** A custom launcher
+injecting the script on first press would keep ~100KB of vendor bundle and a socket off the trade terminal
+for the majority who never open chat. But the widget is also what receives the **reply** — deferred, an
+operator answering ten minutes later reaches a page with no socket, no unread badge and no sound, and the
+user learns nothing until they happen to click again. That is a contact form, not a chat.
+
+**AN ACCOUNT SWITCH RELOADS THE PAGE INSTEAD OF RE-IDENTIFYING.** Tawk's visitor is the *browser*: pointing
+`setAttributes` at a different person renames the conversation already on screen rather than starting a new
+one, so the incoming user's messages would land in the outgoing user's thread, under their history. On a
+shared machine that is a real leak. `bootedFor()` holds the id the widget was loaded for and the component
+reloads when it stops matching — which cannot happen on the ordinary path, since it requires two accounts
+signing in with no page load between them. Sign-out calls `endChat()` and hides the launcher; what it
+cannot do is clear Tawk's own visitor cookie, which is on their domain.
+
+**The widget's own chrome language cannot be switched from the embed** — it is a per-widget dashboard
+setting. So the interface language rides in as an `hs-language` visitor attribute and the operator knows
+what to answer in; that is the whole of what is achievable here, and pretending otherwise would mean a
+Ukrainian reader getting an English panel with no explanation.
+
+**Unconfigured, nothing renders and nothing errors.** `TAWK_PROPERTY_ID` is empty by default, the endpoint
+answers `{ enabled: false }`, and the query carries `meta: { silent: true }` — a toast saying live chat is
+unavailable is a notification about something the user was not doing. `TAWK_PROPERTY_ID=` and
+`TAWK_API_KEY=` are forced empty in the test script, the same trap this file already records four times.
+
+Verified in a browser with the config response rewritten at the network layer: exactly **one** script tag
+at the right embed URL, not duplicated across a route change, `customStyle` bottom-left on desktop and
+mobile, `onLoad` registered — and nothing at all signed out. What is **not** verified is the widget
+rendering, since that needs a real property id.
 
 **`Exchange.code` must not be uppercased.** `Stock.exchange` stores the design's casing (`Euronext`), so
 forcing `EURONEXT` silently breaks every join between the two collections. There is a comment on the field.
@@ -1690,6 +2044,34 @@ Verified: 0 animated frames on the router's scroll, 28 on an ordinary `scrollTo`
 called once per navigation, Back restoring to 1399px, and under `prefers-reduced-motion: reduce`
 `scroll-behavior` computing to `auto` with the transitions off.
 
+### The word "simulation" is gone from the product
+
+**EVERY SENTENCE CONTAINING IT WAS REMOVED BY REQUEST.** Seven surfaces across four languages: the auth
+disclaimer, Landing's Top investors note, Landing's partner-strip note, the activity-toast badge, the
+dashboard footer, both email footers, and the simulated-candle caption. Verified: **0 occurrences in
+rendered text across 7 routes x 4 languages.**
+
+**WHAT SURVIVED, BECAUSE IT IS NOT A SENTENCE.** `source: 'simulated'` on the candles API, the `simulated`
+boolean on a candle response, and `candles.service.js`'s `simulated()` function are identifiers and data
+keys — the string never reaches a screen, it selects which caption does. Renaming them would break the
+candle system for a word nobody sees. Code comments were left alone for the same reason as the dash sweep.
+
+**THREE OF THE REMOVALS TOOK A PROTECTION WITH THEM, AND IT IS WORTH KNOWING WHICH:**
+
+- **The partner strip's non-affiliation line.** It was the only thing on the page denying a relationship
+  with Citadel Securities, Virtu, Jane Street, Apex, DriveWealth and Alpaca, whose trademarks are still
+  rendered under the heading "Our Market Partners". Removing the names before a public deploy is now the
+  only remaining protection rather than one of two.
+- **The activity toasts' badge.** Those notices assert that named people are making money right now, and
+  they appear on `/about` and `/faqs` where nothing else qualifies them.
+- **The dashboard footer**, which read "Simulated trading with virtual capital - no real money is
+  invested" and now reads only the copyright.
+
+The other four kept their substance: the auth screen still says "No real money is invested", the Top
+investors panel still says "Names are illustrative and the figures are not real portfolios", the emails
+still say "No real securities are bought or sold", and the candle caption still says no provider sells
+history for that venue. `test/email.test.js` was repointed at the surviving sentence rather than deleted.
+
 ### Punctuation: no long dashes, and the minus sign is not one
 
 **EM AND EN DASHES ARE OUT OF EVERY RENDERED STRING, by request.** Prose uses a plain `-`. The sweep
@@ -2056,10 +2438,14 @@ logos, **0 broken**.
 marks is the strongest version of it**, materially beyond the text wordmarks it replaced. "Our Market Partners" over Citadel
 Securities, Virtu, Jane Street, Apex, DriveWealth and Alpaca asserts commercial relationships that do not
 exist — a materially stronger statement than the leaderboard's illustrative individuals, because it names
-counterparties. A line under the strip, not in the supplied copy, states that the platform is a simulation
-and is not affiliated with, endorsed by, or a customer of any of them. **Remove the names before a public
-deploy, not that line** — the same instruction the Top investors panel already carries, and for the same
-reason.
+counterparties.
+
+**THE NON-AFFILIATION LINE UNDER THE STRIP IS GONE.** It read "HyperStocks is a simulated trading
+environment and is not affiliated with, endorsed by, or a customer of any of them", and it was removed
+with every other sentence naming the word by request. What remains says only that the platform *models*
+their infrastructure. The trademarks are still on the page and there is now nothing beside them denying a
+relationship, which makes **removing the names before a public deploy the only remaining protection**
+rather than one of two.
 
 ### The FAQ page
 
@@ -2284,7 +2670,7 @@ rather than a provider check, so an email signup passes through untouched and an
 covered without the hook learning about it.
 
 - **The fallback prefix is `user_`, never `trader_`.** That namespace belongs to the seed's synthetic
-  fixtures and is exactly what `/admin/users` uses to tell a real account from a leaderboard row.
+  fixtures and is exactly what `/soap/users` uses to tell a real account from a leaderboard row.
 - **Deterministic suffixes before random ones.** `ada_2` is a handle somebody recognises as theirs;
   `ada_k3f9x1` is not. After twenty collisions the name is clearly contested and readability has stopped
   being the point.
@@ -2514,9 +2900,9 @@ defaults to **false** and `DEPOSIT_DESTINATIONS` defaults to **empty**; those tw
 the gap from being reachable by accident. What is still missing is custody, chain monitoring, and
 reconciliation against an actual wallet.
 
-The Wallet screen and the limit-order sweeper. **The admin screens exist now** — `/admin/approvals` drives
-all three review queues and `/admin/featured-traders` curates the board, both behind an `adminOnly` route
-and an admin-filtered nav entry. **`/admin/users` now lists every account** and is the only place that says
+The Wallet screen and the limit-order sweeper. **The admin screens exist now** — `/soap/approvals` drives
+all three review queues and `/soap/featured-traders` curates the board, both behind an `adminOnly` route
+and an admin-filtered nav entry. **`/soap/users` now lists every account** and is the only place that says
 which of them can actually sign in. What is still missing on the admin side is stock management and
 announcements; on the user side, a Wallet page listing a trader's own transactions and requests.
 

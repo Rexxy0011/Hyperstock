@@ -331,7 +331,7 @@
     "emailPlaceholder": "you@example.com",
     "forgot": "Forgot password?",
     "fillDemo": "Fill demo account (jd_trader)",
-    "disclaimer": "HyperStocks is a simulation platform. No real money is invested.",
+    "disclaimer": "No real money is invested.",
     "haveAccount": "Already have an account?",
     "noAccount": "New here?",
     "grant": "Your first {{amount}} is on us.",
@@ -378,7 +378,9 @@
     "periodAlltime": "all-time",
     "tabWeekly": "Weekly",
     "tabMonthly": "Monthly",
-    "tabAlltime": "All-time"
+    "tabAlltime": "All-time",
+    "trades": "Trades",
+    "bestPosition": "Best position"
   },
   "news": {
     "title": "News",
@@ -527,8 +529,41 @@
         "status": "Status",
         "cash": "Cash",
         "trades": "Trades",
-        "joined": "Joined"
-      }
+        "joined": "Joined",
+        "board": "On the board"
+      },
+      "curated": "Edited",
+      "rankShort": "rank {{rank}}",
+      "notRanked": "Not ranked",
+      "edit": "Edit"
+    },
+    "override": {
+      "title": "Board figures - {{name}}",
+      "actual": "Actual, computed from their positions",
+      "notRanked": "This account is not ranked on the leaderboard.",
+      "value": "Portfolio value (USD)",
+      "valueHint": "What the leaderboard will show for this trader.",
+      "willRank": "This figure would place them at rank {{rank}}.",
+      "changePct": "Return (%)",
+      "changeHint": "The cash gain shown beside it is derived from this, never typed separately.",
+      "trades": "Trades",
+      "bestSymbol": "Best position",
+      "bestReturn": "Best position return (%)",
+      "note": "This changes what the leaderboard displays only. Their cash, positions and portfolio page are untouched, and no money moves.",
+      "save": "Save figures",
+      "saved": "Board figures updated",
+      "resetAction": "Show real figures",
+      "reset": "Reverted to their real figures",
+      "bestNone": "None",
+      "bestNotHeld": "no longer held",
+      "bestHint_one": "{{count}} open position",
+      "bestHint_other": "{{count}} open positions",
+      "noPositions": "This trader holds no positions.",
+      "addPhoto": "Add a photo",
+      "replacePhoto": "Replace photo",
+      "removePhoto": "Remove",
+      "uploading": "Uploading…",
+      "photoHint": "PNG, JPEG, WebP or GIF, up to 600KB. Without one the generated mark is used."
     }
   },
   "notices": {
@@ -547,7 +582,9 @@
     "rejected": "Request rejected.",
     "declined": "Request declined.",
     "claimed": "Claimed. You can now confirm or reject it.",
-    "subscribed": "Subscribed. You are on the list."
+    "subscribed": "Subscribed. You are on the list.",
+    "loginSuccess": "Login successful",
+    "signupSuccess": "Account created"
   },
   "legal": {
     "lastUpdated": "Last updated",
@@ -589,7 +626,6 @@
   },
   "liveGains": {
     "summary": "{{amount}} on {{symbol}}",
-    "simulated": "Simulated",
     "trader": "Trader {{id}}"
   }
 }

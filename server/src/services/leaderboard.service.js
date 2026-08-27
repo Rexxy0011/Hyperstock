@@ -323,6 +323,65 @@ export function invalidateLeaderboard() {
   cache.clear();
 }
 
+/**
+ * The COMPUTED figures for a specific set of accounts, indexed by id.
+ *
+ * `/soap/users` needs each trader's real portfolio value and return so an
+ * operator editing a row starts from what the board actually shows rather than
+ * from an empty box. Running a second aggregation for that would be two owners
+ * of one pipeline — and the two would drift, which on this screen means an
+ * admin typing a "correction" against a number the leaderboard never displayed.
+ *
+ * So it reads the SAME memo the board reads. Usually a cache hit, and identical
+ * by construction.
+ *
+ * PRE-MERGE, DELIBERATELY. These are the account's own computed figures, not
+ * what the board currently displays for it — an already-overridden trader must
+ * still be editable against reality, or each edit would compound on the last
+ * and the original value would be unrecoverable.
+ */
+/**
+ * Where a given figure would land on the board.
+ *
+ * IT IS COMPUTED HERE BECAUSE THE CLIENT CANNOT DO IT. The obvious version —
+ * count the rows above this value in the leaderboard the admin already has —
+ * is wrong, and wrong in a way that looks plausible: `/leaderboard` caps
+ * `limit` at 100, so a trader ranked 190 was measured against a list that
+ * stopped at 100 and the preview cheerfully reported rank 101. Every account
+ * below the cut got the same meaningless answer. Raising the cap to fix a
+ * preview would be widening a public endpoint for the admin's convenience.
+ *
+ * THE TRADER BEING EDITED IS EXCLUDED, AND NOT ONLY BY USER ID. Saving replaces
+ * their row rather than adding one, so leaving it in ranks them against
+ * themselves. The subtlety is that an ALREADY-overridden trader is on the board
+ * as a curated row whose `userId` is the FeaturedTrader document's id, not
+ * theirs — matching on the user id alone would miss it and report a rank one
+ * too low for exactly the traders most likely to be edited again.
+ */
+export async function rankForValue(valueCents, { excludeUserId = null, period = 'alltime' } = {}) {
+  const [computed, featured] = await Promise.all([getBoard(period), listActiveFeatured()]);
+
+  const ownCurated = featured.find((f) => String(f.userId) === String(excludeUserId));
+  const skip = new Set([String(excludeUserId), String(ownCurated?._id ?? '')]);
+
+  const rows = mergeFeatured(computed, featured);
+  const above = rows.filter(
+    (r) => !skip.has(String(r.userId)) && r.portfolioValueCents > valueCents,
+  ).length;
+
+  return { rank: above + 1, totalTraders: rows.length };
+}
+
+export async function computedRowsFor(userIds, period = 'alltime') {
+  const want = new Set(userIds.map(String));
+  if (!want.size) return new Map();
+
+  const rows = await getBoard(period);
+  return new Map(
+    rows.filter((r) => want.has(String(r.userId))).map((r) => [String(r.userId), r]),
+  );
+}
+
 export async function getLeaderboard({ period = 'alltime', limit = 50, userId = null } = {}) {
   const computed = await getBoard(period);
 

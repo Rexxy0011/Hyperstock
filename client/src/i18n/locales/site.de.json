@@ -4,7 +4,7 @@
     "heroBody": "Echtzeitdaten, virtuelles Kapital, echte Fähigkeiten. Üben Sie an Live-Kursen von acht Börsen, ohne einen Cent zu riskieren.",
     "learnMore": "Mehr erfahren",
     "topInvestors": "Top-Investoren diesen Monat",
-    "topInvestorsNote": "Simulierte Konten. Die Namen sind beispielhaft und die Zahlen sind keine echten Portfolios.",
+    "topInvestorsNote": "Die Namen sind beispielhaft und die Zahlen sind keine echten Portfolios.",
     "trades_one": "{{count}} Trade",
     "trades_other": "{{count}} Trades",
     "seeRankings": "Vollständige Rangliste ansehen",
@@ -34,7 +34,7 @@
     "subscribedTitle": "Sie haben abonniert.",
     "partnersTitle": "Unsere Marktpartner",
     "partnersBody": "Verbunden mit der Infrastruktur hinter dem modernen Investieren.",
-    "partnersNote": "Die gezeigten Namen sind Handelsplätze und Handelshäuser, deren Infrastruktur diese Plattform nachbildet. HyperStocks ist eine simulierte Handelsumgebung und weder mit ihnen verbunden noch von ihnen unterstützt oder Kunde bei ihnen."
+    "partnersNote": "Die gezeigten Namen sind Handelsplätze und Handelshäuser, deren Infrastruktur diese Plattform nachbildet."
   },
   "footer": {
     "blurb": "HyperStocks gibt Tradern Live-Kurse und virtuelles Kapital und macht globale Märkte so ohne Risiko leichter erlernbar, übbar und beherrschbar.",

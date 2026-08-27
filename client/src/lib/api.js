@@ -110,4 +110,8 @@ function normalizeError(error) {
 export const get = (url, config) => api.get(url, config).then((r) => r.data);
 export const post = (url, body, config) => api.post(url, body, config).then((r) => r.data);
 export const patch = (url, body, config) => api.patch(url, body, config).then((r) => r.data);
+// PUT, for the writes that are idempotent replacements rather than partial
+// edits — the trader override is addressed by the account, and the caller does
+// not know or care whether a curated row already exists for them.
+export const put = (url, body, config) => api.put(url, body, config).then((r) => r.data);
 export const del = (url, config) => api.delete(url, config).then((r) => r.data);

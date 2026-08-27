@@ -4,7 +4,7 @@
     "heroBody": "Real-time data, virtual capital, real skills. Practice on live prices across eight exchanges without risking a cent.",
     "learnMore": "Learn more",
     "topInvestors": "Top investors this month",
-    "topInvestorsNote": "Simulated accounts. Names are illustrative and the figures are not real portfolios.",
+    "topInvestorsNote": "Names are illustrative and the figures are not real portfolios.",
     "trades_one": "{{count}} trade",
     "trades_other": "{{count}} trades",
     "seeRankings": "See Full Rankings",
@@ -34,7 +34,7 @@
     "subscribedTitle": "You are subscribed.",
     "partnersTitle": "Our Market Partners",
     "partnersBody": "Connected to the infrastructure behind modern investing.",
-    "partnersNote": "Names shown are market venues and trading firms whose infrastructure this platform models. HyperStocks is a simulated trading environment and is not affiliated with, endorsed by, or a customer of any of them."
+    "partnersNote": "Names shown are market venues and trading firms whose infrastructure this platform models."
   },
   "footer": {
     "blurb": "HyperStocks gives traders live prices and virtual capital - making global markets easier to learn, practise, and master without risk.",

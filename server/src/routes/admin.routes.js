@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import express, { Router } from 'express';
 import { z } from 'zod';
 import { requireAuth, requireAdmin } from '../middleware/requireAuth.js';
 import { validate } from '../middleware/validate.js';
@@ -9,10 +9,19 @@ import {
   updateFeatured,
   deleteFeatured,
   searchTraders,
+  upsertOverrideForUser,
+  removeOverrideForUser,
 } from '../services/featuredTrader.service.js';
+import { rankForValue } from '../services/leaderboard.service.js';
 import { queueCounts } from '../services/adminQueue.service.js';
+import { storeImage, MAX_BYTES } from '../services/media.service.js';
 import { listSubscribers, subscriberCounts } from '../services/subscriber.service.js';
-import { listUsers, userCounts, setUserStatus } from '../services/adminUser.service.js';
+import {
+  listUsers,
+  userCounts,
+  setUserStatus,
+  listPositionsFor,
+} from '../services/adminUser.service.js';
 
 /**
  * The curated-leaderboard admin.
@@ -46,9 +55,36 @@ const featuredBody = z.object({
   changePct: z.coerce.number().min(-99.99).max(100_000),
   trades: z.coerce.number().int().min(0).max(1_000_000).default(0),
   bestSymbol: z.string().trim().max(12).default(''),
+  /**
+   * A PATH WE SERVE, NOT AN ARBITRARY URL. Restricted to `/api/media/<sha256>`
+   * so a curated row cannot be pointed at a third-party host: an external
+   * avatar is a request every visitor to the public board makes to somebody
+   * else's server, subject to their hotlink protection and their availability
+   * — the lesson Investing.com already taught the news thumbnails. Empty
+   * clears it back to the generated mark.
+   */
+  avatarUrl: z
+    .string()
+    .trim()
+    .max(120)
+    .regex(/^$|^\/api\/media\/[a-f0-9]{64}$/, 'Not an uploaded image')
+    .default(''),
   bestReturnPct: z.coerce.number().min(-100).max(100_000).default(0),
   active: z.coerce.boolean().default(true),
 });
+
+/**
+ * The same fields as `featuredBody` minus the two that a per-account override
+ * must not carry.
+ *
+ * NO `name`: the row stands for a real trader, and it is taken from the account
+ * rather than typed — renaming a real account from an edit dialog is how one
+ * gets published under an invented identity. NO `userId` either: it is in the
+ * PATH. Accepting it in the body as well would create two sources for the one
+ * thing that decides whose row this replaces, and a mismatch between them is a
+ * silent override of the wrong trader.
+ */
+const overrideBody = featuredBody.omit({ name: true, userId: true });
 
 const idParam = z.object({ id: z.string().regex(/^[a-f0-9]{24}$/i, 'Invalid id') });
 
@@ -104,6 +140,98 @@ router.patch(
   }),
   asyncHandler(async (req, res) => {
     res.json(await setUserStatus(req.params.id, req.body.status, req.user.id));
+  }),
+);
+
+/**
+ * EDITING WHAT A TRADER SHOWS ON THE BOARD, addressed by the ACCOUNT.
+ *
+ * `PUT` rather than POST/PATCH because it is idempotent and the caller does not
+ * know or care whether a curated row already exists for this trader — see
+ * `upsertOverrideForUser`. Two operators opening the same trader would both
+ * find "no override", both POST, and one would be told the trader is already
+ * featured for a form that looked fine.
+ *
+ * IT MOVES NO MONEY, and that is the whole design. It writes a `FeaturedTrader`
+ * row, which changes what the leaderboard DISPLAYS for this account and nothing
+ * else — cash, holdings, ledger and their own portfolio screen are untouched. A
+ * test asserts it. An admin who could edit a real balance from a table row
+ * would be an admin who can mint money by typo.
+ *
+ * The typed value RE-RANKS naturally: `mergeFeatured` sorts the curated row
+ * against the live board on that figure, so a big enough number puts the trader
+ * among the top and a small one drops them down the table. It is never pinned.
+ */
+router.put(
+  '/users/:id/override',
+  validate({ params: idParam, body: overrideBody }),
+  asyncHandler(async (req, res) => {
+    res.json(await upsertOverrideForUser(req.params.id, req.body, req.user.id));
+  }),
+);
+
+/**
+ * Where a typed figure would land, before it is saved.
+ *
+ * "Type a number and find out" is a poor way to run a public board, and the
+ * count cannot be done on the client: `/leaderboard` caps at 100 rows, so any
+ * trader below that is measured against a truncated list.
+ */
+router.get(
+  '/rank-preview',
+  validate({
+    query: z.object({
+      valueCents: z.coerce.number().int().min(0),
+      userId: z.string().regex(/^[a-f0-9]{24}$/i).optional(),
+    }),
+  }),
+  asyncHandler(async (req, res) => {
+    const { valueCents, userId } = req.validatedQuery;
+    res.json(await rankForValue(valueCents, { excludeUserId: userId ?? null }));
+  }),
+);
+
+/**
+ * What this trader actually holds, for the Best-position picker.
+ *
+ * Its own request rather than a field on the listing: valuing twenty-five
+ * portfolios to fill a dropdown nobody may open is the per-row cost this
+ * codebase keeps writing notes about.
+ */
+router.get(
+  '/users/:id/positions',
+  validate({ params: idParam }),
+  asyncHandler(async (req, res) => {
+    res.json({ items: await listPositionsFor(req.params.id) });
+  }),
+);
+
+/**
+ * Uploading an avatar.
+ *
+ * RAW BODY, NOT MULTIPART, so this needs no `multer`. The payload is a single
+ * file with no accompanying fields, which is exactly the case multipart exists
+ * to solve and this is not — the same reasoning `lib/mailer.js` gives for
+ * reaching Resend with `fetch` instead of taking their SDK for one POST.
+ *
+ * The `type` allowlist here only decides what Express will BUFFER. What the
+ * file actually is gets decided by sniffing the bytes in `storeImage`, because
+ * this header is supplied by the uploader.
+ */
+router.post(
+  '/media',
+  express.raw({ type: ['image/png', 'image/jpeg', 'image/webp', 'image/gif'], limit: MAX_BYTES }),
+  asyncHandler(async (req, res) => {
+    res.status(201).json(await storeImage(req.body, req.user.id));
+  }),
+);
+
+/** Back to the account's real computed figures. */
+router.delete(
+  '/users/:id/override',
+  validate({ params: idParam }),
+  asyncHandler(async (req, res) => {
+    res.json(await removeOverrideForUser(req.params.id));
   }),
 );
 

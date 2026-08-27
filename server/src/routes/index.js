@@ -10,6 +10,8 @@ import withdrawalRoutes, { adminWithdrawalRouter } from './withdrawals.routes.js
 import newsRoutes, { announcementRouter } from './news.routes.js';
 import adminRoutes from './admin.routes.js';
 import subscriberRoutes from './subscribers.routes.js';
+import supportRoutes from './support.routes.js';
+import mediaRoutes from './media.routes.js';
 import { optionalAuth } from '../middleware/requireAuth.js';
 import { googleEnabled } from '../auth/betterAuth.js';
 
@@ -56,6 +58,13 @@ router.use('/leaderboard', optionalAuth, leaderboardRoutes);
 // Public and unauthenticated: it backs the landing page's call to action, which
 // runs before anyone has an account. Rate-limited at its own router.
 router.use('/subscribers', subscriberRoutes);
+// The live chat's boot config. Authenticated at its own router, which is what
+// actually enforces "signed-in only" — the component deciding not to render is
+// a convenience, this is the rule.
+router.use('/support', supportRoutes);
+// Public: these are leaderboard avatars and the leaderboard is public. The id
+// is a content hash, so there is nothing to authorise.
+router.use('/media', mediaRoutes);
 // Curating the board. Mounted under /admin like the other two queues, and
 // guarded at its own router rather than here, so the guard travels with the
 // routes if this line ever moves.

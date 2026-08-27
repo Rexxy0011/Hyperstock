@@ -331,7 +331,7 @@
     "emailPlaceholder": "sie@beispiel.de",
     "forgot": "Passwort vergessen?",
     "fillDemo": "Demokonto ausfüllen (jd_trader)",
-    "disclaimer": "HyperStocks ist eine Simulationsplattform. Es wird kein echtes Geld investiert.",
+    "disclaimer": "Es wird kein echtes Geld investiert.",
     "haveAccount": "Sie haben bereits ein Konto?",
     "noAccount": "Neu hier?",
     "grant": "Ihre ersten {{amount}} gehen auf uns.",
@@ -378,7 +378,9 @@
     "periodAlltime": "gesamtem",
     "tabWeekly": "Wöchentlich",
     "tabMonthly": "Monatlich",
-    "tabAlltime": "Gesamt"
+    "tabAlltime": "Gesamt",
+    "trades": "Trades",
+    "bestPosition": "Beste Position"
   },
   "news": {
     "title": "News",
@@ -527,8 +529,41 @@
         "status": "Status",
         "cash": "Barmittel",
         "trades": "Trades",
-        "joined": "Beigetreten"
-      }
+        "joined": "Beigetreten",
+        "board": "In der Rangliste"
+      },
+      "curated": "Bearbeitet",
+      "rankShort": "Platz {{rank}}",
+      "notRanked": "Nicht gewertet",
+      "edit": "Bearbeiten"
+    },
+    "override": {
+      "title": "Ranglistenwerte - {{name}}",
+      "actual": "Tatsachlich, aus den Positionen berechnet",
+      "notRanked": "Dieses Konto wird in der Rangliste nicht gefuhrt.",
+      "value": "Portfoliowert (USD)",
+      "valueHint": "Was die Rangliste fur diesen Trader anzeigen wird.",
+      "willRank": "Mit diesem Wert stunde er auf Platz {{rank}}.",
+      "changePct": "Rendite (%)",
+      "changeHint": "Der daneben angezeigte Gewinn wird daraus abgeleitet und nie separat eingegeben.",
+      "trades": "Trades",
+      "bestSymbol": "Beste Position",
+      "bestReturn": "Rendite der besten Position (%)",
+      "note": "Dies andert nur die Anzeige in der Rangliste. Guthaben, Positionen und Portfolioseite bleiben unberuhrt, es wird kein Geld bewegt.",
+      "save": "Werte speichern",
+      "saved": "Ranglistenwerte aktualisiert",
+      "resetAction": "Echte Werte anzeigen",
+      "reset": "Auf die echten Werte zuruckgesetzt",
+      "bestNone": "Keine",
+      "bestNotHeld": "nicht mehr im Bestand",
+      "bestHint_one": "{{count}} offene Position",
+      "bestHint_other": "{{count}} offene Positionen",
+      "noPositions": "Dieser Trader halt keine Positionen.",
+      "addPhoto": "Foto hinzufugen",
+      "replacePhoto": "Foto ersetzen",
+      "removePhoto": "Entfernen",
+      "uploading": "Wird hochgeladen…",
+      "photoHint": "PNG, JPEG, WebP oder GIF, bis 600KB. Ohne Foto wird die generierte Marke verwendet."
     }
   },
   "notices": {
@@ -547,7 +582,9 @@
     "rejected": "Anfrage abgelehnt.",
     "declined": "Anfrage verweigert.",
     "claimed": "Übernommen. Sie können sie jetzt bestätigen oder ablehnen.",
-    "subscribed": "Abonniert. Sie stehen auf der Liste."
+    "subscribed": "Abonniert. Sie stehen auf der Liste.",
+    "loginSuccess": "Anmeldung erfolgreich",
+    "signupSuccess": "Konto erstellt"
   },
   "legal": {
     "lastUpdated": "Zuletzt aktualisiert",
@@ -589,7 +626,6 @@
   },
   "liveGains": {
     "summary": "{{amount}} mit {{symbol}}",
-    "simulated": "Simuliert",
     "trader": "Trader {{id}}"
   }
 }

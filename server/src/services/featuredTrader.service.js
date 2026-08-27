@@ -45,6 +45,9 @@ export function toBoardRow(doc) {
     displayName: name,
     name,
     avatarLetter: (name[0] ?? '?').toUpperCase(),
+    // Empty rather than absent, so a call site can read it unconditionally and
+    // `Avatar` treats it as "no portrait" without a second branch.
+    avatarUrl: doc.avatarUrl || '',
     trades: doc.trades ?? 0,
     portfolioValueCents: valueCents,
     returnPct: round2(changePct),
@@ -166,6 +169,66 @@ export async function updateFeatured(id, patch, adminId) {
     }
     throw err;
   }
+}
+
+/**
+ * Creates or replaces the override for ONE account, keyed on the account.
+ *
+ * WHY AN UPSERT RATHER THAN THE CREATE/UPDATE PAIR ABOVE. Those are addressed
+ * by the curated row's own id, which is the right shape for the featured-trader
+ * screen where the row IS the object being managed. `/soap/users` addresses the
+ * TRADER — the operator is editing a person, and whether a curated row already
+ * exists for them is an implementation detail they should never have to
+ * discover. Making the client choose the verb also loses the race: two admins
+ * opening the same trader would both see "no override", both POST, and one
+ * would get `ALREADY_FEATURED` for a form that looked fine.
+ *
+ * `setDefaultsOnInsert` matters because `active` defaults to true — without it
+ * an upserted row would be created inactive-by-absence and silently never
+ * appear on the board, which is the exact failure this screen exists to avoid.
+ *
+ * The name is taken from the account rather than typed. An override on a real
+ * trader is a correction to their FIGURES; renaming them as well is what the
+ * standalone curated row is for, and doing both from one form is how an
+ * operator accidentally publishes a real account under an invented name.
+ */
+export async function upsertOverrideForUser(userId, input, adminId) {
+  const user = await User.findById(userId).select('username displayName role').lean();
+  if (!user) throw ApiError.badRequest('NO_SUCH_USER', 'That trader account does not exist.');
+
+  const doc = await FeaturedTrader.findOneAndUpdate(
+    { userId },
+    {
+      $set: {
+        ...input,
+        userId,
+        name: user.displayName || user.username,
+        updatedBy: adminId,
+      },
+    },
+    { new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true },
+  ).lean();
+
+  return doc;
+}
+
+/**
+ * Drops the override, returning the account to its computed figures.
+ *
+ * NOT AN ERROR WHEN THERE IS NOTHING TO REMOVE. The operator's intent is "this
+ * trader should show its real numbers", and that is satisfied either way — a
+ * 404 on a second click would report a failure for a state the caller wanted.
+ */
+export async function removeOverrideForUser(userId) {
+  const doc = await FeaturedTrader.findOneAndDelete({ userId }).lean();
+  return { removed: Boolean(doc) };
+}
+
+/** Overrides for a page of accounts, indexed by user id. */
+export async function overridesForUsers(userIds) {
+  if (!userIds.length) return new Map();
+  const rows = await FeaturedTrader.find({ userId: { $in: userIds } }).lean();
+  return new Map(rows.map((r) => [String(r.userId), r]));
 }
 
 export async function deleteFeatured(id) {

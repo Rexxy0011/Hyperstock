@@ -4,7 +4,7 @@
     "heroBody": "Datos en tiempo real, capital virtual, habilidades reales. Practica con precios en vivo de ocho mercados sin arriesgar un céntimo.",
     "learnMore": "Saber más",
     "topInvestors": "Mejores inversores de este mes",
-    "topInvestorsNote": "Cuentas simuladas. Los nombres son ilustrativos y las cifras no corresponden a carteras reales.",
+    "topInvestorsNote": "Los nombres son ilustrativos y las cifras no corresponden a carteras reales.",
     "trades_one": "{{count}} operación",
     "trades_other": "{{count}} operaciones",
     "seeRankings": "Ver clasificación completa",
@@ -34,7 +34,7 @@
     "subscribedTitle": "Ya estás suscrito.",
     "partnersTitle": "Nuestros socios de mercado",
     "partnersBody": "Conectados a la infraestructura que sostiene la inversión moderna.",
-    "partnersNote": "Los nombres mostrados son mercados y firmas de trading cuya infraestructura esta plataforma modela. HyperStocks es un entorno de trading simulado y no está afiliado, respaldado ni es cliente de ninguno de ellos."
+    "partnersNote": "Los nombres mostrados son mercados y firmas de trading cuya infraestructura esta plataforma modela."
   },
   "footer": {
     "blurb": "HyperStocks ofrece a los traders precios en vivo y capital virtual, lo que hace que los mercados globales sean más fáciles de aprender, practicar y dominar sin riesgo.",

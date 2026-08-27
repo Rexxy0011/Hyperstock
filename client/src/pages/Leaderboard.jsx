@@ -7,6 +7,7 @@ import Tabs from '../components/ui/Tabs';
 import Badge from '../components/ui/Badge';
 import Money from '../components/market/Money';
 import PriceChange from '../components/market/PriceChange';
+import Avatar from '../components/ui/Avatar';
 
 const PERIODS = [
   { value: 'weekly', labelKey: 'leaderboard.tabWeekly' },
@@ -69,9 +70,16 @@ export default function Leaderboard() {
                 <span className="w-5 font-numeric text-lg font-semibold tabular-nums text-void">
                   {r.rank}
                 </span>
-                <span className="inline-flex size-9 items-center justify-center rounded-md border border-cool-grey bg-mist text-sm font-semibold">
-                  {r.avatarLetter}
-                </span>
+                {/* An uploaded portrait wins; the letter chip is the fallback.
+                    `Avatar` degrades to its generated mark on the image's own
+                    error event, so a deleted photo cannot leave a broken frame. */}
+                {r.avatarUrl ? (
+                  <Avatar name={r.username} src={r.avatarUrl} size={36} />
+                ) : (
+                  <span className="inline-flex size-9 items-center justify-center rounded-md border border-cool-grey bg-mist text-sm font-semibold">
+                    {r.avatarLetter}
+                  </span>
+                )}
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-base font-medium">{r.username}</div>
                   <Money value={r.portfolioValueCents} size={13} className="text-text-muted" />
@@ -82,16 +90,34 @@ export default function Leaderboard() {
           </div>
 
           <div className="overflow-x-auto rounded-md border border-cool-grey bg-white shadow-card">
-            <table className="w-full border-collapse">
+            {/*
+              `table-fixed` WITH PERCENTAGES, NOT AUTO LAYOUT.
+
+              Auto layout sizes each column to its content and then dumps the
+              LEFTOVER between two of them — measured at 1600px, ~350px of
+              nothing sat between "Best position" and "Portfolio value" while
+              the trader names stopped short, so a full-width table still read
+              as unfinished. Giving one column `w-full` only moves the problem:
+              at 1920 that left 1188px of empty space after the name.
+
+              Six short columns cannot fill 1846px however the slack is
+              assigned, so it is SPREAD rather than pooled. Every column gets a
+              proportional share, which keeps a row reading as one unit instead
+              of two clusters either side of a canyon.
+
+              `min-w-200` hands narrow screens to the wrapper's existing
+              `overflow-x-auto`, because fixed layout would otherwise crush the
+              columns rather than let the table scroll.
+            */}
+            <table className="w-full min-w-200 table-fixed border-collapse">
               <thead>
                 <tr>
-                  {['Rank', 'Trader', 'Trades', 'Best position'].map((h) => (
-                    <th key={h} className={th}>
-                      {h}
-                    </th>
-                  ))}
-                  <th className={`${th} text-right`}>{t('leaderboard.portfolioValue')}</th>
-                  <th className={`${th} text-right`}>{t('leaderboard.return')}</th>
+                  <th className={`${th} w-[7%]`}>{t('leaderboard.rank')}</th>
+                  <th className={`${th} w-[30%]`}>{t('leaderboard.trader')}</th>
+                  <th className={`${th} w-[9%]`}>{t('leaderboard.trades')}</th>
+                  <th className={`${th} w-[19%]`}>{t('leaderboard.bestPosition')}</th>
+                  <th className={`${th} w-[19%] text-right`}>{t('leaderboard.portfolioValue')}</th>
+                  <th className={`${th} w-[16%] text-right`}>{t('leaderboard.return')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -126,9 +152,13 @@ function Row({ row, pinned = false }) {
       </td>
       <td className={td}>
         <div className="flex items-center gap-3">
-          <span className="inline-flex size-7 items-center justify-center rounded-md border border-cool-grey bg-mist text-2xs font-semibold">
-            {row.avatarLetter}
-          </span>
+          {row.avatarUrl ? (
+            <Avatar name={row.username} src={row.avatarUrl} size={28} />
+          ) : (
+            <span className="inline-flex size-7 items-center justify-center rounded-md border border-cool-grey bg-mist text-2xs font-semibold">
+              {row.avatarLetter}
+            </span>
+          )}
           <span className="font-medium">{row.username}</span>
           {row.you && <Badge variant="neutral">{t('leaderboard.you')}</Badge>}
         </div>
