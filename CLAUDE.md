@@ -174,7 +174,7 @@ Three consequences worth knowing:
 
 **EDITING `.env` DOES NOTHING ON ITS OWN — RUN `npm run admin:sync`.** The credentials live in the
 database, so a configured address with no sync is a login that does not exist; the symptom is signing in as
-some other account and finding `/soap` redirects to `/portfolio`, which is the correct behaviour for a
+some other account and finding `/soap` renders **Not found**, which is the correct behaviour for a
 non-admin and says nothing about the cause. `autoSeedIfNeeded()` returns early unless `isEphemeral()`, so
 the persistent local instance never picks it up by itself.
 
@@ -229,10 +229,25 @@ admin who clicked `/withdraw` meant `/withdraw`. **The Google leg cannot do this
 signing in with Google lands on `/` and reaches the section from the nav.
 
 Verified in the browser across three sessions: as admin, `/soap` redirects to `/soap/approvals` and all
-four screens render; as an ordinary trader every `/soap/*` path bounces to `/portfolio`; anonymously they
+four screens render; as an ordinary trader every `/soap/*` path renders **Not found**; anonymously they
 bounce to `/auth`; and `/admin` and `/admin/approvals` are **Not found for everybody, the admin included**.
 Signing in through the form as the operator lands on `/soap/approvals`, and the account menu's four links
 all read `/soap/…`.
+
+**A NON-ADMIN GETS NOT-FOUND, NOT A REDIRECT, AND THE REDIRECT WAS A LEAK.** `ProtectedRoute adminOnly`
+used to `<Navigate to="/portfolio">`, which defeated the reason the section is at `/soap` at all: an unknown
+path renders Not-found, so a path that instead bounces you somewhere real **confirms it exists**.
+`/soapx/approvals` and `/soap/approvals` have to be indistinguishable to a prober, and a redirect made them
+trivially distinguishable. It also put **login on the wrong page** — signed out, `/soap` sends you to
+`/auth?next=%2Fsoap`, `?next=` correctly wins on the way back, and an ordinary trader signing in was
+therefore carried to the admin prefix and dumped on `/portfolio`, a page they never asked for reached by a
+route they were not allowed down. Measured, then fixed. Rendering in place also leaves the URL alone, so
+nothing lands in history to press Back through.
+
+**What it does not hide is the SHELL.** This renders inside `DashboardLayout` while the router's catch-all
+renders inside `PublicLayout`, so the two Not-founds differ in their chrome. Closing that means mounting the
+admin routes outside the dashboard shell, which has not been done. The API is the larger leak either way and
+is untouched: `/api/admin/*` still answers 401 rather than 404.
 
 `migrateLegacyCredentials()` reads `env.ADMIN_EMAIL` for the same reason — a database seeded under the old
 scheme keeps its hash on the user document, and missing that address in the filter leaves the operator with
