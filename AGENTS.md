@@ -100,3 +100,4 @@ HyperStocks — a stock trading simulator with real market data. Users trade US,
 - Never claim work is done when it is not. Report exactly what was built and what remains
 - Match the existing codebase patterns before introducing new ones
 - Commit messages: imperative, specific — "Add trade confirmation modal" not "updates"
+- When processing large text (logs, command outputs, file contents, build errors, test results), delegate the reading and parsing to the lightest available model or subagent (e.g. `flash_lite` or `flash`). The subagent reads the full output and returns only a concise, actionable summary. The primary agent never ingests raw bulk text into its own context when a cheaper model can extract what is needed
