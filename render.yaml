@@ -42,6 +42,12 @@ services:
         sync: false
       - key: ADMIN_PASSWORD
         sync: false
+      - key: WITHDRAWALS_ENABLED
+        value: "true"
+      - key: DEPOSIT_DESTINATIONS
+        sync: false
+      - key: WITHDRAWAL_NETWORKS
+        sync: false
 
   # ── Client (Static Site) ──────────────────────────────────────────────
   - type: web
