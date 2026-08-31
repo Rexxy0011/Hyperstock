@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from "react";
 import {
   AreaSeries,
   CandlestickSeries,
@@ -6,7 +6,7 @@ import {
   CrosshairMode,
   HistogramSeries,
   createChart,
-} from 'lightweight-charts';
+} from "lightweight-charts";
 
 /**
  * The price chart, on TradingView's Lightweight Charts.
@@ -29,10 +29,10 @@ import {
  */
 
 /** Brand colours, resolved once — the library takes strings, not CSS vars. */
-const UP = '#00c853';
-const DOWN_LIGHT = '#e53935';
+const UP = "#00c853";
+const DOWN_LIGHT = "#e53935";
 /** --color-loss reaches only 4.48:1 on ink; this is the deep-surface pair. */
-const DOWN_DARK = '#ef5350';
+const DOWN_DARK = "#ef5350";
 
 /**
  * `--font-numeric`, resolved to a plain string for the canvas.
@@ -43,8 +43,9 @@ const DOWN_DARK = '#ef5350';
  * this ever runs before the stylesheet has applied.
  */
 const numericFontFamily = () =>
-  getComputedStyle(document.documentElement).getPropertyValue('--font-numeric').trim() ||
-  'system-ui, sans-serif';
+  getComputedStyle(document.documentElement)
+    .getPropertyValue("--font-numeric")
+    .trim() || "system-ui, sans-serif";
 
 /**
  * `height` is the reason this is annotated: it accepts a number OR the string
@@ -65,7 +66,7 @@ export default function TvChart({
   points = [],
   divisor = 100,
   decimals = 2,
-  chartType = 'candles',
+  chartType = "candles",
   hasVolume = false,
   dark = false,
   /**
@@ -79,9 +80,9 @@ export default function TvChart({
    */
   height = 340,
   /** Changes whenever the underlying series changes — see setData vs update. */
-  seriesKey = '',
+  seriesKey = "",
 }) {
-  const fill = height === 'fill';
+  const fill = height === "fill";
   const boxRef = useRef(null);
   const chartRef = useRef(null);
   const priceRef = useRef(null);
@@ -101,8 +102,8 @@ export default function TvChart({
       layout: {
         // Transparent, not a colour: the ink panel behind it is the background,
         // and painting our own would put a second near-black on top of it.
-        background: { type: ColorType.Solid, color: 'transparent' },
-        textColor: dark ? '#9ca3af' : '#6b7280',
+        background: { type: ColorType.Solid, color: "transparent" },
+        textColor: dark ? "#9ca3af" : "#6b7280",
         // Both axes are entirely figures, so they take the numeric face like
         // every other number — left on the mono face they disagreed with the
         // headline price directly above them. Read from the stylesheet rather
@@ -112,25 +113,35 @@ export default function TvChart({
         attributionLogo: false,
       },
       grid: {
-        vertLines: { color: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' },
-        horzLines: { color: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' },
+        vertLines: {
+          color: dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)",
+        },
+        horzLines: {
+          color: dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)",
+        },
       },
       crosshair: {
         // Magnet snaps the crosshair to OHLC values rather than floating between
         // them, which is what makes the readout trustworthy.
         mode: CrosshairMode.Magnet,
-        vertLine: { color: dark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.28)', labelBackgroundColor: dark ? '#1f2937' : '#111111' },
-        horzLine: { color: dark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.28)', labelBackgroundColor: dark ? '#1f2937' : '#111111' },
+        vertLine: {
+          color: dark ? "rgba(255,255,255,0.28)" : "rgba(0,0,0,0.28)",
+          labelBackgroundColor: dark ? "#1f2937" : "#111111",
+        },
+        horzLine: {
+          color: dark ? "rgba(255,255,255,0.28)" : "rgba(0,0,0,0.28)",
+          labelBackgroundColor: dark ? "#1f2937" : "#111111",
+        },
       },
       rightPriceScale: {
-        borderColor: dark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.10)',
+        borderColor: dark ? "rgba(255,255,255,0.10)" : "rgba(0,0,0,0.10)",
         // Without a top margin the highest gridline sits flush against the
         // canvas edge and its label is clipped in half. The bottom margin
         // leaves the volume overlay somewhere to live when there is one.
         scaleMargins: { top: 0.1, bottom: hasVolume ? 0.22 : 0.1 },
       },
       timeScale: {
-        borderColor: dark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.10)',
+        borderColor: dark ? "rgba(255,255,255,0.10)" : "rgba(0,0,0,0.10)",
         // Intraday ranges need the clock; daily ones do not. Cheap to always
         // allow — the library hides it when the spacing makes it meaningless.
         timeVisible: true,
@@ -158,7 +169,7 @@ export default function TvChart({
 
     const scale = (v) => v / divisor;
     const priceFormat = {
-      type: 'price',
+      type: "price",
       precision: decimals,
       minMove: 1 / 10 ** decimals,
     };
@@ -177,7 +188,7 @@ export default function TvChart({
     rows.sort((a, b) => a.time - b.time);
 
     const priceData =
-      chartType === 'candles'
+      chartType === "candles"
         ? rows.map((r) => ({
             time: r.time,
             open: scale(r.o),
@@ -189,7 +200,7 @@ export default function TvChart({
 
     if (!priceRef.current) {
       priceRef.current =
-        chartType === 'candles'
+        chartType === "candles"
           ? chart.addSeries(CandlestickSeries, {
               upColor: UP,
               downColor: down,
@@ -201,18 +212,18 @@ export default function TvChart({
             })
           : chart.addSeries(AreaSeries, {
               lineColor: UP,
-              topColor: 'rgba(0,200,83,0.28)',
-              bottomColor: 'rgba(0,200,83,0.02)',
+              topColor: "rgba(0,200,83,0.28)",
+              bottomColor: "rgba(0,200,83,0.02)",
               lineWidth: 2,
               priceFormat,
             });
 
       if (hasVolume) {
         volRef.current = chart.addSeries(HistogramSeries, {
-          priceFormat: { type: 'volume' },
+          priceFormat: { type: "volume" },
           // An empty priceScaleId overlays the histogram on its own invisible
           // scale, so volume cannot squash the price axis.
-          priceScaleId: '',
+          priceScaleId: "",
           // Both OFF or the histogram publishes its own last value onto the
           // price axis — a red "716.05K" tag sitting under the real price, on a
           // scale that is not the price scale, plus a horizontal line across
@@ -241,8 +252,8 @@ export default function TvChart({
           rows.map((r) => ({
             time: r.time,
             value: r.v,
-            color: r.c >= r.o ? 'rgba(0,200,83,0.45)' : `${down}73`,
-          })),
+            color: r.c >= r.o ? "rgba(0,200,83,0.45)" : `${down}73`,
+          }))
         );
       }
       chart.timeScale().fitContent();
@@ -258,7 +269,7 @@ export default function TvChart({
           volRef.current.update({
             time: r.time,
             value: r.v,
-            color: r.c >= r.o ? 'rgba(0,200,83,0.45)' : `${down}73`,
+            color: r.c >= r.o ? "rgba(0,200,83,0.45)" : `${down}73`,
           });
         }
       } catch {
@@ -269,8 +280,8 @@ export default function TvChart({
             rows.map((r) => ({
               time: r.time,
               value: r.v,
-              color: r.c >= r.o ? 'rgba(0,200,83,0.45)' : `${down}73`,
-            })),
+              color: r.c >= r.o ? "rgba(0,200,83,0.45)" : `${down}73`,
+            }))
           );
         }
       }
@@ -288,8 +299,14 @@ export default function TvChart({
       if (!bar) return setLegend(null);
       setLegend(
         bar.close != null
-          ? { o: bar.open, h: bar.high, l: bar.low, c: bar.close, up: bar.close >= bar.open }
-          : { c: bar.value, up: true },
+          ? {
+              o: bar.open,
+              h: bar.high,
+              l: bar.low,
+              c: bar.close,
+              up: bar.close >= bar.open,
+            }
+          : { c: bar.value, up: true }
       );
     };
 
@@ -298,14 +315,19 @@ export default function TvChart({
   }, [chartType, dark]);
 
   const fmt = (v) =>
-    v == null ? '-' : v.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+    v == null
+      ? "-"
+      : v.toLocaleString("en-US", {
+          minimumFractionDigits: decimals,
+          maximumFractionDigits: decimals,
+        });
 
   return (
-    <div className={fill ? 'relative h-full' : 'relative'}>
+    <div className={fill ? "relative h-full" : "relative"}>
       <div
         ref={boxRef}
         style={fill ? undefined : { height }}
-        className={fill ? 'h-full w-full' : 'w-full'}
+        className={fill ? "h-full w-full" : "w-full"}
       />
 
       {/* The OHLC readout sits over the plot, as it does on a real terminal —
@@ -313,7 +335,7 @@ export default function TvChart({
       {legend && (
         <div
           className={`pointer-events-none absolute top-2 left-2 flex gap-3 rounded-md px-2.5 py-1.5 font-numeric text-2xs tabular-nums ${
-            dark ? 'bg-white/8 text-text-on-deep' : 'bg-ink/85 text-white'
+            dark ? "bg-white/8 text-text-on-deep" : "bg-ink/85 text-white"
           }`}
         >
           {legend.o != null && (

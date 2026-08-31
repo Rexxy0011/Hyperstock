@@ -83,7 +83,6 @@ export function createApp() {
       res.sendFile(path.join(clientBuildDirectory, "index.html"));
     });
   }
-
   app.use(notFoundHandler);
   app.use(errorHandler);
 
