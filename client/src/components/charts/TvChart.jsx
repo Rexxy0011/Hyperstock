@@ -248,14 +248,31 @@ export default function TvChart({
       chart.timeScale().fitContent();
       lastRef.current = seriesKey;
     } else {
-      priceRef.current.update(priceData[priceData.length - 1]);
-      if (volRef.current) {
-        const r = rows[rows.length - 1];
-        volRef.current.update({
-          time: r.time,
-          value: r.v,
-          color: r.c >= r.o ? 'rgba(0,200,83,0.45)' : `${down}73`,
-        });
+      try {
+        const lastBar = priceData[priceData.length - 1];
+        if (lastBar) {
+          priceRef.current.update(lastBar);
+        }
+        if (volRef.current && rows.length > 0) {
+          const r = rows[rows.length - 1];
+          volRef.current.update({
+            time: r.time,
+            value: r.v,
+            color: r.c >= r.o ? 'rgba(0,200,83,0.45)' : `${down}73`,
+          });
+        }
+      } catch {
+        // Fallback to setData on timestamp ordering anomalies or series sync mismatches
+        priceRef.current.setData(priceData);
+        if (volRef.current) {
+          volRef.current.setData(
+            rows.map((r) => ({
+              time: r.time,
+              value: r.v,
+              color: r.c >= r.o ? 'rgba(0,200,83,0.45)' : `${down}73`,
+            })),
+          );
+        }
       }
     }
   }, [points, divisor, decimals, chartType, hasVolume, down, seriesKey]);
