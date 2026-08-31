@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from "react-i18next";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { FiArrowRight, FiCheck } from "react-icons/fi";
 import { get, post } from "../lib/api";
@@ -85,16 +85,16 @@ function Hero() {
             read as one composition arriving rather than two elements racing. */}
         <Reveal className="relative">
           <h1 className="m-0 text-[clamp(28px,4vw,42px)] font-bold">
-            {t('landing.heroTitle')}
+            {t("landing.heroTitle")}
           </h1>
           <p className="mt-6 mb-8 max-w-105 font-display text-md font-normal text-text-muted">
-            {t('landing.heroBody')}
+            {t("landing.heroBody")}
           </p>
           {/* Goes to /about, not /markets. The arrow below points at this
               button as the page's "read on" affordance, and the exchange table
               further down is already the route to the market list. */}
           <Button to="/about" variant="slate" size="lg" pill>
-            {t('landing.learnMore')}
+            {t("landing.learnMore")}
             <FiArrowRight size={18} aria-hidden="true" />
           </Button>
 
@@ -214,101 +214,106 @@ function TopInvestors({ rows, loading = false }) {
               reason the arrow reads as a connection rather than as an ornament
               parked between two panels. */}
           <Reveal className="min-w-0 flex-1">
-            <h2 className="m-0 text-xl font-bold">{t('landing.topInvestors')}</h2>
+            <h2 className="m-0 text-xl font-bold">
+              {t("landing.topInvestors")}
+            </h2>
             {/* The rows carry real people's names against entirely invented
                 figures. In a Forbes-styled ranking that reads as a claim about
                 their money unless it is said plainly, so it is said here and
                 not only in the footer. Remove the names before a public
                 deploy, not this line. */}
             <p className="mt-2 mb-6 font-display text-base font-normal text-text-muted">
-              {t('landing.topInvestorsNote')}
+              {t("landing.topInvestorsNote")}
             </p>
 
             <div className="overflow-hidden rounded-3xl border border-cool-grey bg-white shadow-card">
-          {loading &&
-            SKELETON_ROWS.map((n, i) => (
-              <div
-                key={n}
-                className={rowClass(i === SKELETON_ROWS.length - 1)}
-                aria-hidden="true"
-              >
-                <span className="h-4 w-5 animate-pulse rounded-sm bg-cool-grey" />
-                <span className="size-10 animate-pulse rounded-lg bg-cool-grey" />
-                <span className="h-4 w-32 animate-pulse rounded-sm bg-cool-grey" />
-                <span className="ml-auto h-4 w-24 animate-pulse rounded-sm bg-cool-grey" />
-              </div>
-            ))}
+              {loading &&
+                SKELETON_ROWS.map((n, i) => (
+                  <div
+                    key={n}
+                    className={rowClass(i === SKELETON_ROWS.length - 1)}
+                    aria-hidden="true"
+                  >
+                    <span className="h-4 w-5 animate-pulse rounded-sm bg-cool-grey" />
+                    <span className="size-10 animate-pulse rounded-lg bg-cool-grey" />
+                    <span className="h-4 w-32 animate-pulse rounded-sm bg-cool-grey" />
+                    <span className="ml-auto h-4 w-24 animate-pulse rounded-sm bg-cool-grey" />
+                  </div>
+                ))}
 
-          {!loading && !rows.length && (
-            <p className="m-0 px-6 py-10 text-center text-sm text-text-muted">
-              {t('landing.rankingsPending')}
-            </p>
-          )}
+              {!loading && !rows.length && (
+                <p className="m-0 px-6 py-10 text-center text-sm text-text-muted">
+                  {t("landing.rankingsPending")}
+                </p>
+              )}
 
-          {/* Keyed on userId, not username: a curated row carries a free-typed
+              {/* Keyed on userId, not username: a curated row carries a free-typed
               name that may match a real trader's, and two rows sharing a key
               silently drop one of them. */}
-          {rows.map((r, i) => (
-            <div key={r.userId} className={rowClass(i === rows.length - 1)}>
-              <span
-                className={`w-5 font-numeric font-semibold tabular-nums ${
-                  r.rank <= 3 ? "text-void" : "text-text-muted"
-                }`}
-              >
-                {r.rank}
-              </span>
+              {rows.map((r, i) => (
+                <div key={r.userId} className={rowClass(i === rows.length - 1)}>
+                  <span
+                    className={`w-5 font-numeric font-semibold tabular-nums ${
+                      r.rank <= 3 ? "text-void" : "text-text-muted"
+                    }`}
+                  >
+                    {r.rank}
+                  </span>
 
-              <Avatar
-                name={r.name ?? r.username}
-                /* An operator-uploaded portrait outranks the bundled one: it
+                  <Avatar
+                    name={r.name ?? r.username}
+                    /* An operator-uploaded portrait outranks the bundled one: it
                    is the more recent decision, and the bundled photos are keyed
                    by seeded username so a curated row would otherwise fall back
                    to a face chosen for somebody else. */
-                src={r.avatarUrl || investorPhoto(r.username)}
-                size={40}
-              />
-
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-base font-medium">
-                  {r.name ?? r.username}
-                </span>
-                <span className="block truncate text-xs text-text-muted">
-                  {t('landing.trades', { count: r.trades })}
-                </span>
-              </span>
-
-              {/* Total, then today's move — the order Forbes reads in, because
-                  the day's change is the part that actually moves. */}
-              <span className="text-right">
-                <Money
-                  value={r.portfolioValueCents}
-                  size={16}
-                  className="block font-semibold"
-                />
-                <span className="mt-0.5 flex items-center justify-end gap-1.5">
-                  <Money
-                    value={r.dayChangeCents}
-                    size={12}
-                    signed
-                    className="text-text-muted"
+                    src={r.avatarUrl || investorPhoto(r.username)}
+                    size={40}
                   />
-                  <PriceChange value={r.dayChangePct} size={12} pill />
-                </span>
-              </span>
-            </div>
-          ))}
+
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-base font-medium">
+                      {r.name ?? r.username}
+                    </span>
+                    <span className="block truncate text-xs text-text-muted">
+                      {t("landing.trades", { count: r.trades })}
+                    </span>
+                  </span>
+
+                  {/* Total, then today's move — the order Forbes reads in, because
+                  the day's change is the part that actually moves. */}
+                  <span className="text-right">
+                    <Money
+                      value={r.portfolioValueCents}
+                      size={16}
+                      className="block font-semibold"
+                    />
+                    <span className="mt-0.5 flex items-center justify-end gap-1.5">
+                      <Money
+                        value={r.dayChangeCents}
+                        size={12}
+                        signed
+                        className="text-text-muted"
+                      />
+                      <PriceChange value={r.dayChangePct} size={12} pill />
+                    </span>
+                  </span>
+                </div>
+              ))}
             </div>
 
             <div className="mt-6">
               <Button to="/leaderboard" variant="secondary" size="sm">
-                {t('landing.seeRankings')}
+                {t("landing.seeRankings")}
               </Button>
             </div>
           </Reveal>
 
           {/* Flow arrow: points right when columns are side-by-side on desktop,
               and points down (rotate-90) when columns are stacked on mobile. */}
-          <Reveal delay={110} className="flex shrink-0 items-center justify-center self-center py-2 lg:py-0">
+          <Reveal
+            delay={110}
+            className="flex shrink-0 items-center justify-center self-center py-2 lg:py-0"
+          >
             <img
               src={assets.flowArrow}
               alt=""
@@ -326,10 +331,10 @@ function TopInvestors({ rows, loading = false }) {
                 rule the box was invisible and its padding just knocked the
                 heading 16px out of line with the copy below. */}
             <h2 className="m-0 text-xl font-bold">
-              {t('landing.fastTrackTitle')}
+              {t("landing.fastTrackTitle")}
             </h2>
             <p className="mt-2 mb-6 font-display text-base font-normal text-text-muted">
-              {t('landing.fastTrackBody')}
+              {t("landing.fastTrackBody")}
             </p>
 
             <img
@@ -345,7 +350,6 @@ function TopInvestors({ rows, loading = false }) {
     </section>
   );
 }
-
 
 /* --------------------------------------------------------------- security */
 
@@ -366,10 +370,10 @@ function TopInvestors({ rows, loading = false }) {
  * and baking it into the copy means translating it four times.
  */
 const PILLARS = [
-  { icon: assets.icons.money, key: 'sec1' },
-  { icon: assets.icons.lock, key: 'sec2' },
-  { icon: assets.icons.wallet, key: 'sec3' },
-  { icon: assets.icons.security, key: 'sec4' },
+  { icon: assets.icons.money, key: "sec1" },
+  { icon: assets.icons.lock, key: "sec2" },
+  { icon: assets.icons.wallet, key: "sec3" },
+  { icon: assets.icons.security, key: "sec4" },
 ];
 
 /**
@@ -422,13 +426,13 @@ function Security() {
                 size steps down as well. All three revert at `sm`, and English
                 at its designed size is what every screen above a phone gets. */}
             <h2 className="m-0 shrink-0 rounded-full border border-slate/35 px-4 py-2 text-center text-base font-bold tracking-wider uppercase sm:px-6 sm:text-lg sm:tracking-widest">
-              {t('landing.securityEyebrow')}
+              {t("landing.securityEyebrow")}
             </h2>
             <span className="h-px flex-1 bg-linear-to-r from-slate/55 from-60% to-transparent" />
           </div>
 
           <p className="mx-auto mt-4 mb-8 max-w-118 text-center font-display text-base font-normal text-text-muted">
-            {t('landing.securityLead')}
+            {t("landing.securityLead")}
           </p>
         </Reveal>
 
@@ -449,30 +453,30 @@ function Security() {
               thing the note above about `items-start` warns off. */}
           {PILLARS.map(({ icon, key }, i) => (
             <Reveal key={key} delay={i * 80} className="h-full">
-            <Card className="flex h-full flex-col gap-3 rounded-xl">
-              {/* No mist tile behind these. It was there to give an 18px line
+              <Card className="flex h-full flex-col gap-3 rounded-xl">
+                {/* No mist tile behind these. It was there to give an 18px line
                   icon a surface to sit on; full-colour artwork brings its own,
                   and a second one just competes. alt is empty on purpose —
                   the heading underneath already names the idea, so announcing
                   the icon would read it twice. */}
-              <img
-                src={icon}
-                alt=""
-                width={48}
-                height={48}
-                className="size-12"
-              />
+                <img
+                  src={icon}
+                  alt=""
+                  width={48}
+                  height={48}
+                  className="size-12"
+                />
 
-              <h3 className="m-0 text-md font-bold">
-                {/* The numeral is composed here, not carried in the copy —
+                <h3 className="m-0 text-md font-bold">
+                  {/* The numeral is composed here, not carried in the copy —
                     it is the same in every language. */}
-                {String(i + 1).padStart(2, '0')}. {t(`landing.${key}Title`)}
-              </h3>
+                  {String(i + 1).padStart(2, "0")}. {t(`landing.${key}Title`)}
+                </h3>
 
-              <p className="m-0 font-display text-base font-normal text-text-muted">
-                {t(`landing.${key}Body`)}
-              </p>
-            </Card>
+                <p className="m-0 font-display text-base font-normal text-text-muted">
+                  {t(`landing.${key}Body`)}
+                </p>
+              </Card>
             </Reveal>
           ))}
         </div>
@@ -488,7 +492,9 @@ function Markets({ exchanges }) {
   return (
     <section className={`mx-auto max-w-300 px-8 ${SECTION_Y}`}>
       <Reveal>
-        <h2 className="m-0 mb-6 text-xl font-bold">{t('landing.marketsCovered')}</h2>
+        <h2 className="m-0 mb-6 text-xl font-bold">
+          {t("landing.marketsCovered")}
+        </h2>
       </Reveal>
 
       {/* bg-ink, the same deep surface as the nav balance pill and the ticker
@@ -497,11 +503,18 @@ function Markets({ exchanges }) {
           already defines the shape. Row separators move to white/10 for the
           same reason — the light divider has to come out of the surface, not
           off the light-theme palette. */}
-      <Reveal delay={90} className="overflow-x-auto rounded-md bg-ink shadow-card">
+      <Reveal
+        delay={90}
+        className="overflow-x-auto rounded-md bg-ink shadow-card"
+      >
         <table className="w-full border-collapse">
           <thead>
             <tr>
-              {[t('landing.colExchange'), t('landing.colRegion'), t('landing.colHours')].map((h) => (
+              {[
+                t("landing.colExchange"),
+                t("landing.colRegion"),
+                t("landing.colHours"),
+              ].map((h) => (
                 <th
                   key={h}
                   className="border-b border-white/10 px-4 py-2.5 text-left font-display text-xs font-medium text-text-on-deep-muted"
@@ -510,7 +523,7 @@ function Markets({ exchanges }) {
                 </th>
               ))}
               <th className="border-b border-white/10 px-4 py-2.5 text-right font-display text-xs font-medium text-text-on-deep-muted">
-                {t('landing.colStocks')}
+                {t("landing.colStocks")}
               </th>
             </tr>
           </thead>
@@ -588,7 +601,8 @@ function CtaShowcase() {
 
   const subscribe = useMutation({
     /** @param {string} address */
-    mutationFn: (address) => post("/subscribers", { email: address, source: "landing_cta" }),
+    mutationFn: (address) =>
+      post("/subscribers", { email: address, source: "landing_cta" }),
     onSuccess: () => {
       setDone(true);
       notify.t("toast.subscribed");
@@ -611,12 +625,10 @@ function CtaShowcase() {
           Card because that brings a p-5 that fights this padding. */}
       <Reveal className="flex w-full flex-col items-center gap-10 rounded-xl border border-cool-grey bg-white px-6 py-14 text-center shadow-card lg:aspect-91/32 lg:flex-row lg:justify-between lg:gap-12 lg:px-14 lg:py-0 lg:text-left">
         <div className="lg:max-w-150">
-          <h2 className="m-0 text-xl font-bold">
-            {t('landing.closingTitle')}
-          </h2>
+          <h2 className="m-0 text-xl font-bold">{t("landing.closingTitle")}</h2>
 
           <p className="mt-3 mb-8 font-display text-base font-normal text-text-muted">
-            {t('landing.closingBody')}
+            {t("landing.closingBody")}
           </p>
 
           {done ? (
@@ -629,7 +641,7 @@ function CtaShowcase() {
               className="mx-auto flex max-w-120 items-center justify-center gap-2.5 rounded-md border border-gain/30 bg-green-tint px-4 py-3.5 text-base font-medium text-gain lg:mx-0 lg:justify-start"
             >
               <FiCheck size={18} aria-hidden="true" />
-              {t('landing.subscribedTitle')}
+              {t("landing.subscribedTitle")}
             </p>
           ) : (
             <form
@@ -637,7 +649,7 @@ function CtaShowcase() {
               className="mx-auto flex w-full max-w-120 flex-col gap-3 sm:flex-row lg:mx-0"
             >
               <label className="sr-only" htmlFor="cta-email">
-                {t('landing.emailAddress')}
+                {t("landing.emailAddress")}
               </label>
               <input
                 id="cta-email"
@@ -645,12 +657,19 @@ function CtaShowcase() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder={t('landing.emailPlaceholder')}
+                placeholder={t("landing.emailPlaceholder")}
                 autoComplete="email"
                 className="min-w-0 flex-1 rounded-md border border-cool-grey bg-white px-4 py-3 font-display text-base text-text-body outline-none placeholder:text-text-muted focus:border-slate"
               />
-              <Button type="submit" size="lg" className="shrink-0" disabled={subscribe.isPending}>
-                {subscribe.isPending ? t('common.submitting') : t('landing.subscribe')}
+              <Button
+                type="submit"
+                size="lg"
+                className="shrink-0"
+                disabled={subscribe.isPending}
+              >
+                {subscribe.isPending
+                  ? t("common.submitting")
+                  : t("landing.subscribe")}
               </Button>
             </form>
           )}
@@ -670,7 +689,6 @@ function CtaShowcase() {
     </section>
   );
 }
-
 
 /* ---------------------------------------------------------- market partners */
 
@@ -697,21 +715,21 @@ function CtaShowcase() {
  * in that mode so nothing is announced or shown twice.
  */
 const PARTNERS = [
-  { name: 'NASDAQ', logo: partnerLogos.nasdaq },
+  { name: "NASDAQ", logo: partnerLogos.nasdaq },
   // NYSE PUBLISHES NO FAVICON OR ICON ANYWHERE — 404 from nyse.com directly and
   // from every icon service. Its parent (theice.com) has one, but that is the
   // ICE brand, not this one, and drawing a trademark by hand is the thing
   // `CoinIcon` already refuses to do. So it renders as a wordmark alone, which
   // is what the missing-logo path exists for.
-  { name: 'NYSE', logo: null },
-  { name: 'CBOE', logo: partnerLogos.cboe },
-  { name: 'CITADEL SECURITIES', logo: partnerLogos.citadelSecurities },
-  { name: 'VIRTU', logo: partnerLogos.virtu },
-  { name: 'JANE STREET', logo: partnerLogos.janeStreet },
-  { name: 'SIG', logo: partnerLogos.sig },
-  { name: 'APEX', logo: partnerLogos.apex },
-  { name: 'DRIVEWEALTH', logo: partnerLogos.drivewealth },
-  { name: 'ALPACA', logo: partnerLogos.alpaca },
+  { name: "NYSE", logo: null },
+  { name: "CBOE", logo: partnerLogos.cboe },
+  { name: "CITADEL SECURITIES", logo: partnerLogos.citadelSecurities },
+  { name: "VIRTU", logo: partnerLogos.virtu },
+  { name: "JANE STREET", logo: partnerLogos.janeStreet },
+  { name: "SIG", logo: partnerLogos.sig },
+  { name: "APEX", logo: partnerLogos.apex },
+  { name: "DRIVEWEALTH", logo: partnerLogos.drivewealth },
+  { name: "ALPACA", logo: partnerLogos.alpaca },
 ];
 
 function MarketPartners() {
@@ -720,12 +738,15 @@ function MarketPartners() {
   const row = (duplicate) => (
     <div
       className={`flex shrink-0 items-center gap-14 pr-14 motion-reduce:flex-wrap motion-reduce:justify-center motion-reduce:gap-x-10 motion-reduce:gap-y-4 motion-reduce:pr-0 ${
-        duplicate ? 'motion-reduce:hidden' : ''
+        duplicate ? "motion-reduce:hidden" : ""
       }`}
       aria-hidden={duplicate || undefined}
     >
       {PARTNERS.map(({ name, logo }) => (
-        <span key={name} className="inline-flex items-center gap-2.5 whitespace-nowrap">
+        <span
+          key={name}
+          className="inline-flex items-center gap-2.5 whitespace-nowrap"
+        >
           {logo && (
             <img
               src={logo}
@@ -742,7 +763,7 @@ function MarketPartners() {
               // row degrades to exactly what it looked like before there were
               // logos. Same rule as `AssetMark` and `Thumbnail`.
               onError={(e) => {
-                e.currentTarget.style.display = 'none';
+                e.currentTarget.style.display = "none";
               }}
               className="size-6 shrink-0 object-contain"
             />
@@ -762,9 +783,11 @@ function MarketPartners() {
     <section className="border-t border-cool-grey bg-mist">
       <div className="mx-auto max-w-300 px-8 py-14">
         <Reveal className="text-center">
-          <h2 className="m-0 text-xl font-bold">{t('landing.partnersTitle')}</h2>
+          <h2 className="m-0 text-xl font-bold">
+            {t("landing.partnersTitle")}
+          </h2>
           <p className="mx-auto mt-3 mb-0 max-w-150 font-display text-base font-normal text-text-muted">
-            {t('landing.partnersBody')}
+            {t("landing.partnersBody")}
           </p>
         </Reveal>
 
@@ -798,7 +821,7 @@ function MarketPartners() {
           delay={200}
           className="mx-auto mt-8 mb-0 max-w-150 text-center text-2xs text-text-muted"
         >
-          {t('landing.partnersNote')}
+          {t("landing.partnersNote")}
         </Reveal>
       </div>
     </section>

@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import Button from '../components/ui/Button';
-import { useAccountCta } from '../hooks/useAccountCta';
-import Icon from '../components/ui/Icon';
-import { useFaqs, FAQ_COUNT } from './faqContent';
+import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import Button from "../components/ui/Button";
+import { useAccountCta } from "../hooks/useAccountCta";
+import Icon from "../components/ui/Icon";
+import { useFaqs, FAQ_COUNT } from "./faqContent";
 
 /**
  * `/faqs` — the reference layout: a hero, then a sticky category rail beside a
@@ -78,22 +78,22 @@ function Hero() {
     <section className="border-b border-cool-grey bg-mist/40">
       <div className="mx-auto w-full max-w-300 px-4 py-16 sm:px-6 lg:px-10 lg:py-24">
         <p className="m-0 text-2xs font-medium tracking-[0.14em] text-text-muted uppercase">
-          {t('faq.eyebrow')}
+          {t("faq.eyebrow")}
         </p>
         <h1 className="mt-4 mb-0 max-w-200 text-[clamp(28px,4vw,42px)] font-bold text-void">
-          {t('faq.title')}
+          {t("faq.title")}
         </h1>
         <p className="mt-5 mb-0 max-w-160 text-md text-text-body">
-          {t('faq.lead')}
+          {t("faq.lead")}
         </p>
         <p className="mt-3 mb-0 max-w-160 text-sm text-text-muted">
-          {t('faq.sub')}
+          {t("faq.sub")}
         </p>
 
         <div className="mt-8 flex flex-wrap gap-3">
           <Button to={cta.to}>{cta.label}</Button>
           <Button to="/contact" variant="secondary">
-            {t('faq.contactSupport')}
+            {t("faq.contactSupport")}
           </Button>
         </div>
       </div>
@@ -123,7 +123,9 @@ function CategoryRail({ categories }) {
   const stripRef = useRef(/** @type {HTMLDivElement | null} */ (null));
 
   useEffect(() => {
-    const headings = categories.map((c) => document.getElementById(c.id)).filter(Boolean);
+    const headings = categories
+      .map((c) => document.getElementById(c.id))
+      .filter(Boolean);
     if (!headings.length) return;
 
     const observer = new IntersectionObserver(
@@ -133,7 +135,7 @@ function CategoryRail({ categories }) {
           .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
         if (visible[0]) setActive(visible[0].target.id);
       },
-      { rootMargin: '-88px 0px -70% 0px', threshold: 0 },
+      { rootMargin: "-88px 0px -70% 0px", threshold: 0 }
     );
 
     headings.forEach((h) => observer.observe(h));
@@ -145,22 +147,9 @@ function CategoryRail({ categories }) {
   // On mobile the strip scrolls horizontally, so the active chip is centered
   // by scrolling only the container. We avoid calling `scrollIntoView` because
   // that hijacks the window's vertical scroll position on mobile touch screens.
-  useEffect(() => {
-    const strip = stripRef.current;
-    if (!strip) return;
     const chip = strip.querySelector(`[data-chip="${active}"]`);
     if (chip instanceof HTMLElement) {
       const chipLeft = chip.offsetLeft;
-      const chipWidth = chip.offsetWidth;
-      const stripWidth = strip.offsetWidth;
-      const targetScroll = chipLeft - (stripWidth - chipWidth) / 2;
-      strip.scrollTo({ left: Math.max(0, targetScroll), behavior: 'smooth' });
-    }
-  }, [active]);
-
-  return (
-    <>
-      {/* Mobile: a scrolling strip above the list. `-mx-4 px-4` lets it bleed to
           the screen edges so the last chip does not look clipped by a margin. */}
       <div
         ref={stripRef}
@@ -170,13 +159,12 @@ function CategoryRail({ categories }) {
           <a
             key={c.id}
             href={`#${c.id}`}
-            data-chip={c.id}
             className={[
-              'shrink-0 rounded-lg border px-3 py-2 text-2xs font-medium whitespace-nowrap no-underline transition-colors',
+              "shrink-0 rounded-lg border px-3 py-2 text-2xs font-medium whitespace-nowrap no-underline transition-colors",
               active === c.id
-                ? 'border-void bg-ink text-white'
-                : 'border-cool-grey text-text-muted hover:text-void',
-            ].join(' ')}
+                ? "border-void bg-ink text-white"
+                : "border-cool-grey text-text-muted hover:text-void",
+            ].join(" ")}
           >
             {c.label}
           </a>
@@ -189,20 +177,20 @@ function CategoryRail({ categories }) {
       <nav aria-label="FAQ categories" className="hidden lg:block">
         <div className="sticky top-24">
           <p className="m-0 mb-4 text-2xs font-medium tracking-[0.14em] text-text-muted uppercase">
-            {t('faq.categories')}
+            {t("faq.categories")}
           </p>
           <ul className="m-0 list-none p-0">
             {categories.map((c) => (
               <li key={c.id}>
                 <a
                   href={`#${c.id}`}
-                  aria-current={active === c.id ? 'true' : undefined}
+                  aria-current={active === c.id ? "true" : undefined}
                   className={[
-                    'block border-l-2 py-2 pl-3 text-sm no-underline transition-colors',
+                    "block border-l-2 py-2 pl-3 text-sm no-underline transition-colors",
                     active === c.id
-                      ? 'border-gain font-medium text-void'
-                      : 'border-cool-grey text-text-muted hover:border-slate/40 hover:text-void',
-                  ].join(' ')}
+                      ? "border-gain font-medium text-void"
+                      : "border-cool-grey text-text-muted hover:border-slate/40 hover:text-void",
+                  ].join(" ")}
                 >
                   {c.label}
                 </a>
@@ -211,7 +199,7 @@ function CategoryRail({ categories }) {
           </ul>
 
           <p className="mt-6 mb-0 text-2xs text-text-muted">
-            {t('faq.answered', { count: FAQ_COUNT })}
+            {t("faq.answered", { count: FAQ_COUNT })}
           </p>
         </div>
       </nav>
@@ -249,7 +237,9 @@ function FaqItem({ faq }) {
           <span className="mt-0.5 shrink-0 font-numeric text-2xs tabular-nums text-text-muted">
             {faq.n}
           </span>
-          <span className="min-w-0 flex-1 text-sm font-medium text-void">{faq.q}</span>
+          <span className="min-w-0 flex-1 text-sm font-medium text-void">
+            {faq.q}
+          </span>
           {/*
             A PLUS THAT ROTATES INTO A MINUS, matching the reference. One glyph
             rotating 45° rather than swapping two icons: a swap has no
@@ -260,7 +250,7 @@ function FaqItem({ faq }) {
             name="plus"
             size={16}
             className={`mt-0.5 shrink-0 text-text-muted transition-transform duration-300 ${
-              open ? 'rotate-135' : ''
+              open ? "rotate-135" : ""
             }`}
           />
         </button>
@@ -272,10 +262,10 @@ function FaqItem({ faq }) {
         // content out of the tab order and away from screen readers, which
         // `overflow: hidden` alone does not do.
         className={`grid transition-[grid-template-rows] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-          open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+          open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
         }`}
       >
-        <div className={`overflow-hidden ${open ? '' : 'invisible'}`}>
+        <div className={`overflow-hidden ${open ? "" : "invisible"}`}>
           <div className="flex flex-col gap-3 pt-1 pb-6 pl-9 text-sm text-text-muted">
             {faq.body.map((block, i) =>
               // A block is a paragraph string, or an object carrying a list.
@@ -285,7 +275,10 @@ function FaqItem({ faq }) {
                 <ul key={i} className="m-0 flex list-none flex-col gap-2 p-0">
                   {block.list.map((item) => (
                     <li key={item} className="flex gap-2.5">
-                      <span aria-hidden="true" className="mt-2 size-1 shrink-0 rounded-full bg-gain" />
+                      <span
+                        aria-hidden="true"
+                        className="mt-2 size-1 shrink-0 rounded-full bg-gain"
+                      />
                       <span>{item}</span>
                     </li>
                   ))}
@@ -294,7 +287,7 @@ function FaqItem({ faq }) {
                 <p key={i} className="m-0 max-w-200 leading-relaxed">
                   {block}
                 </p>
-              ),
+              )
             )}
 
             {/* The answer's own button. Signed in, the account already
@@ -338,17 +331,17 @@ function ClosingCta() {
     <section className="border-t border-cool-grey bg-mist/50">
       <div className="mx-auto w-full max-w-300 px-4 py-20 text-center sm:px-6 lg:px-10">
         <h2 className="m-0 text-[clamp(24px,3vw,34px)] font-bold text-void">
-          {t('faq.closingTitle')}
+          {t("faq.closingTitle")}
         </h2>
         <p className="mx-auto mt-5 mb-0 max-w-150 text-sm text-text-body">
-          {t('faq.closingBody')}
+          {t("faq.closingBody")}
         </p>
         <p className="mx-auto mt-2 mb-0 max-w-150 text-sm text-text-muted">
-          {t('faq.closingSub')}
+          {t("faq.closingSub")}
         </p>
 
         <div className="mt-8 flex flex-wrap justify-center gap-3">
-          <Button to="/contact">{t('faq.contactSupport')}</Button>
+          <Button to="/contact">{t("faq.contactSupport")}</Button>
           <Button to={cta.to} variant="secondary">
             {cta.label}
           </Button>
