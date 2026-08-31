@@ -306,20 +306,15 @@ function TopInvestors({ rows, loading = false }) {
             </div>
           </Reveal>
 
-          {/* Purely decorative, so it carries an empty alt and is hidden while
-              the columns are stacked — an arrow pointing right means nothing
-              when the two things it connects sit one above the other.
-
-              The layout classes move to the Reveal wrapper, which is now the
-              flex item; leaving `self-center` on the image would centre it
-              inside a wrapper that is already exactly its size and do nothing. */}
-          <Reveal delay={110} className="hidden shrink-0 self-center lg:block">
+          {/* Flow arrow: points right when columns are side-by-side on desktop,
+              and points down (rotate-90) when columns are stacked on mobile. */}
+          <Reveal delay={110} className="flex shrink-0 items-center justify-center self-center py-2 lg:py-0">
             <img
               src={assets.flowArrow}
               alt=""
               width={993}
               height={406}
-              className="lg:w-56"
+              className="w-28 rotate-90 my-3 lg:my-0 lg:w-56 lg:rotate-0 transition-transform"
             />
           </Reveal>
 
