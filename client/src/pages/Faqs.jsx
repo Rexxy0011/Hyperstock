@@ -142,12 +142,20 @@ function CategoryRail({ categories }) {
     // observer still holding the old nodes would never fire again.
   }, [categories]);
 
-  // On mobile the strip scrolls, so the active chip has to be brought into view
-  // as the reader moves — otherwise it silently drifts off the left edge and the
-  // strip appears to have no current item at all.
+  // On mobile the strip scrolls horizontally, so the active chip is centered
+  // by scrolling only the container. We avoid calling `scrollIntoView` because
+  // that hijacks the window's vertical scroll position on mobile touch screens.
   useEffect(() => {
-    const chip = stripRef.current?.querySelector(`[data-chip="${active}"]`);
-    chip?.scrollIntoView({ block: 'nearest', inline: 'center' });
+    const strip = stripRef.current;
+    if (!strip) return;
+    const chip = strip.querySelector(`[data-chip="${active}"]`);
+    if (chip instanceof HTMLElement) {
+      const chipLeft = chip.offsetLeft;
+      const chipWidth = chip.offsetWidth;
+      const stripWidth = strip.offsetWidth;
+      const targetScroll = chipLeft - (stripWidth - chipWidth) / 2;
+      strip.scrollTo({ left: Math.max(0, targetScroll), behavior: 'smooth' });
+    }
   }, [active]);
 
   return (
@@ -156,7 +164,7 @@ function CategoryRail({ categories }) {
           the screen edges so the last chip does not look clipped by a margin. */}
       <div
         ref={stripRef}
-        className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 lg:hidden scrollbar-none"
+        className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-2 pt-1 lg:hidden scrollbar-none overscroll-x-contain"
       >
         {categories.map((c) => (
           <a
