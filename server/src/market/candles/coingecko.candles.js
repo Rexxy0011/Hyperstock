@@ -60,7 +60,13 @@ export async function fetchCandles(instrument, range) {
   const days = RANGE_DAYS[range] ?? 30;
   const res = await fetch(
     `${URL}/${encodeURIComponent(instrument.vendorId)}/ohlc?vs_currency=usd&days=${days}`,
-    { headers: { accept: 'application/json' }, signal: AbortSignal.timeout(env.MARKET_TIMEOUT_MS) },
+    {
+      headers: {
+        accept: 'application/json',
+        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      },
+      signal: AbortSignal.timeout(env.MARKET_TIMEOUT_MS),
+    },
   );
   // 429 is the common one and it arrives after only a handful of calls, which
   // is the whole reason candles.service.js caches rather than proxying.
