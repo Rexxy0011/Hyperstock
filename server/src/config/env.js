@@ -1,16 +1,15 @@
-import { z } from 'zod';
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { z } from "zod";
 
 /**
  * Env is validated once, at import time, and fails fast with a readable list of
  * problems. Everything downstream imports `env` and can trust it.
  */
 const schema = z.object({
-  NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+  NODE_ENV: z
+    .enum(["development", "test", "production"])
+    .default("development"),
   PORT: z.coerce.number().int().positive().default(4000),
-  CLIENT_ORIGIN: z.string().default('http://localhost:5173'),
+  CLIENT_ORIGIN: z.string().default("http://localhost:5173"),
 
   /**
    * Where THIS API is reachable from the public internet.
@@ -27,10 +26,10 @@ const schema = z.object({
    * Empty means "derive from PORT", which is right in development and refused
    * in production below.
    */
-  API_ORIGIN: z.string().default(''),
+  API_ORIGIN: z.string().default(""),
 
   // Blank means "start an in-memory replica set" — see config/db.js
-  MONGODB_URI: z.string().default(''),
+  MONGODB_URI: z.string().default(""),
 
   /**
    * Better Auth signs session tokens with this. `min(32)` is its own floor, not
@@ -42,7 +41,7 @@ const schema = z.object({
   BETTER_AUTH_SECRET: z
     .string()
     .min(32)
-    .default('dev-better-auth-secret-change-me-0123456789'),
+    .default("dev-better-auth-secret-change-me-0123456789"),
 
   /**
    * THE OPERATOR ACCOUNT. The one seeded user with `role: 'admin'`, and so the
@@ -66,8 +65,8 @@ const schema = z.object({
    * place on the next run — but a database seeded under the old address keeps
    * it until `npm run seed` runs again.
    */
-  ADMIN_EMAIL: z.string().trim().toLowerCase().default('admin@hyperstocks.app'),
-  ADMIN_PASSWORD: z.string().min(8).default('password123'),
+  ADMIN_EMAIL: z.string().trim().toLowerCase().default("admin@hyperstocks.app"),
+  ADMIN_PASSWORD: z.string().min(8).default("password123"),
 
   /**
    * GOOGLE OAUTH. Both halves are optional and default to empty: the provider
@@ -76,8 +75,8 @@ const schema = z.object({
    * empty client id fails at the moment somebody presses it, on a Google error
    * page, which is the worst place to learn an env var is missing.
    */
-  GOOGLE_CLIENT_ID: z.string().default(''),
-  GOOGLE_CLIENT_SECRET: z.string().default(''),
+  GOOGLE_CLIENT_ID: z.string().default(""),
+  GOOGLE_CLIENT_SECRET: z.string().default(""),
 
   /**
    * EMAIL. Optional: with no key the mailer prints messages to the terminal in
@@ -91,8 +90,8 @@ const schema = z.object({
    * that gets spam-flagged from poisoning the reputation that password resets
    * depend on.
    */
-  RESEND_API_KEY: z.string().default(''),
-  MAIL_FROM: z.string().default('HyperStocks <onboarding@resend.dev>'),
+  RESEND_API_KEY: z.string().default(""),
+  MAIL_FROM: z.string().default("HyperStocks <onboarding@resend.dev>"),
 
   /**
    * SUPERSEDED BY BETTER AUTH and kept only because a deployed `.env` still
@@ -100,11 +99,11 @@ const schema = z.object({
    * self-contained JWTs, so there is no access token to sign and no refresh
    * token to rotate. Delete them once no environment sets them.
    */
-  JWT_ACCESS_SECRET: z.string().min(8).default('dev-access-secret-change-me'),
-  JWT_REFRESH_SECRET: z.string().min(8).default('dev-refresh-secret-change-me'),
+  JWT_ACCESS_SECRET: z.string().min(8).default("dev-access-secret-change-me"),
+  JWT_REFRESH_SECRET: z.string().min(8).default("dev-refresh-secret-change-me"),
 
-  MARKET_DATA_PROVIDER: z.enum(['yahoo', 'finnhub', 'mock']).default('yahoo'),
-  MARKET_DATA_API_KEY: z.string().default(''),
+  MARKET_DATA_PROVIDER: z.enum(["yahoo", "finnhub", "mock"]).default("yahoo"),
+  MARKET_DATA_API_KEY: z.string().default(""),
 
   // News. FINNHUB_API_KEY is the one to set; MARKET_DATA_API_KEY is accepted as
   // a fallback because when MARKET_DATA_PROVIDER is 'finnhub' it holds the same
@@ -114,13 +113,21 @@ const schema = z.object({
   // 'rss' forces the keyless Nasdaq feed, which is also where an unset key, a
   // rejected key or a vendor outage lands. 'none' disables market news
   // entirely, leaving /news as announcements only.
-  NEWS_PROVIDER: z.enum(['finnhub', 'rss', 'none']).default('finnhub'),
-  FINNHUB_API_KEY: z.string().default(''),
+  NEWS_PROVIDER: z.enum(["finnhub", "rss", "none"]).default("finnhub"),
+  FINNHUB_API_KEY: z.string().default(""),
   NEWS_TIMEOUT_MS: z.coerce.number().int().positive().default(6_000),
   /** How long a cached article stays servable. */
-  NEWS_TTL_MS: z.coerce.number().int().positive().default(15 * 60_000),
+  NEWS_TTL_MS: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(15 * 60_000),
   /** Floor between vendor calls for the same feed — the real quota guard. */
-  NEWS_MIN_FETCH_MS: z.coerce.number().int().positive().default(5 * 60_000),
+  NEWS_MIN_FETCH_MS: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(5 * 60_000),
 
   // Markets. Crypto and forex are keyless; live equity quotes reuse
   // FINNHUB_API_KEY and only reach the US symbols the free tier allows.
@@ -128,7 +135,7 @@ const schema = z.object({
   // Non-US equity quotes. Free key from twelvedata.com — there is no demo
   // path, `apikey=demo` 401s. Unset means the six non-US exchanges keep their
   // seeded prices, which is what they did before this provider existed.
-  TWELVEDATA_API_KEY: z.string().default(''),
+  TWELVEDATA_API_KEY: z.string().default(""),
   /** Floor between vendor calls per asset class — the quota guard, as for news. */
   MARKET_MIN_FETCH_MS: z.coerce.number().int().positive().default(60_000),
   QUOTE_REFRESH_MS: z.coerce.number().int().positive().default(15_000),
@@ -157,7 +164,7 @@ const schema = z.object({
    * to open a crypto deposit while it is empty, so no screen can instruct
    * anyone to send money until an operator has deliberately configured where.
    */
-  DEPOSIT_DESTINATIONS: z.string().default('[]'),
+  DEPOSIT_DESTINATIONS: z.string().default("[]"),
 
   /**
    * Which chains payouts may be SENT on, as JSON.
@@ -176,14 +183,14 @@ const schema = z.object({
    * behaviour and stays the default so nothing changes for a deployment that
    * does not set it.
    */
-  WITHDRAWAL_NETWORKS: z.string().default('[]'),
+  WITHDRAWAL_NETWORKS: z.string().default("[]"),
 
   /** Confirmations before a detected payment is put in front of a reviewer. */
   DEPOSIT_MIN_CONFIRMATIONS: z.coerce.number().int().nonnegative().default(1),
   /** An unpaid deposit stops being quotable after this long. */
   DEPOSIT_TTL_MINUTES: z.coerce.number().int().positive().default(30),
   /** Shown on the payment screen for an amount that does not match the quote. */
-  SUPPORT_EMAIL: z.string().trim().default('support@hyperstocks.app'),
+  SUPPORT_EMAIL: z.string().trim().default("support@hyperstocks.app"),
 
   /**
    * Tawk.to live chat. Empty property id means no chat, and the client asks
@@ -197,9 +204,9 @@ const schema = z.object({
    * feature, which is the failure `DEPOSIT_DESTINATIONS` records under ONE
    * SOURCE, AND THAT IS DELIBERATE.
    */
-  TAWK_PROPERTY_ID: z.string().trim().default(''),
+  TAWK_PROPERTY_ID: z.string().trim().default(""),
   /** Tawk's own default widget is literally named `default`. */
-  TAWK_WIDGET_ID: z.string().trim().default('default'),
+  TAWK_WIDGET_ID: z.string().trim().default("default"),
 
   /**
    * OPTIONAL, AND OFF BY DEFAULT. Tawk's "secure mode" key, from
@@ -214,7 +221,7 @@ const schema = z.object({
    * Left empty the config response says `verified: false`, so which mode is
    * running is reported rather than guessed.
    */
-  TAWK_API_KEY: z.string().trim().default(''),
+  TAWK_API_KEY: z.string().trim().default(""),
 
   /**
    * WITHDRAWALS ARE OFF UNLESS AN OPERATOR TURNS THEM ON, and the default is
@@ -229,8 +236,8 @@ const schema = z.object({
    */
   WITHDRAWALS_ENABLED: z
     .string()
-    .default('true')
-    .transform((v) => v === 'true' || v === '1'),
+    .default("false")
+    .transform((v) => v === "true" || v === "1"),
   /** Floor per payout, in dollars. Below this the network fee dominates. */
   MIN_WITHDRAWAL_AMOUNT: z.coerce.number().positive().default(20),
   /** Ceiling per payout, in dollars — a manual review process has a limit. */
@@ -243,8 +250,8 @@ const parsed = schema.safeParse(process.env);
 
 if (!parsed.success) {
   const issues = parsed.error.issues
-    .map((i) => `  ${i.path.join('.')}: ${i.message}`)
-    .join('\n');
+    .map((i) => `  ${i.path.join(".")}: ${i.message}`)
+    .join("\n");
   console.error(`\nInvalid environment configuration:\n${issues}\n`);
   process.exit(1);
 }
@@ -292,16 +299,20 @@ export const WITHDRAWAL_NETWORKS = (() => {
       }
     }
   } catch {
-    console.error('Refusing to start: WITHDRAWAL_NETWORKS is not valid JSON.');
+    console.error("Refusing to start: WITHDRAWAL_NETWORKS is not valid JSON.");
     process.exit(1);
   }
   if (!Array.isArray(raw)) {
-    console.error('Refusing to start: WITHDRAWAL_NETWORKS must be a JSON array.');
+    console.error(
+      "Refusing to start: WITHDRAWAL_NETWORKS must be a JSON array."
+    );
     process.exit(1);
   }
   for (const n of raw) {
     if (!n?.asset || !n?.network) {
-      console.error('Refusing to start: every WITHDRAWAL_NETWORKS entry needs asset and network.');
+      console.error(
+        "Refusing to start: every WITHDRAWAL_NETWORKS entry needs asset and network."
+      );
       process.exit(1);
     }
   }
@@ -325,17 +336,19 @@ export const DEPOSIT_DESTINATIONS = (() => {
       }
     }
   } catch {
-    console.error('Refusing to start: DEPOSIT_DESTINATIONS is not valid JSON.');
+    console.error("Refusing to start: DEPOSIT_DESTINATIONS is not valid JSON.");
     process.exit(1);
   }
   if (!Array.isArray(raw)) {
-    console.error('Refusing to start: DEPOSIT_DESTINATIONS must be a JSON array.');
+    console.error(
+      "Refusing to start: DEPOSIT_DESTINATIONS must be a JSON array."
+    );
     process.exit(1);
   }
   for (const d of raw) {
     if (!d?.asset || !d?.network || !d?.address) {
       console.error(
-        'Refusing to start: every DEPOSIT_DESTINATIONS entry needs asset, network and address.',
+        "Refusing to start: every DEPOSIT_DESTINATIONS entry needs asset, network and address."
       );
       process.exit(1);
     }
@@ -343,7 +356,7 @@ export const DEPOSIT_DESTINATIONS = (() => {
   return raw;
 })();
 
-export const isProd = env.NODE_ENV === 'production';
+export const isProd = env.NODE_ENV === "production";
 
 /**
  * The API's own origin, with the development fallback applied.
@@ -354,9 +367,11 @@ export const isProd = env.NODE_ENV === 'production';
 export const apiOrigin = env.API_ORIGIN || `http://localhost:${env.PORT}`;
 
 if (isProd) {
-  for (const key of ['BETTER_AUTH_SECRET']) {
-    if (env[key].startsWith('dev-')) {
-      console.error(`Refusing to start: ${key} is still the development default.`);
+  for (const key of ["BETTER_AUTH_SECRET"]) {
+    if (env[key].startsWith("dev-")) {
+      console.error(
+        `Refusing to start: ${key} is still the development default.`
+      );
       process.exit(1);
     }
   }
@@ -371,8 +386,10 @@ if (isProd) {
    * secret this default is an ordinary-looking password and nothing about it
    * announces itself as a placeholder.
    */
-  if (env.ADMIN_PASSWORD === 'password123') {
-    console.error('Refusing to start: ADMIN_PASSWORD is still the development default.');
+  if (env.ADMIN_PASSWORD === "password123") {
+    console.error(
+      "Refusing to start: ADMIN_PASSWORD is still the development default."
+    );
     process.exit(1);
   }
 
@@ -382,10 +399,10 @@ if (isProd) {
    * the redirect goes to a machine that is not on the internet. Refusing at
    * boot turns a confusing user-facing failure into an obvious startup one.
    */
-  if (apiOrigin.includes('localhost') || apiOrigin.includes('127.0.0.1')) {
+  if (apiOrigin.includes("localhost") || apiOrigin.includes("127.0.0.1")) {
     console.error(
-      'Refusing to start: API_ORIGIN is unset or points at localhost. ' +
-        'Set it to this API\'s public URL — the Google callback is derived from it.',
+      "Refusing to start: API_ORIGIN is unset or points at localhost. " +
+        "Set it to this API's public URL — the Google callback is derived from it."
     );
     process.exit(1);
   }
