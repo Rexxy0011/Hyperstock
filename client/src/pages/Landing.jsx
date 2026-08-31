@@ -208,7 +208,7 @@ function TopInvestors({ rows, loading = false }) {
             panel's fixed 360px, and `min-w-0` lets long usernames truncate
             instead of forcing the row wider than its column. Below lg they
             stack, with the panel second — the ranking is the substance. */}
-        <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
+        <div className="flex flex-col gap-2 lg:gap-8 lg:flex-row lg:items-start lg:justify-between">
           {/* Left to right, in reading order: the ranking, then the arrow that
               points out of it, then what it points at. The stagger is the whole
               reason the arrow reads as a connection rather than as an ornament
@@ -308,18 +308,17 @@ function TopInvestors({ rows, loading = false }) {
             </div>
           </Reveal>
 
-          {/* Flow arrow: points right when columns are side-by-side on desktop,
-              and points down (rotate-90) when columns are stacked on mobile. */}
+          {/* Flow arrow: compact downward arrow on mobile, horizontal arrow on desktop */}
           <Reveal
             delay={110}
-            className="flex shrink-0 items-center justify-center self-center py-2 lg:py-0"
+            className="flex shrink-0 items-center justify-center self-center my-0"
           >
             <img
               src={assets.flowArrow}
               alt=""
               width={993}
               height={406}
-              className="w-28 rotate-90 my-3 lg:my-0 lg:w-56 lg:rotate-0 transition-transform"
+              className="w-14 rotate-90 my-1 lg:my-0 lg:w-48 lg:rotate-0 transition-transform"
             />
           </Reveal>
 

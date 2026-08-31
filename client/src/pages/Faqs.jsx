@@ -147,9 +147,22 @@ function CategoryRail({ categories }) {
   // On mobile the strip scrolls horizontally, so the active chip is centered
   // by scrolling only the container. We avoid calling `scrollIntoView` because
   // that hijacks the window's vertical scroll position on mobile touch screens.
+  useEffect(() => {
+    const strip = stripRef.current;
+    if (!strip) return;
     const chip = strip.querySelector(`[data-chip="${active}"]`);
     if (chip instanceof HTMLElement) {
       const chipLeft = chip.offsetLeft;
+      const chipWidth = chip.offsetWidth;
+      const stripWidth = strip.offsetWidth;
+      const targetScroll = chipLeft - (stripWidth - chipWidth) / 2;
+      strip.scrollTo({ left: Math.max(0, targetScroll), behavior: "smooth" });
+    }
+  }, [active]);
+
+  return (
+    <>
+      {/* Mobile: a scrolling strip above the list. `-mx-4 px-4` lets it bleed to
           the screen edges so the last chip does not look clipped by a margin. */}
       <div
         ref={stripRef}
@@ -159,6 +172,7 @@ function CategoryRail({ categories }) {
           <a
             key={c.id}
             href={`#${c.id}`}
+            data-chip={c.id}
             className={[
               "shrink-0 rounded-lg border px-3 py-2 text-2xs font-medium whitespace-nowrap no-underline transition-colors",
               active === c.id
