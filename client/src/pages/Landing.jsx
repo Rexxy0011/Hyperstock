@@ -117,7 +117,7 @@ function Hero() {
             aria-hidden="true"
             width={457}
             height={806}
-            className="pointer-events-none absolute bottom-10 -left-24 hidden w-20 min-[1400px]:block"
+            className="pointer-events-none absolute -left-5 bottom-1 w-9 opacity-80 sm:-left-6 sm:bottom-2 sm:w-12 min-[1400px]:-left-24 min-[1400px]:bottom-10 min-[1400px]:w-20 min-[1400px]:opacity-100 block"
           />
         </Reveal>
 
