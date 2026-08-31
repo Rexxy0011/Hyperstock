@@ -24,8 +24,8 @@ export default function DonutChart({ slices = [], size = 140, thickness = 16 }) 
   });
 
   return (
-    <div className="flex w-full flex-col sm:flex-row xl:flex-col items-center justify-center gap-6">
-      <div className="relative shrink-0 flex items-center justify-center">
+    <div className="flex w-full flex-col sm:flex-row xl:flex-col items-start justify-start gap-6">
+      <div className="relative shrink-0 flex items-center justify-start">
         <svg width={size} height={size} className="-rotate-90" aria-hidden="true">
           {arcs.map((a) => (
             <circle
