@@ -173,10 +173,10 @@ export default function Portfolio() {
         <Watchlist items={watchlist} onRemove={remove} />
       </div>
 
-      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="grid min-w-0 items-start gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
         <HoldingsTable holdings={holdings} onSelect={setSelected} />
         {portfolio?.allocation?.length > 0 && (
-          <section className="rounded-xl border border-cool-grey p-5">
+          <section className="min-w-0 rounded-xl border border-cool-grey p-4 sm:p-5 overflow-hidden">
             <h2 className="mb-4 text-md font-bold text-void">{t('portfolio.allocation')}</h2>
             <DonutChart slices={portfolio.allocation} />
           </section>
@@ -218,7 +218,7 @@ function HoldingsTable({ holdings, onSelect }) {
   const td = 'border-b border-cool-grey/70 px-4 py-3 text-sm whitespace-nowrap';
 
   return (
-    <section className="rounded-xl border border-cool-grey">
+    <section className="min-w-0 rounded-xl border border-cool-grey overflow-hidden">
       <h2 className="px-5 py-4 text-md font-bold text-void">{t('portfolio.holdings')}</h2>
       <div className="overflow-x-auto">
         <table className="w-full border-collapse">
