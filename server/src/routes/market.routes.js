@@ -1,22 +1,25 @@
-import { Router } from 'express';
-import { Stock } from '../models/Stock.js';
-import { Exchange } from '../models/Exchange.js';
-import { asyncHandler } from '../middleware/errorHandler.js';
-import { ApiError } from '../lib/ApiError.js';
-import { generateCandles, SUPPORTED_RANGES } from '../market/mockCandles.js';
-import { isOpen, minutesUntilOpen } from '../market/hours.js';
-import { validate } from '../middleware/validate.js';
-import { ASSET_CLASSES, getInstruments } from '../services/market.service.js';
-import { getCandles } from '../services/candles.service.js';
-import { stats as quoteStats } from '../market/refreshJob.js';
-import { liveFeed } from '../market/liveFeed.js';
-import * as twelvedata from '../market/providers/twelvedata.provider.js';
-import { z } from 'zod';
+import { Router } from "express";
+import { Stock } from "../models/Stock.js";
+import { Exchange } from "../models/Exchange.js";
+import { asyncHandler } from "../middleware/errorHandler.js";
+import { ApiError } from "../lib/ApiError.js";
+import { generateCandles, SUPPORTED_RANGES } from "../market/mockCandles.js";
+import { isOpen, minutesUntilOpen } from "../market/hours.js";
+import { validate } from "../middleware/validate.js";
+import { ASSET_CLASSES, getInstruments } from "../services/market.service.js";
+import { getCandles } from "../services/candles.service.js";
+import { stats as quoteStats } from "../market/refreshJob.js";
+import { liveFeed } from "../market/liveFeed.js";
+import * as twelvedata from "../market/providers/twelvedata.provider.js";
+import { z } from "zod";
+
+/** Escape special regex characters so user input is matched literally. */
+const literal = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 const router = Router();
 
 /** Symbols shown in the Landing ticker tape, in the design's order. */
-const TAPE = ['AAPL', 'TSLA', 'NVDA', 'ASML', 'TSM', 'MSFT', 'AMZN'];
+const TAPE = ["AAPL", "TSLA", "NVDA", "ASML", "TSM", "MSFT", "AMZN"];
 
 const publicStock = (s) => ({
   symbol: s.symbol,
@@ -32,21 +35,26 @@ const publicStock = (s) => ({
 });
 
 router.get(
-  '/ticker',
+  "/ticker",
   asyncHandler(async (req, res) => {
-    const symbols = req.query.symbols ? String(req.query.symbols).split(',') : TAPE;
+    const symbols = req.query.symbols
+      ? String(req.query.symbols).split(",")
+      : TAPE;
     const stocks = await Stock.find({ symbol: { $in: symbols } }).lean();
 
     // Preserve the requested order rather than Mongo's.
     const bySymbol = new Map(stocks.map((s) => [s.symbol, s]));
-    const items = symbols.map((sym) => bySymbol.get(sym)).filter(Boolean).map(publicStock);
+    const items = symbols
+      .map((sym) => bySymbol.get(sym))
+      .filter(Boolean)
+      .map(publicStock);
 
     res.json({ asOf: new Date().toISOString(), degraded: false, items });
-  }),
+  })
 );
 
 router.get(
-  '/exchanges',
+  "/exchanges",
   asyncHandler(async (req, res) => {
     const rows = await Exchange.find().sort({ displayOrder: 1 }).lean();
     res.json(
@@ -60,9 +68,9 @@ router.get(
         timezone: e.timezone,
         currency: e.currency,
         stockCount: e.stockCount,
-      })),
+      }))
     );
-  }),
+  })
 );
 
 /**
@@ -83,79 +91,86 @@ router.get(
  * and never touches the database or the vendor, so a hundred open tabs cost a
  * hundred writes to a socket rather than a hundred requests to Finnhub.
  */
-router.get('/stream', (req, res) => {
+router.get("/stream", (req, res) => {
   res.writeHead(200, {
-    'content-type': 'text/event-stream',
-    'cache-control': 'no-cache, no-transform',
-    connection: 'keep-alive',
+    "content-type": "text/event-stream",
+    "cache-control": "no-cache, no-transform",
+    connection: "keep-alive",
     // Node compresses via middleware upstream; buffering an event stream would
     // hold every tick until the buffer filled.
-    'x-accel-buffering': 'no',
+    "x-accel-buffering": "no",
   });
 
-  const send = (event, data) => res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+  const send = (event, data) =>
+    res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
 
-  send('status', liveFeed.status());
+  send("status", liveFeed.status());
 
-  const onTicks = (batch) => send('ticks', batch);
-  const onStatus = (s) => send('status', s);
-  liveFeed.on('ticks', onTicks);
-  liveFeed.on('status', onStatus);
+  const onTicks = (batch) => send("ticks", batch);
+  const onStatus = (s) => send("status", s);
+  liveFeed.on("ticks", onTicks);
+  liveFeed.on("status", onStatus);
 
   // Proxies and load balancers close an idle stream. A comment line is a valid
   // SSE keep-alive and costs two bytes.
-  const ping = setInterval(() => res.write(': ping\n\n'), 25_000);
+  const ping = setInterval(() => res.write(": ping\n\n"), 25_000);
   ping.unref?.();
 
-  req.on('close', () => {
+  req.on("close", () => {
     clearInterval(ping);
-    liveFeed.off('ticks', onTicks);
-    liveFeed.off('status', onStatus);
+    liveFeed.off("ticks", onTicks);
+    liveFeed.off("status", onStatus);
   });
 });
 
-router.get('/status', asyncHandler(async (req, res) => {
-  const ageMs = quoteStats.lastRunAt ? Date.now() - quoteStats.lastRunAt.getTime() : null;
+router.get(
+  "/status",
+  asyncHandler(async (req, res) => {
+    const ageMs = quoteStats.lastRunAt
+      ? Date.now() - quoteStats.lastRunAt.getTime()
+      : null;
 
-  /**
-   * The US session, carried here so the client has ONE endpoint for "is
-   * anything wrong or has anything changed" rather than polling feed health in
-   * one place and reading a session off a per-symbol instrument response in
-   * another. NASDAQ stands for both US venues: they keep the same hours, and
-   * the instrument screens already compute their own row's exchange.
-   */
-  const nasdaq = await Exchange.findOne({ code: 'NASDAQ' }).lean();
-  const session = nasdaq
-    ? {
-        code: nasdaq.code,
-        open: isOpen(nasdaq),
-        minutesUntilOpen: isOpen(nasdaq) ? 0 : minutesUntilOpen(nasdaq),
-      }
-    : null;
+    /**
+     * The US session, carried here so the client has ONE endpoint for "is
+     * anything wrong or has anything changed" rather than polling feed health in
+     * one place and reading a session off a per-symbol instrument response in
+     * another. NASDAQ stands for both US venues: they keep the same hours, and
+     * the instrument screens already compute their own row's exchange.
+     */
+    const nasdaq = await Exchange.findOne({ code: "NASDAQ" }).lean();
+    const session = nasdaq
+      ? {
+          code: nasdaq.code,
+          open: isOpen(nasdaq),
+          minutesUntilOpen: isOpen(nasdaq) ? 0 : minutesUntilOpen(nasdaq),
+        }
+      : null;
 
-  res.json({
-    session,
-    live: Boolean(quoteStats.startedAt) && quoteStats.consecutiveFailures === 0,
-    startedAt: quoteStats.startedAt,
-    lastRunAt: quoteStats.lastRunAt,
-    quoteAgeMs: ageMs,
-    symbolsTracked: quoteStats.symbols,
-    lastUpdated: quoteStats.updated,
-    consecutiveFailures: quoteStats.consecutiveFailures,
-    lastError: quoteStats.lastError,
-    // The six exchanges the free tier cannot quote, stated rather than implied.
-    liveExchanges: ['NYSE', 'NASDAQ'],
-    stream: liveFeed.status(),
-    // Whether the Twelve Data plan actually sells non-US venues. `false` on the
-    // free tier, and worth reporting: the failure it guards against is a silent
-    // one — a mis-detected plan re-probes every cycle and drains an 800/day
-    // credit budget overnight, taking the candle charts with it.
-    twelvedata: {
-      configured: twelvedata.isConfigured(),
-      coversNonUs: twelvedata.planCoversIntl(),
-    },
-  });
-}));
+    res.json({
+      session,
+      live:
+        Boolean(quoteStats.startedAt) && quoteStats.consecutiveFailures === 0,
+      startedAt: quoteStats.startedAt,
+      lastRunAt: quoteStats.lastRunAt,
+      quoteAgeMs: ageMs,
+      symbolsTracked: quoteStats.symbols,
+      lastUpdated: quoteStats.updated,
+      consecutiveFailures: quoteStats.consecutiveFailures,
+      lastError: quoteStats.lastError,
+      // The six exchanges the free tier cannot quote, stated rather than implied.
+      liveExchanges: ["NYSE", "NASDAQ"],
+      stream: liveFeed.status(),
+      // Whether the Twelve Data plan actually sells non-US venues. `false` on the
+      // free tier, and worth reporting: the failure it guards against is a silent
+      // one — a mis-detected plan re-probes every cycle and drains an 800/day
+      // credit budget overnight, taking the candle charts with it.
+      twelvedata: {
+        configured: twelvedata.isConfigured(),
+        coversNonUs: twelvedata.planCoversIntl(),
+      },
+    });
+  })
+);
 
 /**
  * GET /api/market/instruments
@@ -166,10 +181,12 @@ router.get('/status', asyncHandler(async (req, res) => {
  * it rather than replacing it.
  */
 router.get(
-  '/instruments',
+  "/instruments",
   validate({
     query: z.object({
-      assetClass: z.enum(/** @type {[string, ...string[]]} */ (ASSET_CLASSES)).default('stocks'),
+      assetClass: z
+        .enum(/** @type {[string, ...string[]]} */ (ASSET_CLASSES))
+        .default("stocks"),
       q: z.string().max(40).optional(),
       limit: z.coerce.number().int().min(1).max(250).default(100),
     }),
@@ -177,23 +194,24 @@ router.get(
   asyncHandler(async (req, res) => {
     const { assetClass, q, limit } = req.validatedQuery;
     res.json(await getInstruments({ assetClass, q, limit }));
-  }),
+  })
 );
 
 router.get(
-  '/stocks',
+  "/stocks",
   asyncHandler(async (req, res) => {
     const { exchange, sector, q } = req.query;
     const page = Math.max(1, Number(req.query.page) || 1);
     const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 50));
 
     const filter = {};
-    if (exchange && exchange !== 'All') filter.exchange = exchange;
+    if (exchange && exchange !== "All") filter.exchange = exchange;
     if (sector) filter.sector = sector;
     if (q) {
+      const escaped = literal(q);
       filter.$or = [
-        { symbol: { $regex: q, $options: 'i' } },
-        { name: { $regex: q, $options: 'i' } },
+        { symbol: { $regex: escaped, $options: "i" } },
+        { name: { $regex: escaped, $options: "i" } },
       ];
     }
 
@@ -207,7 +225,7 @@ router.get(
     ]);
 
     res.json({ items: rows.map(publicStock), total, page, limit });
-  }),
+  })
 );
 
 /**
@@ -222,7 +240,7 @@ router.get(
  * market service's cache, so there is nothing to look up by primary key.
  */
 router.get(
-  '/instruments/:assetClass/:symbol',
+  "/instruments/:assetClass/:symbol",
   asyncHandler(async (req, res) => {
     const assetClass = String(req.params.assetClass).toLowerCase();
     if (!ASSET_CLASSES.includes(assetClass)) {
@@ -230,7 +248,10 @@ router.get(
     }
 
     const symbol = String(req.params.symbol).toUpperCase();
-    const { items, resolution } = await getInstruments({ assetClass, limit: 250 });
+    const { items, resolution } = await getInstruments({
+      assetClass,
+      limit: 250,
+    });
     const row = items.find((i) => i.symbol.toUpperCase() === symbol);
     if (!row) throw ApiError.notFound(`No ${assetClass} listing ${symbol}`);
 
@@ -238,9 +259,12 @@ router.get(
     // from CoinGecko and forex real daily closes from the ECB; equities have no
     // free source and keep the seeded walk. `candles.service.js` picks, and the
     // response says which — see `simulated` and `hasRange` on the payload.
-    const range = String(req.query.range ?? '1M').toUpperCase();
+    const range = String(req.query.range ?? "1M").toUpperCase();
     if (!SUPPORTED_RANGES.includes(range)) {
-      throw ApiError.badRequest('BAD_RANGE', `range must be one of ${SUPPORTED_RANGES.join(', ')}`);
+      throw ApiError.badRequest(
+        "BAD_RANGE",
+        `range must be one of ${SUPPORTED_RANGES.join(", ")}`
+      );
     }
 
     /**
@@ -257,11 +281,12 @@ router.get(
      */
     let reference;
     let about;
-    if (assetClass === 'stocks') {
+    if (assetClass === "stocks") {
       const doc = await Stock.findOne({ symbol: row.symbol })
-        .select('peRatio referenceAsOf about')
+        .select("peRatio referenceAsOf about")
         .lean();
-      if (doc?.peRatio) reference = { peRatio: doc.peRatio, asOf: doc.referenceAsOf };
+      if (doc?.peRatio)
+        reference = { peRatio: doc.peRatio, asOf: doc.referenceAsOf };
       // Free-riding on the query that was already being made for `peRatio`, so
       // the terminal's rail gets a description at no extra round trip. Only
       // equities have one — a currency pair has nothing to describe.
@@ -281,7 +306,7 @@ router.get(
      * `Euronext`, and uppercasing it here would match nothing.
      */
     let session;
-    if (assetClass === 'stocks') {
+    if (assetClass === "stocks") {
       const venue = await Exchange.findOne({ code: row.exchange }).lean();
       if (venue) {
         session = {
@@ -307,16 +332,18 @@ router.get(
           priceCents: row.priceCents,
           vendorId: row.vendorId,
         },
-        range,
+        range
       ),
     });
-  }),
+  })
 );
 
 router.get(
-  '/stocks/:symbol',
+  "/stocks/:symbol",
   asyncHandler(async (req, res) => {
-    const stock = await Stock.findOne({ symbol: req.params.symbol.toUpperCase() }).lean();
+    const stock = await Stock.findOne({
+      symbol: req.params.symbol.toUpperCase(),
+    }).lean();
     if (!stock) throw ApiError.notFound(`No stock ${req.params.symbol}`);
 
     res.json({
@@ -337,18 +364,23 @@ router.get(
       },
       referenceAsOf: stock.referenceAsOf,
     });
-  }),
+  })
 );
 
 router.get(
-  '/stocks/:symbol/candles',
+  "/stocks/:symbol/candles",
   asyncHandler(async (req, res) => {
-    const range = String(req.query.range ?? '1M').toUpperCase();
+    const range = String(req.query.range ?? "1M").toUpperCase();
     if (!SUPPORTED_RANGES.includes(range)) {
-      throw ApiError.badRequest('BAD_RANGE', `range must be one of ${SUPPORTED_RANGES.join(', ')}`);
+      throw ApiError.badRequest(
+        "BAD_RANGE",
+        `range must be one of ${SUPPORTED_RANGES.join(", ")}`
+      );
     }
 
-    const stock = await Stock.findOne({ symbol: req.params.symbol.toUpperCase() }).lean();
+    const stock = await Stock.findOne({
+      symbol: req.params.symbol.toUpperCase(),
+    }).lean();
     if (!stock) throw ApiError.notFound(`No stock ${req.params.symbol}`);
 
     res.json({
@@ -356,7 +388,7 @@ router.get(
       currency: stock.currency,
       ...generateCandles(stock.symbol, stock.priceCents, range),
     });
-  }),
+  })
 );
 
 export default router;
