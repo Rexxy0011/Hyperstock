@@ -199,11 +199,11 @@ function TickerTape({ items }) {
 function TopInvestors({ rows, loading = false }) {
   const { t } = useTranslation();
   const rowClass = (last) =>
-    `flex items-center gap-4 bg-white px-6 py-3.5 ${last ? "" : "border-b border-cool-grey"}`;
+    `flex items-center gap-2.5 sm:gap-4 bg-white px-3.5 sm:px-6 py-3 sm:py-3.5 ${last ? "" : "border-b border-cool-grey"}`;
 
   return (
     <section className="border-b border-cool-grey bg-mist">
-      <div className={`mx-auto max-w-300 px-8 ${SECTION_Y}`}>
+      <div className={`mx-auto max-w-300 px-4 sm:px-8 ${SECTION_Y}`}>
         {/* Flex rather than grid: the list takes whatever is left after the
             panel's fixed 360px, and `min-w-0` lets long usernames truncate
             instead of forcing the row wider than its column. Below lg they
@@ -234,10 +234,10 @@ function TopInvestors({ rows, loading = false }) {
                     className={rowClass(i === SKELETON_ROWS.length - 1)}
                     aria-hidden="true"
                   >
-                    <span className="h-4 w-5 animate-pulse rounded-sm bg-cool-grey" />
-                    <span className="size-10 animate-pulse rounded-lg bg-cool-grey" />
-                    <span className="h-4 w-32 animate-pulse rounded-sm bg-cool-grey" />
-                    <span className="ml-auto h-4 w-24 animate-pulse rounded-sm bg-cool-grey" />
+                    <span className="h-4 w-4 sm:w-5 animate-pulse rounded-sm bg-cool-grey" />
+                    <span className="size-8 sm:size-10 animate-pulse rounded-lg bg-cool-grey" />
+                    <span className="h-4 w-24 sm:w-32 animate-pulse rounded-sm bg-cool-grey" />
+                    <span className="ml-auto h-4 w-16 sm:w-24 animate-pulse rounded-sm bg-cool-grey" />
                   </div>
                 ))}
 
@@ -253,7 +253,7 @@ function TopInvestors({ rows, loading = false }) {
               {rows.map((r, i) => (
                 <div key={r.userId} className={rowClass(i === rows.length - 1)}>
                   <span
-                    className={`w-5 font-numeric font-semibold tabular-nums ${
+                    className={`w-4 sm:w-5 shrink-0 font-numeric text-sm sm:text-base font-semibold tabular-nums ${
                       r.rank <= 3 ? "text-void" : "text-text-muted"
                     }`}
                   >
@@ -267,34 +267,34 @@ function TopInvestors({ rows, loading = false }) {
                    by seeded username so a curated row would otherwise fall back
                    to a face chosen for somebody else. */
                     src={r.avatarUrl || investorPhoto(r.username)}
-                    size={40}
+                    size={36}
                   />
 
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-base font-medium">
+                  <span className="min-w-0 flex-1 overflow-hidden">
+                    <span className="block truncate text-sm sm:text-base font-medium text-void leading-tight">
                       {r.name ?? r.username}
                     </span>
-                    <span className="block truncate text-xs text-text-muted">
+                    <span className="block truncate text-2xs sm:text-xs text-text-muted">
                       {t("landing.trades", { count: r.trades })}
                     </span>
                   </span>
 
                   {/* Total, then today's move — the order Forbes reads in, because
                   the day's change is the part that actually moves. */}
-                  <span className="text-right">
+                  <span className="shrink-0 text-right">
                     <Money
                       value={r.portfolioValueCents}
-                      size={16}
-                      className="block font-semibold"
+                      size={14}
+                      className="block font-semibold sm:text-base"
                     />
-                    <span className="mt-0.5 flex items-center justify-end gap-1.5">
+                    <span className="mt-0.5 flex items-center justify-end gap-1 sm:gap-1.5">
                       <Money
                         value={r.dayChangeCents}
-                        size={12}
+                        size={11}
                         signed
-                        className="text-text-muted"
+                        className="hidden sm:inline text-text-muted"
                       />
-                      <PriceChange value={r.dayChangePct} size={12} pill />
+                      <PriceChange value={r.dayChangePct} size={11} pill />
                     </span>
                   </span>
                 </div>
