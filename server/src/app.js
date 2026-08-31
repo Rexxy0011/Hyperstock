@@ -1,26 +1,26 @@
-import express from 'express';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { existsSync } from 'node:fs';
-import cors from 'cors';
-import helmet from 'helmet';
-import mongoSanitize from 'express-mongo-sanitize';
-import cookieParser from 'cookie-parser';
-import morgan from 'morgan';
-import { toNodeHandler } from 'better-auth/node';
-import { env } from './config/env.js';
-import { createAuth } from './auth/betterAuth.js';
-import routes from './routes/index.js';
-import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
-import { authLimiter } from './middleware/rateLimiters.js';
+import express from "express";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { existsSync } from "node:fs";
+import cors from "cors";
+import helmet from "helmet";
+import mongoSanitize from "express-mongo-sanitize";
+import cookieParser from "cookie-parser";
+import morgan from "morgan";
+import { toNodeHandler } from "better-auth/node";
+import { env } from "./config/env.js";
+import { createAuth } from "./auth/betterAuth.js";
+import routes from "./routes/index.js";
+import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
+import { authLimiter } from "./middleware/rateLimiters.js";
 
 const sourceDirectory = path.dirname(fileURLToPath(import.meta.url));
-const clientBuildDirectory = path.resolve(sourceDirectory, '../../client/dist');
+const clientBuildDirectory = path.resolve(sourceDirectory, "../../client/dist");
 
 export function createApp() {
   const app = express();
 
-  app.set('trust proxy', 1);
+  app.set("trust proxy", 1);
 
   // The API serves JSON to a separate origin and embeds nothing, so CSP and
   // COEP would only constrain a surface that doesn't exist here.
@@ -28,7 +28,7 @@ export function createApp() {
     helmet({
       contentSecurityPolicy: false,
       crossOriginEmbedderPolicy: false,
-    }),
+    })
   );
 
   // CORS FIRST, because the auth handler below answers its own preflights and
@@ -55,20 +55,20 @@ export function createApp() {
    * The instance is built here rather than at import time because it borrows
    * the mongoose connection, which `index.js` opens before calling createApp().
    */
-  app.all('/api/auth/*', authLimiter, toNodeHandler(createAuth()));
+  app.all("/api/auth/*", authLimiter, toNodeHandler(createAuth()));
 
-  app.use(express.json({ limit: '100kb' }));
+  app.use(express.json({ limit: "100kb" }));
   app.use(cookieParser());
 
   // Strips $ and . from keys so a payload like { "email": { "$ne": null } }
   // cannot reach a Mongoose query as an operator.
-  app.use(mongoSanitize({ replaceWith: '_' }));
+  app.use(mongoSanitize({ replaceWith: "_" }));
 
-  if (env.NODE_ENV !== 'test') {
-    app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
+  if (env.NODE_ENV !== "test") {
+    app.use(morgan(env.NODE_ENV === "production" ? "combined" : "dev"));
   }
 
-  app.use('/api', routes);
+  app.use("/api", routes);
 
   /**
    * Render runs the built Vite client and API as one persistent web service.
@@ -76,11 +76,11 @@ export function createApp() {
    * hot reload and its `/api` proxy. API misses stay JSON rather than falling
    * through to the React document, which would turn an API typo into a 200.
    */
-  if (env.NODE_ENV === 'production' && existsSync(clientBuildDirectory)) {
-    app.use('/api', notFoundHandler);
+  if (env.NODE_ENV === "production" && existsSync(clientBuildDirectory)) {
+    app.use("/api", notFoundHandler);
     app.use(express.static(clientBuildDirectory, { index: false }));
-    app.get('*', (req, res) => {
-      res.sendFile(path.join(clientBuildDirectory, 'index.html'));
+    app.get("*", (req, res) => {
+      res.sendFile(path.join(clientBuildDirectory, "index.html"));
     });
   }
 

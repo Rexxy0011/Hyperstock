@@ -1,15 +1,15 @@
-import { env } from './config/env.js';
-import { connectDb, disconnectDb, isEphemeral } from './config/db.js';
-import { createApp } from './app.js';
-import { User } from './models/User.js';
-import { runSeed } from './seed/seed.js';
+import { env } from "./config/env.js";
+import { connectDb, disconnectDb, isEphemeral } from "./config/db.js";
+import { createApp } from "./app.js";
+import { User } from "./models/User.js";
+import { runSeed } from "./seed/seed.js";
 import {
   startQuoteRefresh,
   stopQuoteRefresh,
   startTickFlush,
   stopTickFlush,
-} from './market/refreshJob.js';
-import { liveFeed } from './market/liveFeed.js';
+} from "./market/refreshJob.js";
+import { liveFeed } from "./market/liveFeed.js";
 
 /**
  * The in-memory database starts empty and dies with the process, so a separate
@@ -20,12 +20,14 @@ import { liveFeed } from './market/liveFeed.js';
 async function autoSeedIfNeeded() {
   if ((await User.estimatedDocumentCount()) > 0) return;
 
-  console.log('  Database is empty — seeding initial markets and demo fixtures…\n');
+  console.log(
+    "  Database is empty — seeding initial markets and demo fixtures…\n"
+  );
   await runSeed({ fresh: false });
 }
 
 async function main() {
-  console.log('\nHyperStocks API starting…');
+  console.log("\nHyperStocks API starting…");
 
   await connectDb();
   await autoSeedIfNeeded();
@@ -36,7 +38,7 @@ async function main() {
   console.log(
     quotesLive
       ? `  Live quotes: NYSE + NASDAQ every ${env.QUOTE_FULL_REFRESH_MS / 1000}s`
-      : '  Live quotes: off (no FINNHUB_API_KEY) — prices stay as seeded',
+      : "  Live quotes: off (no FINNHUB_API_KEY) — prices stay as seeded"
   );
 
   // Real-time ticks over one Finnhub socket, fanned out to browsers by SSE.
@@ -44,12 +46,14 @@ async function main() {
   // reach and what fills prices in before the first trade of a session prints.
   if (liveFeed.start()) {
     startTickFlush();
-    console.log('  Live ticks:  Finnhub socket → /api/market/stream');
+    console.log("  Live ticks:  Finnhub socket → /api/market/stream");
   }
 
   const app = createApp();
   const server = app.listen(env.PORT, () => {
-    console.log(`  Listening on http://localhost:${env.PORT} (${env.NODE_ENV})\n`);
+    console.log(
+      `  Listening on http://localhost:${env.PORT} (${env.NODE_ENV})\n`
+    );
   });
 
   const shutdown = async (signal) => {
@@ -61,11 +65,11 @@ async function main() {
     await disconnectDb();
     process.exit(0);
   };
-  process.on('SIGINT', () => shutdown('SIGINT'));
-  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on("SIGINT", () => shutdown("SIGINT"));
+  process.on("SIGTERM", () => shutdown("SIGTERM"));
 }
 
 main().catch((err) => {
-  console.error('Failed to start:', err);
+  console.error("Failed to start:", err);
   process.exit(1);
 });
