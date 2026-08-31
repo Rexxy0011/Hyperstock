@@ -1,4 +1,7 @@
 import { z } from 'zod';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 /**
  * Env is validated once, at import time, and fails fast with a readable list of
@@ -226,7 +229,7 @@ const schema = z.object({
    */
   WITHDRAWALS_ENABLED: z
     .string()
-    .default('false')
+    .default('true')
     .transform((v) => v === 'true' || v === '1'),
   /** Floor per payout, in dollars. Below this the network fee dominates. */
   MIN_WITHDRAWAL_AMOUNT: z.coerce.number().positive().default(20),
@@ -269,10 +272,25 @@ export const MAX_WITHDRAWAL_CENTS = Math.round(env.MAX_WITHDRAWAL_AMOUNT * 100);
  * does not know is therefore a configuration error, caught here rather than at
  * the moment somebody pastes an address nothing will verify.
  */
+const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
+const serverRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+
 export const WITHDRAWAL_NETWORKS = (() => {
   let raw;
   try {
-    raw = JSON.parse(env.WITHDRAWAL_NETWORKS);
+    if (env.WITHDRAWAL_NETWORKS && env.WITHDRAWAL_NETWORKS !== '[]') {
+      raw = JSON.parse(env.WITHDRAWAL_NETWORKS);
+    } else {
+      const filePath = [
+        path.join(serverRoot, 'withdrawal-networks.json'),
+        path.join(projectRoot, 'withdrawal-networks.json'),
+      ].find((p) => fs.existsSync(p));
+      if (filePath) {
+        raw = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      } else {
+        raw = [];
+      }
+    }
   } catch {
     console.error('Refusing to start: WITHDRAWAL_NETWORKS is not valid JSON.');
     process.exit(1);
@@ -293,7 +311,19 @@ export const WITHDRAWAL_NETWORKS = (() => {
 export const DEPOSIT_DESTINATIONS = (() => {
   let raw;
   try {
-    raw = JSON.parse(env.DEPOSIT_DESTINATIONS);
+    if (env.DEPOSIT_DESTINATIONS && env.DEPOSIT_DESTINATIONS !== '[]') {
+      raw = JSON.parse(env.DEPOSIT_DESTINATIONS);
+    } else {
+      const filePath = [
+        path.join(serverRoot, 'deposit-destinations.json'),
+        path.join(projectRoot, 'deposit-destinations.json'),
+      ].find((p) => fs.existsSync(p));
+      if (filePath) {
+        raw = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      } else {
+        raw = [];
+      }
+    }
   } catch {
     console.error('Refusing to start: DEPOSIT_DESTINATIONS is not valid JSON.');
     process.exit(1);

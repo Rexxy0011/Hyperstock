@@ -1,0 +1,24 @@
+[
+  {
+    "asset": "USDT",
+    "network": "TRC20",
+    "address": "TH1P2ue3vM7DKwGzXs2bDTEkwrNpXHMfCb",
+    "minAmount": 10,
+    "decimals": 6
+  },
+  {
+    "asset": "BTC",
+    "network": "BITCOIN",
+    "address": "bc1qfasaka4t0dstpg63tdvjswsxl3tljzml7xql6r",
+    "minAmount": 50,
+    "decimals": 8
+  },
+  {
+    "asset": "BNB",
+    "network": "BEP20",
+    "address": "0x4cF25a06d56492e68c83bb73a4BFaa3545A16286",
+    "minAmount": 25,
+    "decimals": 8,
+    "note": "Please make sure your wallet is set to BNB Smart Chain (BEP20). We can only receive on this network, and transfers sent on another one cannot be recovered."
+  }
+]

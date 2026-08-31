@@ -1,0 +1,22 @@
+[
+  { "asset": "USDT", "network": "TRC20", "decimals": 6 },
+  { "asset": "USDT", "network": "ERC20", "decimals": 6 },
+  { "asset": "USDT", "network": "BEP20", "decimals": 6 },
+  { "asset": "USDT", "network": "POLYGON", "decimals": 6 },
+  { "asset": "USDT", "network": "ARBITRUM", "decimals": 6 },
+  { "asset": "USDC", "network": "ERC20", "decimals": 6 },
+  { "asset": "USDC", "network": "BEP20", "decimals": 6 },
+  { "asset": "USDC", "network": "POLYGON", "decimals": 6 },
+  { "asset": "USDC", "network": "BASE", "decimals": 6 },
+  { "asset": "USDC", "network": "SPL", "decimals": 6 },
+  { "asset": "BTC", "network": "BITCOIN", "decimals": 8 },
+  { "asset": "ETH", "network": "ERC20", "decimals": 8 },
+  { "asset": "ETH", "network": "ARBITRUM", "decimals": 8 },
+  { "asset": "ETH", "network": "OPTIMISM", "decimals": 8 },
+  { "asset": "ETH", "network": "BASE", "decimals": 8 },
+  { "asset": "BNB", "network": "BEP20", "decimals": 8 },
+  { "asset": "SOL", "network": "SOLANA", "decimals": 6 },
+  { "asset": "LTC", "network": "LITECOIN", "decimals": 8 },
+  { "asset": "DOGE", "network": "DOGECOIN", "decimals": 8 },
+  { "asset": "AVAX", "network": "AVALANCHE", "decimals": 8 }
+]
