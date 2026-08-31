@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { requireAuth, requireAdmin } from '../middleware/requireAuth.js';
 import { validate } from '../middleware/validate.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
+import { adminMoneyActionLimiter, depositLimiter } from '../middleware/rateLimiters.js';
 import {
   approveDeposit,
   cancelDeposit,
@@ -47,6 +48,7 @@ const createBody = z.object({
 
 router.post(
   '/',
+  depositLimiter,
   validate({ body: createBody }),
   asyncHandler(async (req, res) => {
     const result = await createDeposit({ ...req.body, userId: req.user._id });
@@ -94,6 +96,7 @@ const submitBody = z.object({
  */
 router.post(
   '/:reference/submit',
+  depositLimiter,
   validate({ body: submitBody }),
   asyncHandler(async (req, res) => {
     res.json(
@@ -108,6 +111,7 @@ router.post(
 
 router.post(
   '/:reference/cancel',
+  depositLimiter,
   asyncHandler(async (req, res) => {
     res.json(await cancelDeposit({ userId: req.user._id, reference: req.params.reference }));
   }),
@@ -142,6 +146,7 @@ const reviewBody = z.object({ note: z.string().trim().max(280).optional() });
 
 adminDepositRouter.post(
   '/:reference/approve',
+  adminMoneyActionLimiter,
   validate({ body: reviewBody }),
   asyncHandler(async (req, res) => {
     res.json(
@@ -158,6 +163,7 @@ const rejectBody = z.object({ reason: z.string().trim().min(1).max(280) });
 
 adminDepositRouter.post(
   '/:reference/reject',
+  adminMoneyActionLimiter,
   validate({ body: rejectBody }),
   asyncHandler(async (req, res) => {
     res.json(

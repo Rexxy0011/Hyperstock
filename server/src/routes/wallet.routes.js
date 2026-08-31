@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { requireAuth, requireAdmin } from '../middleware/requireAuth.js';
 import { validate } from '../middleware/validate.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
+import { adminMoneyActionLimiter, topUpLimiter } from '../middleware/rateLimiters.js';
 import { listTopUps, requestTopUp, reviewTopUp, topUpLimits } from '../services/wallet.service.js';
 
 const router = Router();
@@ -33,6 +34,7 @@ const topUpBody = z.object({
 
 router.post(
   '/topups',
+  topUpLimiter,
   validate({ body: topUpBody }),
   asyncHandler(async (req, res) => {
     const result = await requestTopUp({ ...req.body, userId: req.user._id });
@@ -76,6 +78,7 @@ const reviewBody = z.object({
 router.post(
   '/admin/topups/:id',
   requireAdmin,
+  adminMoneyActionLimiter,
   validate({ body: reviewBody }),
   asyncHandler(async (req, res) => {
     res.json(

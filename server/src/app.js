@@ -1,4 +1,7 @@
 import express from 'express';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { existsSync } from 'node:fs';
 import cors from 'cors';
 import helmet from 'helmet';
 import mongoSanitize from 'express-mongo-sanitize';
@@ -9,6 +12,10 @@ import { env } from './config/env.js';
 import { createAuth } from './auth/betterAuth.js';
 import routes from './routes/index.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
+import { authLimiter } from './middleware/rateLimiters.js';
+
+const sourceDirectory = path.dirname(fileURLToPath(import.meta.url));
+const clientBuildDirectory = path.resolve(sourceDirectory, '../../client/dist');
 
 export function createApp() {
   const app = express();
@@ -48,7 +55,7 @@ export function createApp() {
    * The instance is built here rather than at import time because it borrows
    * the mongoose connection, which `index.js` opens before calling createApp().
    */
-  app.all('/api/auth/*', toNodeHandler(createAuth()));
+  app.all('/api/auth/*', authLimiter, toNodeHandler(createAuth()));
 
   app.use(express.json({ limit: '100kb' }));
   app.use(cookieParser());
@@ -62,6 +69,26 @@ export function createApp() {
   }
 
   app.use('/api', routes);
+
+  /**
+   * Render runs the built Vite client and API as one persistent web service.
+   * Keep this production-only: Vite owns the client in development, including
+   * hot reload and its `/api` proxy. API misses stay JSON rather than falling
+   * through to the React document, which would turn an API typo into a 200.
+   */
+  if (env.NODE_ENV === 'production') {
+    if (!existsSync(clientBuildDirectory)) {
+      throw new Error(
+        'Client build is missing. Run `npm run build` before starting the production server.',
+      );
+    }
+
+    app.use('/api', notFoundHandler);
+    app.use(express.static(clientBuildDirectory, { index: false }));
+    app.get('*', (req, res) => {
+      res.sendFile(path.join(clientBuildDirectory, 'index.html'));
+    });
+  }
 
   app.use(notFoundHandler);
   app.use(errorHandler);

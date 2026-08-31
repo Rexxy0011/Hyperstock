@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { requireAuth } from '../middleware/requireAuth.js';
 import { validate } from '../middleware/validate.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
+import { orderLimiter } from '../middleware/rateLimiters.js';
 import { listOrders, placeOrder } from '../services/order.service.js';
 
 const router = Router();
@@ -52,6 +53,7 @@ const placeBody = z.object({
 
 router.post(
   '/',
+  orderLimiter,
   validate({ body: placeBody }),
   asyncHandler(async (req, res) => {
     const result = await placeOrder({ ...req.body, userId: req.user._id });
