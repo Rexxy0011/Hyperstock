@@ -6,7 +6,7 @@ import { money } from '../../lib/format';
  */
 const PALETTE = ['#0c1210', '#00c853', '#6b7280', '#9ca3af', '#c7cbd1', '#e5e7eb'];
 
-export default function DonutChart({ slices = [], size = 132, thickness = 14 }) {
+export default function DonutChart({ slices = [], size = 140, thickness = 16 }) {
   const radius = (size - thickness) / 2;
   const circumference = 2 * Math.PI * radius;
 
@@ -24,34 +24,38 @@ export default function DonutChart({ slices = [], size = 132, thickness = 14 }) 
   });
 
   return (
-    // Stacked, not side-by-side: this card lives in a ~340px column, and a
-    // horizontal legend squeezed sector names down to a single character.
-    <div className="flex flex-col items-center gap-5">
-      <svg width={size} height={size} className="shrink-0 -rotate-90" aria-hidden="true">
-        {arcs.map((a) => (
-          <circle
-            key={a.label}
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            fill="none"
-            stroke={a.color}
-            strokeWidth={thickness}
-            strokeDasharray={a.dash}
-            strokeDashoffset={a.offset}
-          />
-        ))}
-      </svg>
+    <div className="flex w-full flex-col sm:flex-row xl:flex-col items-center justify-center gap-6">
+      <div className="relative shrink-0 flex items-center justify-center">
+        <svg width={size} height={size} className="-rotate-90" aria-hidden="true">
+          {arcs.map((a) => (
+            <circle
+              key={a.label}
+              cx={size / 2}
+              cy={size / 2}
+              r={radius}
+              fill="none"
+              stroke={a.color}
+              strokeWidth={thickness}
+              strokeDasharray={a.dash}
+              strokeDashoffset={a.offset}
+            />
+          ))}
+        </svg>
+      </div>
 
-      <ul className="flex w-full flex-col gap-2.5">
+      <ul className="flex w-full flex-1 flex-col gap-2.5 max-w-sm">
         {arcs.map((a) => (
-          <li key={a.label} className="flex items-center gap-2 text-xs">
-            <span className="size-2.5 shrink-0 rounded-sm" style={{ background: a.color }} />
-            <span className="min-w-0 flex-1 truncate text-text-muted">{a.label}</span>
-            <span className="font-numeric text-text-muted tabular-nums">{money(a.valueCents)}</span>
-            <span className="w-12 text-right font-numeric font-semibold tabular-nums text-void">
-              {a.pct}%
-            </span>
+          <li key={a.label} className="flex items-center justify-between gap-2 text-xs">
+            <div className="flex min-w-0 items-center gap-2 flex-1">
+              <span className="size-2.5 shrink-0 rounded-sm" style={{ background: a.color }} />
+              <span className="truncate text-text font-medium">{a.label}</span>
+            </div>
+            <div className="flex items-center gap-2.5 shrink-0 text-right">
+              <span className="font-numeric text-text-muted tabular-nums">{money(a.valueCents)}</span>
+              <span className="min-w-10 text-right font-numeric font-semibold tabular-nums text-void">
+                {a.pct}%
+              </span>
+            </div>
           </li>
         ))}
       </ul>
