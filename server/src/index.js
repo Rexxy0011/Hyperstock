@@ -18,10 +18,9 @@ import { liveFeed } from './market/liveFeed.js';
  * enough to get a fully populated app.
  */
 async function autoSeedIfNeeded() {
-  if (!isEphemeral()) return;
   if ((await User.estimatedDocumentCount()) > 0) return;
 
-  console.log('  Ephemeral database is empty — seeding…\n');
+  console.log('  Database is empty — seeding initial markets and demo fixtures…\n');
   await runSeed({ fresh: false });
 }
 
