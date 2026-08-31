@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import Link from '../../components/ui/Link';
+import Reveal from '../../components/ui/Reveal';
 import { DOCUMENTS, LAST_UPDATED } from './legalContent';
 
 /**
@@ -27,48 +28,54 @@ export default function LegalDocument({ id }) {
 
   return (
     <div className="mx-auto w-full max-w-300 px-6 py-16 lg:px-10">
-      <header className="mb-10 border-b border-cool-grey pb-8">
-        <h1 className="m-0 text-[clamp(28px,4vw,40px)] font-bold text-void">{doc.title}</h1>
-        <p className="mt-3 mb-0 text-sm text-text-muted">
-          {t('legal.lastUpdated')}{' '}
-          <time dateTime={LAST_UPDATED} className="font-numeric tabular-nums">
-            {new Date(LAST_UPDATED).toLocaleDateString(i18n.language === 'uk' ? 'uk-UA' : 'en-US', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-            })}
-          </time>
-        </p>
-
-        {/* Only shown to a reader who is not reading the governing language.
-            In English it would be a statement of the obvious taking up the top
-            of every legal page. */}
-        {i18n.language !== 'en' && (
-          <p className="mt-4 mb-0 max-w-180 rounded-md border border-cool-grey bg-mist px-4 py-3 text-sm text-text-body">
-            {t('legal.englishOnly')}
+      <Reveal>
+        <header className="mb-10 border-b border-cool-grey pb-8">
+          <h1 className="m-0 text-[clamp(28px,4vw,40px)] font-bold text-void">{doc.title}</h1>
+          <p className="mt-3 mb-0 text-sm text-text-muted">
+            {t('legal.lastUpdated')}{' '}
+            <time dateTime={LAST_UPDATED} className="font-numeric tabular-nums">
+              {new Date(LAST_UPDATED).toLocaleDateString(i18n.language === 'uk' ? 'uk-UA' : 'en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              })}
+            </time>
           </p>
-        )}
-      </header>
+
+          {/* Only shown to a reader who is not reading the governing language.
+              In English it would be a statement of the obvious taking up the top
+              of every legal page. */}
+          {i18n.language !== 'en' && (
+            <p className="mt-4 mb-0 max-w-180 rounded-md border border-cool-grey bg-mist px-4 py-3 text-sm text-text-body">
+              {t('legal.englishOnly')}
+            </p>
+          )}
+        </header>
+      </Reveal>
 
       <div className="max-w-180">
-        {doc.intro.map((para) => (
-          <p key={para.slice(0, 40)} className="mt-0 mb-4 text-base leading-relaxed text-text-body">
-            {para}
-          </p>
-        ))}
+        <Reveal delay={60}>
+          {doc.intro.map((para) => (
+            <p key={para.slice(0, 40)} className="mt-0 mb-4 text-base leading-relaxed text-text-body">
+              {para}
+            </p>
+          ))}
+        </Reveal>
 
         {doc.sections.map((section, i) => (
-          <section key={section.heading} className="mt-10">
-            <h2 className="m-0 text-xl font-bold text-void">
-              <span className="mr-2 font-numeric text-text-muted tabular-nums">{i + 1}.</span>
-              {section.heading}
-            </h2>
-            <div className="mt-4">
-              {section.blocks.map((block, j) => (
-                <Block key={j} block={block} />
-              ))}
-            </div>
-          </section>
+          <Reveal key={section.heading} delay={Math.min(180, (i + 1) * 40)}>
+            <section className="mt-10">
+              <h2 className="m-0 text-xl font-bold text-void">
+                <span className="mr-2 font-numeric text-text-muted tabular-nums">{i + 1}.</span>
+                {section.heading}
+              </h2>
+              <div className="mt-4">
+                {section.blocks.map((block, j) => (
+                  <Block key={j} block={block} />
+                ))}
+              </div>
+            </section>
+          </Reveal>
         ))}
       </div>
     </div>

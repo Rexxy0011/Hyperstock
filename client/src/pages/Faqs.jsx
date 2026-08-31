@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import Button from "../components/ui/Button";
+import Reveal from "../components/ui/Reveal";
 import { useAccountCta } from "../hooks/useAccountCta";
 import Icon from "../components/ui/Icon";
 import { useFaqs, FAQ_COUNT } from "./faqContent";
@@ -37,8 +38,8 @@ export default function Faqs() {
           <CategoryRail categories={categories} />
 
           <div className="min-w-0">
-            {categories.map((category) => (
-              <div key={category.id} className="mb-12 last:mb-0">
+            {categories.map((category, idx) => (
+              <Reveal key={category.id} delay={Math.min(150, idx * 50)} className="mb-12 last:mb-0">
                 {/*
                   `scroll-mt` is load-bearing, not spacing. The nav is sticky at
                   65px, so an anchor jump lands the heading UNDER it — the
@@ -57,7 +58,7 @@ export default function Faqs() {
                     <FaqItem key={faq.n} faq={faq} />
                   ))}
                 </ul>
-              </div>
+              </Reveal>
             ))}
           </div>
         </div>
@@ -77,25 +78,27 @@ function Hero() {
   return (
     <section className="border-b border-cool-grey bg-mist/40">
       <div className="mx-auto w-full max-w-300 px-4 py-16 sm:px-6 lg:px-10 lg:py-24">
-        <p className="m-0 text-2xs font-medium tracking-[0.14em] text-text-muted uppercase">
-          {t("faq.eyebrow")}
-        </p>
-        <h1 className="mt-4 mb-0 max-w-200 text-[clamp(28px,4vw,42px)] font-bold text-void">
-          {t("faq.title")}
-        </h1>
-        <p className="mt-5 mb-0 max-w-160 text-md text-text-body">
-          {t("faq.lead")}
-        </p>
-        <p className="mt-3 mb-0 max-w-160 text-sm text-text-muted">
-          {t("faq.sub")}
-        </p>
+        <Reveal>
+          <p className="m-0 text-2xs font-medium tracking-[0.14em] text-text-muted uppercase">
+            {t("faq.eyebrow")}
+          </p>
+          <h1 className="mt-4 mb-0 max-w-200 text-[clamp(28px,4vw,42px)] font-bold text-void">
+            {t("faq.title")}
+          </h1>
+          <p className="mt-5 mb-0 max-w-160 text-md text-text-body">
+            {t("faq.lead")}
+          </p>
+          <p className="mt-3 mb-0 max-w-160 text-sm text-text-muted">
+            {t("faq.sub")}
+          </p>
 
-        <div className="mt-8 flex flex-wrap gap-3">
-          <Button to={cta.to}>{cta.label}</Button>
-          <Button to="/contact" variant="secondary">
-            {t("faq.contactSupport")}
-          </Button>
-        </div>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Button to={cta.to}>{cta.label}</Button>
+            <Button to="/contact" variant="secondary">
+              {t("faq.contactSupport")}
+            </Button>
+          </div>
+        </Reveal>
       </div>
     </section>
   );
