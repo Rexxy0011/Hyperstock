@@ -1,6 +1,6 @@
-import crypto from 'node:crypto';
-import { Subscriber } from '../models/Subscriber.js';
-import { User } from '../models/User.js';
+import crypto from "node:crypto";
+import { Subscriber } from "../models/Subscriber.js";
+import { User } from "../models/User.js";
 
 /**
  * Capturing an address from a marketing call to action.
@@ -13,15 +13,15 @@ import { User } from '../models/User.js';
  * the SERVER can distinguish the two for its own counting without the
  * distinction reaching an anonymous client.
  */
-export async function subscribe({ email, source = 'other' }) {
-  const address = String(email ?? '')
+export async function subscribe({ email, source = "other" }) {
+  const address = String(email ?? "")
     .trim()
     .toLowerCase();
 
   // Shape only. Deliverability is not knowable here, and a stricter pattern
   // rejects valid addresses far more often than it catches a bad one.
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(address) || address.length > 254) {
-    return { ok: false, code: 'BAD_EMAIL' };
+    return { ok: false, code: "BAD_EMAIL" };
   }
 
   /**
@@ -33,7 +33,9 @@ export async function subscribe({ email, source = 'other' }) {
    * address keeps the credit; overwriting it on a later submit would quietly
    * reattribute every conversion to whichever page someone visited last.
    */
-  const before = await Subscriber.findOne({ email: address }).select('_id').lean();
+  const before = await Subscriber.findOne({ email: address })
+    .select("_id")
+    .lean();
 
   await Subscriber.updateOne(
     { email: address },
@@ -41,7 +43,7 @@ export async function subscribe({ email, source = 'other' }) {
       $setOnInsert: {
         email: address,
         source,
-        unsubscribeToken: crypto.randomBytes(24).toString('base64url'),
+        unsubscribeToken: crypto.randomBytes(24).toString("base64url"),
       },
       /**
        * CLEARED on every submit, and it must be `$set` rather than
@@ -52,7 +54,7 @@ export async function subscribe({ email, source = 'other' }) {
        */
       $set: { unsubscribedAt: null },
     },
-    { upsert: true },
+    { upsert: true }
   );
 
   return { ok: true, created: !before };
@@ -72,12 +74,12 @@ export async function subscribe({ email, source = 'other' }) {
  * produce an error page.
  */
 export async function unsubscribe(token) {
-  const value = String(token ?? '').trim();
-  if (!value) return { ok: false, code: 'BAD_TOKEN' };
+  const value = String(token ?? "").trim();
+  if (!value) return { ok: false, code: "BAD_TOKEN" };
 
   await Subscriber.updateOne(
     { unsubscribeToken: value, unsubscribedAt: null },
-    { $set: { unsubscribedAt: new Date() } },
+    { $set: { unsubscribedAt: new Date() } }
   );
 
   return { ok: true };
@@ -101,9 +103,9 @@ export async function listSubscribers({ limit = 100 } = {}) {
   const registered = new Set(
     (
       await User.find({ email: { $in: rows.map((r) => r.email) } })
-        .select('email')
+        .select("email")
         .lean()
-    ).map((u) => String(u.email).toLowerCase()),
+    ).map((u) => String(u.email).toLowerCase())
   );
 
   return rows.map((r) => ({
@@ -120,17 +122,25 @@ export async function listSubscribers({ limit = 100 } = {}) {
 }
 
 export async function subscriberCounts() {
-  const [total, subscribed, converted] = await Promise.all([
+  const [total, subscribed, convertedAgg] = await Promise.all([
     Subscriber.countDocuments(),
     // The number that matters for a send. `total` includes people who left, and
     // reporting that as the list size overstates it every time.
     Subscriber.countDocuments({ unsubscribedAt: null }),
-    // Not `converted: true` — the field is a cache nothing writes. The count
-    // has to agree with what the listing computes or the two disagree on screen.
-    Subscriber.countDocuments({
-      email: { $in: (await User.find().select('email').lean()).map((u) => u.email) },
-    }),
+    // Push the join to MongoDB rather than loading every user into Node memory.
+    Subscriber.aggregate([
+      {
+        $lookup: {
+          from: "users",
+          localField: "email",
+          foreignField: "email",
+          as: "_u",
+        },
+      },
+      { $match: { "_u.0": { $exists: true } } },
+      { $count: "n" },
+    ]),
   ]);
 
-  return { total, subscribed, converted };
+  return { total, subscribed, converted: convertedAgg[0]?.n ?? 0 };
 }

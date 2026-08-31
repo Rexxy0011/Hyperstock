@@ -1,6 +1,6 @@
-import { FeaturedTrader } from '../models/FeaturedTrader.js';
-import { User } from '../models/User.js';
-import { ApiError } from '../lib/ApiError.js';
+import { FeaturedTrader } from "../models/FeaturedTrader.js";
+import { User } from "../models/User.js";
+import { ApiError } from "../lib/ApiError.js";
 
 /**
  * Curated leaderboard rows — read into the board, written from the admin.
@@ -34,7 +34,9 @@ export function toBoardRow(doc) {
    * different writers.
    */
   const dayChangeCents =
-    changePct <= -100 ? valueCents : Math.round(valueCents - valueCents / (1 + changePct / 100));
+    changePct <= -100
+      ? valueCents
+      : Math.round(valueCents - valueCents / (1 + changePct / 100));
 
   return {
     userId: String(doc._id),
@@ -44,10 +46,10 @@ export function toBoardRow(doc) {
     username: name,
     displayName: name,
     name,
-    avatarLetter: (name[0] ?? '?').toUpperCase(),
+    avatarLetter: (name[0] ?? "?").toUpperCase(),
     // Empty rather than absent, so a call site can read it unconditionally and
     // `Avatar` treats it as "no portrait" without a second branch.
-    avatarUrl: doc.avatarUrl || '',
+    avatarUrl: doc.avatarUrl || "",
     trades: doc.trades ?? 0,
     portfolioValueCents: valueCents,
     returnPct: round2(changePct),
@@ -96,7 +98,7 @@ export function mergeFeatured(rows, featuredDocs) {
   if (!featuredDocs.length) return rows;
 
   const overridden = new Set(
-    featuredDocs.filter((d) => d.userId).map((d) => String(d.userId)),
+    featuredDocs.filter((d) => d.userId).map((d) => String(d.userId))
   );
 
   const merged = [
@@ -120,9 +122,12 @@ export function listActiveFeatured() {
   return FeaturedTrader.find({ active: true }).lean();
 }
 
-/** Everything, newest first — what the admin screen lists. */
+/** Everything, newest first — what the admin screen lists. Capped at 200. */
 export function listAllFeatured() {
-  return FeaturedTrader.find().sort({ portfolioValueCents: -1 }).lean();
+  return FeaturedTrader.find()
+    .sort({ portfolioValueCents: -1 })
+    .limit(200)
+    .lean();
 }
 
 /**
@@ -135,7 +140,11 @@ export function listAllFeatured() {
 async function assertUserExists(userId) {
   if (!userId) return;
   const exists = await User.exists({ _id: userId });
-  if (!exists) throw ApiError.badRequest('NO_SUCH_USER', 'That trader account does not exist.');
+  if (!exists)
+    throw ApiError.badRequest(
+      "NO_SUCH_USER",
+      "That trader account does not exist."
+    );
 }
 
 export async function createFeatured(input, adminId) {
@@ -147,7 +156,10 @@ export async function createFeatured(input, adminId) {
     // The unique partial index over `userId` is the guard, not a prior read —
     // two admins overriding the same account race otherwise.
     if (err?.code === 11000) {
-      throw ApiError.conflict('ALREADY_FEATURED', 'That trader is already featured.');
+      throw ApiError.conflict(
+        "ALREADY_FEATURED",
+        "That trader is already featured."
+      );
     }
     throw err;
   }
@@ -159,13 +171,16 @@ export async function updateFeatured(id, patch, adminId) {
     const doc = await FeaturedTrader.findByIdAndUpdate(
       id,
       { ...patch, updatedBy: adminId },
-      { new: true, runValidators: true },
+      { new: true, runValidators: true }
     ).lean();
-    if (!doc) throw ApiError.notFound('Featured trader not found.');
+    if (!doc) throw ApiError.notFound("Featured trader not found.");
     return doc;
   } catch (err) {
     if (err?.code === 11000) {
-      throw ApiError.conflict('ALREADY_FEATURED', 'That trader is already featured.');
+      throw ApiError.conflict(
+        "ALREADY_FEATURED",
+        "That trader is already featured."
+      );
     }
     throw err;
   }
@@ -193,8 +208,14 @@ export async function updateFeatured(id, patch, adminId) {
  * operator accidentally publishes a real account under an invented name.
  */
 export async function upsertOverrideForUser(userId, input, adminId) {
-  const user = await User.findById(userId).select('username displayName role').lean();
-  if (!user) throw ApiError.badRequest('NO_SUCH_USER', 'That trader account does not exist.');
+  const user = await User.findById(userId)
+    .select("username displayName role")
+    .lean();
+  if (!user)
+    throw ApiError.badRequest(
+      "NO_SUCH_USER",
+      "That trader account does not exist."
+    );
 
   const doc = await FeaturedTrader.findOneAndUpdate(
     { userId },
@@ -206,7 +227,7 @@ export async function upsertOverrideForUser(userId, input, adminId) {
         updatedBy: adminId,
       },
     },
-    { new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true },
+    { new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true }
   ).lean();
 
   return doc;
@@ -233,7 +254,7 @@ export async function overridesForUsers(userIds) {
 
 export async function deleteFeatured(id) {
   const doc = await FeaturedTrader.findByIdAndDelete(id).lean();
-  if (!doc) throw ApiError.notFound('Featured trader not found.');
+  if (!doc) throw ApiError.notFound("Featured trader not found.");
   return { id };
 }
 
@@ -245,15 +266,18 @@ export async function deleteFeatured(id) {
  * users today and an unbounded number later.
  */
 export async function searchTraders(q, limit = 10) {
-  const term = String(q ?? '').trim();
+  const term = String(q ?? "").trim();
   if (!term) return [];
 
   // Escaped: the term reaches a regex, and a user-supplied `(` is a 500.
-  const safe = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const rx = new RegExp(`^${safe}`, 'i');
+  const safe = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const rx = new RegExp(`^${safe}`, "i");
 
-  const rows = await User.find({ role: 'user', $or: [{ username: rx }, { displayName: rx }] })
-    .select('username displayName portfolioValueCents')
+  const rows = await User.find({
+    role: "user",
+    $or: [{ username: rx }, { displayName: rx }],
+  })
+    .select("username displayName portfolioValueCents")
     .limit(limit)
     .lean();
 

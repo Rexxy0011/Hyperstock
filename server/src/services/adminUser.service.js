@@ -1,10 +1,10 @@
-import mongoose from 'mongoose';
-import { User } from '../models/User.js';
-import { ApiError } from '../lib/ApiError.js';
-import { computedRowsFor } from './leaderboard.service.js';
-import { overridesForUsers } from './featuredTrader.service.js';
-import { getPortfolio } from './portfolio.service.js';
-import { Stock } from '../models/Stock.js';
+import mongoose from "mongoose";
+import { User } from "../models/User.js";
+import { ApiError } from "../lib/ApiError.js";
+import { computedRowsFor } from "./leaderboard.service.js";
+import { overridesForUsers } from "./featuredTrader.service.js";
+import { getPortfolio } from "./portfolio.service.js";
+import { Stock } from "../models/Stock.js";
 
 /**
  * The user listing behind /admin/users.
@@ -25,7 +25,7 @@ import { Stock } from '../models/Stock.js';
 const PAGE_SIZE = 25;
 
 /** Escapes a user-supplied search string so it cannot act as a regex. */
-const literal = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const literal = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 /**
  * Exactly the fields an operator needs and nothing else.
@@ -84,9 +84,9 @@ const publicRow = (user, canSignIn, computed = null, override = null) => ({
         portfolioValueCents: override.portfolioValueCents,
         changePct: override.changePct,
         trades: override.trades ?? 0,
-        bestSymbol: override.bestSymbol || '',
+        bestSymbol: override.bestSymbol || "",
         bestReturnPct: override.bestReturnPct ?? 0,
-        avatarUrl: override.avatarUrl || '',
+        avatarUrl: override.avatarUrl || "",
         active: override.active !== false,
         updatedAt: override.updatedAt,
       }
@@ -96,7 +96,7 @@ const publicRow = (user, canSignIn, computed = null, override = null) => ({
 /**
  * @param {{ q?: string, page?: number, limit?: number }} [options]
  */
-export async function listUsers({ q = '', page = 1, limit = PAGE_SIZE } = {}) {
+export async function listUsers({ q = "", page = 1, limit = PAGE_SIZE } = {}) {
   const size = Math.min(100, Math.max(1, limit));
   const current = Math.max(1, page);
 
@@ -104,9 +104,9 @@ export async function listUsers({ q = '', page = 1, limit = PAGE_SIZE } = {}) {
   const filter = term
     ? {
         $or: [
-          { username: { $regex: literal(term), $options: 'i' } },
-          { email: { $regex: literal(term), $options: 'i' } },
-          { displayName: { $regex: literal(term), $options: 'i' } },
+          { username: { $regex: literal(term), $options: "i" } },
+          { email: { $regex: literal(term), $options: "i" } },
+          { displayName: { $regex: literal(term), $options: "i" } },
         ],
       }
     : {};
@@ -136,7 +136,7 @@ export async function listUsers({ q = '', page = 1, limit = PAGE_SIZE } = {}) {
    */
   const [credentialRows, computed, overrides] = await Promise.all([
     mongoose.connection
-      .collection('accounts')
+      .collection("accounts")
       .find({ userId: { $in: ids } })
       .project({ userId: 1 })
       .toArray(),
@@ -153,7 +153,7 @@ export async function listUsers({ q = '', page = 1, limit = PAGE_SIZE } = {}) {
         r,
         withCredentials.has(key),
         computed.get(key) ?? null,
-        overrides.get(key) ?? null,
+        overrides.get(key) ?? null
       );
     }),
     total,
@@ -196,8 +196,8 @@ export async function listPositions(userId = null) {
   let holdings = [];
 
   if (userId) {
-    const user = await User.findById(userId).select('cashBalanceCents').lean();
-    if (!user) throw ApiError.notFound('No such user', 'USER_NOT_FOUND');
+    const user = await User.findById(userId).select("cashBalanceCents").lean();
+    if (!user) throw ApiError.notFound("No such user", "USER_NOT_FOUND");
 
     // `holdings`, not `positions` — the local variable inside `getPortfolio` is
     // named `positions` but the key it returns is `holdings`, and destructuring
@@ -243,15 +243,15 @@ export async function listPositions(userId = null) {
    * anything of those classes the trader owns is already in `held` above.
    */
   const owned = new Set(held.map((p) => p.symbol));
-  const listed = await Stock.find({ status: { $ne: 'Halted' } })
-    .select('symbol name exchange')
+  const listed = await Stock.find({ status: { $ne: "Halted" } })
+    .select("symbol name exchange")
     .lean();
 
   const available = listed
     .filter((s) => !owned.has(s.symbol))
     .map((s) => ({
       symbol: s.symbol,
-      assetClass: 'stocks',
+      assetClass: "stocks",
       name: s.name,
       exchange: s.exchange,
       returnPct: null,
@@ -273,14 +273,22 @@ export async function listPositions(userId = null) {
 export async function userCounts() {
   const [total, admins, suspended, withCredentials] = await Promise.all([
     User.countDocuments(),
-    User.countDocuments({ role: 'admin' }),
-    User.countDocuments({ status: 'Suspended' }),
-    mongoose.connection.collection('accounts').countDocuments({ providerId: 'credential' }),
+    User.countDocuments({ role: "admin" }),
+    User.countDocuments({ status: "Suspended" }),
+    mongoose.connection
+      .collection("accounts")
+      .countDocuments({ providerId: "credential" }),
   ]);
-  return { total, admins, suspended, withCredentials, fixtures: total - withCredentials };
+  return {
+    total,
+    admins,
+    suspended,
+    withCredentials,
+    fixtures: total - withCredentials,
+  };
 }
 
-const STATUSES = ['Active', 'Flagged', 'Suspended'];
+const STATUSES = ["Active", "Flagged", "Suspended"];
 
 /**
  * Changes an account's status, which is the only write this screen offers.
@@ -303,30 +311,34 @@ const STATUSES = ['Active', 'Flagged', 'Suspended'];
  */
 export async function setUserStatus(userId, status, actingAdminId) {
   if (!STATUSES.includes(status)) {
-    throw ApiError.badRequest('BAD_STATUS', 'Unknown status', { status });
+    throw ApiError.badRequest("BAD_STATUS", "Unknown status", { status });
   }
   if (String(userId) === String(actingAdminId)) {
     throw ApiError.badRequest(
-      'SELF_STATUS_CHANGE',
-      'You cannot change your own account status',
+      "SELF_STATUS_CHANGE",
+      "You cannot change your own account status"
     );
   }
 
-  const user = await User.findByIdAndUpdate(userId, { $set: { status } }, { new: true }).lean();
-  if (!user) throw ApiError.notFound('No such user', 'USER_NOT_FOUND');
+  const user = await User.findByIdAndUpdate(
+    userId,
+    { $set: { status } },
+    { new: true }
+  ).lean();
+  if (!user) throw ApiError.notFound("No such user", "USER_NOT_FOUND");
 
   let sessionsRevoked = 0;
-  if (status === 'Suspended') {
+  if (status === "Suspended") {
     const result = await mongoose.connection
-      .collection('sessions')
+      .collection("sessions")
       .deleteMany({ userId: user._id });
     sessionsRevoked = result.deletedCount ?? 0;
   }
 
   const canSignIn = Boolean(
     await mongoose.connection
-      .collection('accounts')
-      .findOne({ userId: user._id, providerId: 'credential' }),
+      .collection("accounts")
+      .findOne({ userId: user._id, providerId: "credential" })
   );
 
   return { user: publicRow(user, canSignIn), sessionsRevoked };
