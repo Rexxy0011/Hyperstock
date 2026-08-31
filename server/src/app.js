@@ -76,13 +76,7 @@ export function createApp() {
    * hot reload and its `/api` proxy. API misses stay JSON rather than falling
    * through to the React document, which would turn an API typo into a 200.
    */
-  if (env.NODE_ENV === 'production') {
-    if (!existsSync(clientBuildDirectory)) {
-      throw new Error(
-        'Client build is missing. Run `npm run build` before starting the production server.',
-      );
-    }
-
+  if (env.NODE_ENV === 'production' && existsSync(clientBuildDirectory)) {
     app.use('/api', notFoundHandler);
     app.use(express.static(clientBuildDirectory, { index: false }));
     app.get('*', (req, res) => {
