@@ -1,7 +1,7 @@
-import { useTranslation } from 'react-i18next';
-import Link from '../../components/ui/Link';
-import Reveal from '../../components/ui/Reveal';
-import { DOCUMENTS, LAST_UPDATED } from './legalContent';
+import { useTranslation } from "react-i18next";
+import Link from "../../components/ui/Link";
+import Reveal from "../../components/ui/Reveal";
+import { DOCUMENTS, LAST_UPDATED } from "./legalContent";
 
 /**
  * One component for all three legal documents.
@@ -30,24 +30,29 @@ export default function LegalDocument({ id }) {
     <div className="mx-auto w-full max-w-300 px-6 py-16 lg:px-10">
       <Reveal>
         <header className="mb-10 border-b border-cool-grey pb-8">
-          <h1 className="m-0 text-[clamp(28px,4vw,40px)] font-bold text-void">{doc.title}</h1>
+          <h1 className="m-0 text-[clamp(28px,4vw,40px)] font-bold text-void">
+            {doc.title}
+          </h1>
           <p className="mt-3 mb-0 text-sm text-text-muted">
-            {t('legal.lastUpdated')}{' '}
+            {t("legal.lastUpdated")}{" "}
             <time dateTime={LAST_UPDATED} className="font-numeric tabular-nums">
-              {new Date(LAST_UPDATED).toLocaleDateString(i18n.language === 'uk' ? 'uk-UA' : 'en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-              })}
+              {new Date(LAST_UPDATED).toLocaleDateString(
+                i18n.language === "uk" ? "uk-UA" : "en-US",
+                {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                }
+              )}
             </time>
           </p>
 
           {/* Only shown to a reader who is not reading the governing language.
               In English it would be a statement of the obvious taking up the top
               of every legal page. */}
-          {i18n.language !== 'en' && (
+          {i18n.language !== "en" && (
             <p className="mt-4 mb-0 max-w-180 rounded-md border border-cool-grey bg-mist px-4 py-3 text-sm text-text-body">
-              {t('legal.englishOnly')}
+              {t("legal.englishOnly")}
             </p>
           )}
         </header>
@@ -56,7 +61,10 @@ export default function LegalDocument({ id }) {
       <div className="max-w-180">
         <Reveal delay={60}>
           {doc.intro.map((para) => (
-            <p key={para.slice(0, 40)} className="mt-0 mb-4 text-base leading-relaxed text-text-body">
+            <p
+              key={para.slice(0, 40)}
+              className="mt-0 mb-4 text-base leading-relaxed text-text-body"
+            >
               {para}
             </p>
           ))}
@@ -66,7 +74,9 @@ export default function LegalDocument({ id }) {
           <Reveal key={section.heading} delay={Math.min(180, (i + 1) * 40)}>
             <section className="mt-10">
               <h2 className="m-0 text-xl font-bold text-void">
-                <span className="mr-2 font-numeric text-text-muted tabular-nums">{i + 1}.</span>
+                <span className="mr-2 font-numeric text-text-muted tabular-nums">
+                  {i + 1}.
+                </span>
                 {section.heading}
               </h2>
               <div className="mt-4">
@@ -91,22 +101,36 @@ export default function LegalDocument({ id }) {
  * no `t`. See the note at the top of `legalContent.js`.
  */
 function Block({ block }) {
-  if (typeof block === 'string') {
-    return <p className="mt-0 mb-4 text-base leading-relaxed text-text-body">{block}</p>;
+  if (typeof block === "string") {
+    return (
+      <p className="mt-0 mb-4 text-base leading-relaxed text-text-body">
+        {block}
+      </p>
+    );
   }
 
   if (block.subheading) {
-    return <h3 className="mt-6 mb-2 text-base font-semibold text-void">{block.subheading}</h3>;
+    return (
+      <h3 className="mt-6 mb-2 text-base font-semibold text-void">
+        {block.subheading}
+      </h3>
+    );
   }
 
   if (block.list) {
     return (
       <ul className="mt-0 mb-4 flex list-none flex-col gap-1.5 p-0">
         {block.list.map((item) => (
-          <li key={item} className="flex gap-2.5 text-base leading-relaxed text-text-body">
+          <li
+            key={item}
+            className="flex gap-2.5 text-base leading-relaxed text-text-body"
+          >
             {/* A marker span rather than a list-style bullet: the default sits
                 on the first line's baseline and drifts on a wrapped item. */}
-            <span aria-hidden="true" className="mt-2.5 size-1.5 shrink-0 rounded-full bg-cool-grey" />
+            <span
+              aria-hidden="true"
+              className="mt-2.5 size-1.5 shrink-0 rounded-full bg-cool-grey"
+            />
             <span>{item}</span>
           </li>
         ))}
@@ -118,7 +142,10 @@ function Block({ block }) {
     return (
       <p className="mt-0 mb-4 text-base leading-relaxed text-text-body">
         {block.link.before}
-        <Link to={block.link.to} className="font-medium underline underline-offset-2">
+        <Link
+          to={block.link.to}
+          className="font-medium underline underline-offset-2"
+        >
           {block.link.label}
         </Link>
         {block.link.after}
@@ -129,7 +156,9 @@ function Block({ block }) {
   if (block.contact) {
     return (
       <div className="mt-2 mb-4 rounded-md border border-cool-grey bg-mist px-4 py-3.5">
-        <p className="m-0 text-sm font-semibold text-void">{block.contact.name}</p>
+        <p className="m-0 text-sm font-semibold text-void">
+          {block.contact.name}
+        </p>
         <a
           href={`mailto:${block.contact.email}`}
           className="mt-0.5 inline-block font-mono text-sm text-text-body underline underline-offset-2"

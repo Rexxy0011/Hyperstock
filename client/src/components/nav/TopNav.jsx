@@ -1,17 +1,17 @@
-import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
-import Link, { NavLink } from '../ui/Link';
-import { useQuery } from '@tanstack/react-query';
-import { get } from '../../lib/api';
-import { keys } from '../../lib/queryClient';
-import { money, pct } from '../../lib/format';
-import { useAuth } from '../../auth/AuthProvider';
-import Icon from '../ui/Icon';
-import Button from '../ui/Button';
-import Logo from '../ui/Logo';
-import { NAV, SECONDARY, ADMIN } from './navItems';
-import LanguageSwitcher from './LanguageSwitcher';
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
+import Link, { NavLink } from "../ui/Link";
+import { useQuery } from "@tanstack/react-query";
+import { get } from "../../lib/api";
+import { keys } from "../../lib/queryClient";
+import { money, pct } from "../../lib/format";
+import { useAuth } from "../../auth/AuthProvider";
+import Icon from "../ui/Icon";
+import Button from "../ui/Button";
+import Logo from "../ui/Logo";
+import { NAV, SECONDARY, ADMIN } from "./navItems";
+import LanguageSwitcher from "./LanguageSwitcher";
 
 /**
  * The single navbar, used by the marketing shell and the signed-in dashboard
@@ -34,13 +34,13 @@ export default function TopNav({ onOpenNav, bordered = true }) {
     // scroll through it.
     <header
       className={`sticky top-0 z-30 flex items-center gap-3 bg-white px-4 py-3 sm:gap-4 sm:px-5 lg:px-7 ${
-        bordered ? 'border-b border-cool-grey/70' : ''
+        bordered ? "border-b border-cool-grey/70" : ""
       }`}
     >
       <button
         type="button"
         onClick={onOpenNav}
-        aria-label={t('nav.menu')}
+        aria-label={t("nav.menu")}
         className="-ml-1 shrink-0 cursor-pointer rounded-lg p-2 text-text-muted transition-colors hover:bg-hover hover:text-void lg:hidden"
       >
         <Icon name="menu" size={20} />
@@ -50,7 +50,12 @@ export default function TopNav({ onOpenNav, bordered = true }) {
 
       <nav className="ml-2 hidden items-center gap-0.5 lg:flex">
         {NAV.map((item) => (
-          <NavLink key={item.to} to={item.to} end={item.end} className={linkClass}>
+          <NavLink
+            key={item.to}
+            to={item.to}
+            end={item.end}
+            className={linkClass}
+          >
             {t(`nav.${item.key}`)}
           </NavLink>
         ))}
@@ -84,8 +89,8 @@ export default function TopNav({ onOpenNav, bordered = true }) {
         <Icon name="search" size={16} className="text-text-muted" />
         <input
           type="search"
-          placeholder={t('nav.search')}
-          onFocus={() => navigate('/markets')}
+          placeholder={t("nav.search")}
+          onFocus={() => navigate("/markets")}
           className="min-w-0 flex-1 bg-transparent text-sm text-text-body outline-none placeholder:text-text-muted"
         />
       </label>
@@ -129,10 +134,10 @@ export default function TopNav({ onOpenNav, bordered = true }) {
         {authReady && !user ? (
           <div className="flex shrink-0 items-center gap-2">
             <Button to="/auth" variant="ghost" size="sm">
-              {t('nav.login')}
+              {t("nav.login")}
             </Button>
             <Button to="/auth?mode=signup" size="sm">
-              {t('nav.getStarted')}
+              {t("nav.getStarted")}
             </Button>
           </div>
         ) : (
@@ -151,16 +156,18 @@ export default function TopNav({ onOpenNav, bordered = true }) {
 // the rest of the marketing shell moved to Poppins.
 const linkClass = ({ isActive }) =>
   [
-    'rounded-lg px-3 py-2 font-display text-sm font-medium no-underline transition-colors',
-    isActive ? 'bg-hover text-void' : 'text-text-muted hover:bg-hover hover:text-void',
-  ].join(' ');
+    "rounded-lg px-3 py-2 font-display text-sm font-medium no-underline transition-colors",
+    isActive
+      ? "bg-hover text-void"
+      : "text-text-muted hover:bg-hover hover:text-void",
+  ].join(" ");
 
 function InvestmentPill() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { data } = useQuery({
     queryKey: keys.portfolio,
-    queryFn: () => get('/portfolio'),
+    queryFn: () => get("/portfolio"),
     enabled: Boolean(user),
   });
 
@@ -172,13 +179,15 @@ function InvestmentPill() {
       to="/portfolio"
       className="flex shrink-0 items-center gap-2 rounded-lg bg-ink px-2.5 py-2 no-underline sm:gap-2.5 sm:px-3"
     >
-      <span className="hidden text-2xs text-text-on-deep-muted sm:inline">{t('nav.total')}</span>
+      <span className="hidden text-2xs text-text-on-deep-muted sm:inline">
+        {t("nav.total")}
+      </span>
       <span className="font-numeric text-sm font-bold tabular-nums text-white">
         {money(s.portfolioValueCents)}
       </span>
       <span
         className={`hidden font-numeric text-2xs font-semibold tabular-nums sm:inline ${
-          s.allTimeReturnPct >= 0 ? 'text-gain' : 'text-loss'
+          s.allTimeReturnPct >= 0 ? "text-gain" : "text-loss"
         }`}
       >
         {pct(s.allTimeReturnPct)}
@@ -201,9 +210,11 @@ function AccountMenu() {
         className="flex cursor-pointer items-center gap-2 rounded-lg py-1 pr-1.5 pl-1 transition-colors hover:bg-hover"
       >
         <span className="inline-flex size-8 items-center justify-center rounded-lg bg-mist text-sm font-semibold text-void">
-          {user?.avatarLetter ?? '?'}
+          {user?.avatarLetter ?? "?"}
         </span>
-        <span className="hidden text-sm font-semibold text-void xl:block">{user?.username}</span>
+        <span className="hidden text-sm font-semibold text-void xl:block">
+          {user?.username}
+        </span>
         <Icon name="chevronDown" size={14} className="text-text-muted" />
       </button>
 
@@ -212,34 +223,44 @@ function AccountMenu() {
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
           <div className="absolute right-0 z-20 mt-2 w-56 overflow-hidden rounded-xl border border-cool-grey bg-white py-1 shadow-panel">
             <div className="border-b border-cool-grey px-3 py-2">
-              <div className="truncate text-sm font-semibold">{user?.username}</div>
-              <div className="truncate text-xs text-text-muted">{user?.email}</div>
+              <div className="truncate text-sm font-semibold">
+                {user?.username}
+              </div>
+              <div className="truncate text-xs text-text-muted">
+                {user?.email}
+              </div>
             </div>
 
-            {[...SECONDARY, ...(user?.role === 'admin' ? ADMIN : [])].map((item) => (
-              <Link
-                key={item.to}
-                to={item.to}
-                onClick={() => setOpen(false)}
-                className="flex items-center gap-2.5 px-3 py-2 text-sm text-text-body no-underline transition-colors hover:bg-hover"
-              >
-                <Icon name={item.icon} size={16} className="text-text-muted" />
-                <span className="flex-1">{t(`nav.${item.key}`)}</span>
-                {item.badge && (
-                  <span className="inline-flex size-4 items-center justify-center rounded-md bg-loss text-2xs font-semibold text-white">
-                    {item.badge}
-                  </span>
-                )}
-              </Link>
-            ))}
+            {[...SECONDARY, ...(user?.role === "admin" ? ADMIN : [])].map(
+              (item) => (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  onClick={() => setOpen(false)}
+                  className="flex items-center gap-2.5 px-3 py-2 text-sm text-text-body no-underline transition-colors hover:bg-hover"
+                >
+                  <Icon
+                    name={item.icon}
+                    size={16}
+                    className="text-text-muted"
+                  />
+                  <span className="flex-1">{t(`nav.${item.key}`)}</span>
+                  {item.badge && (
+                    <span className="inline-flex size-4 items-center justify-center rounded-md bg-loss text-2xs font-semibold text-white">
+                      {item.badge}
+                    </span>
+                  )}
+                </Link>
+              )
+            )}
 
             <button
               type="button"
-              onClick={() => logout().then(() => navigate('/'))}
+              onClick={() => logout().then(() => navigate("/"))}
               className="flex w-full cursor-pointer items-center gap-2.5 border-t border-cool-grey px-3 py-2 text-sm text-text-body transition-colors hover:bg-hover"
             >
               <Icon name="logout" size={16} className="text-text-muted" />
-              {t('nav.logout')}
+              {t("nav.logout")}
             </button>
           </div>
         </>

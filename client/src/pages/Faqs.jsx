@@ -39,7 +39,11 @@ export default function Faqs() {
 
           <div className="min-w-0">
             {categories.map((category, idx) => (
-              <Reveal key={category.id} delay={Math.min(150, idx * 50)} className="mb-12 last:mb-0">
+              <Reveal
+                key={category.id}
+                delay={Math.min(150, idx * 50)}
+                className="mb-12 last:mb-0"
+              >
                 {/*
                   `scroll-mt` is load-bearing, not spacing. The nav is sticky at
                   65px, so an anchor jump lands the heading UNDER it — the
