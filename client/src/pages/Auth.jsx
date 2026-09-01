@@ -393,13 +393,6 @@ export default function Auth() {
             />
           </p>
         </div>
-
-        {/* Outside the card, not in it: it qualifies the whole screen rather
-            than the form, and inside it would be the last thing read before the
-            submit button. */}
-        <p className="mt-6 text-center text-xs text-text-muted">
-          {t('auth.disclaimer')}
-        </p>
       </div>
     </div>
   );
