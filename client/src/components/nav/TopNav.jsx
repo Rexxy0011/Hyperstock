@@ -46,7 +46,7 @@ export default function TopNav({ onOpenNav, bordered = true }) {
         <Icon name="menu" size={20} />
       </button>
 
-      <Logo size={28} className="[&>span]:hidden sm:[&>span]:block" />
+      <Logo size={28} />
 
       <nav className="ml-2 hidden items-center gap-0.5 lg:flex">
         {NAV.map((item) => (
