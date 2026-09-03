@@ -54,6 +54,8 @@ const userSchema = new mongoose.Schema(
      */
     passwordHash: { type: String, select: false },
 
+    country: { type: String },
+
     role: { type: String, enum: ['user', 'admin'], default: 'user', index: true },
     status: { type: String, enum: ['Active', 'Flagged', 'Suspended'], default: 'Active' },
 

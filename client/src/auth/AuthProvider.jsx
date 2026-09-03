@@ -87,7 +87,7 @@ export function AuthProvider({ children }) {
   );
 
   const register = useCallback(
-    async ({ email, password, username, displayName }) =>
+    async ({ email, password, username, displayName, country }) =>
       adopt(
         await post('/auth/sign-up/email', {
           email,
@@ -98,6 +98,7 @@ export function AuthProvider({ children }) {
           // sets a display name rather than blocking the form on a field the
           // design does not have.
           name: displayName || username,
+          ...(country && { country }),
         }),
       ),
     [adopt],

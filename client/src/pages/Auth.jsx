@@ -9,6 +9,7 @@ import { Navigate, useSearchParams } from "react-router-dom";
 import Link from "../components/ui/Link";
 import Button from "../components/ui/Button";
 import Input from "../components/ui/Input";
+import Select from "../components/ui/Select";
 import SegmentedControl from "../components/ui/SegmentedControl";
 import Logo from "../components/ui/Logo";
 import { useAuth } from "../auth/AuthProvider";
@@ -46,6 +47,7 @@ export default function Auth() {
     username: "",
     email: params.get("email") ?? "",
     password: "",
+    country: "",
   });
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -283,6 +285,19 @@ export default function Auth() {
                       disabled={!isSignup}
                       {...field("username")}
                     />
+
+                    <div className="mt-4 flex flex-col gap-1.5">
+                      <label className="font-display text-xs font-semibold uppercase text-text-body">
+                        Country
+                      </label>
+                      <Select
+                        value={form.country}
+                        onChange={(value) => setForm((f) => ({ ...f, country: value }))}
+                        options={COUNTRIES}
+                        placeholder="Select Country"
+                        disabled={!isSignup}
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -335,6 +350,7 @@ export default function Auth() {
                       username: "",
                       email: "jd@hyperstocks.app",
                       password: "password123",
+                      country: "",
                     });
                     setError(null);
                   }}

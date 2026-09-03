@@ -78,6 +78,8 @@ const additionalFields = {
   // `displayUsername`: that is a cased variant of the handle, while this is a
   // human name that may carry spaces and accents, which the handle regex bans.
   displayName: { type: /** @type {const} */ ('string'), required: false, input: false },
+  country: { type: /** @type {const} */ ("string"), required: false, input: true },
+
   role: { type: /** @type {const} */ ('string'), required: false, defaultValue: 'user', input: false },
   status: { type: /** @type {const} */ ('string'), required: false, defaultValue: 'Active', input: false },
   cashBalanceCents: {
