@@ -29,6 +29,19 @@ import { ADMIN_HOME } from "../components/nav/navItems";
  * Same reasoning as `navItems.js` carrying `key` apart from `label` — a value
  * derived from English copy breaks when the copy is reworded or translated.
  */
+const COUNTRIES = [
+  { value: "US", label: "United States" },
+  { value: "GB", label: "United Kingdom" },
+  { value: "CA", label: "Canada" },
+  { value: "AU", label: "Australia" },
+  { value: "DE", label: "Germany" },
+  { value: "FR", label: "France" },
+  { value: "IT", label: "Italy" },
+  { value: "ES", label: "Spain" },
+  { value: "JP", label: "Japan" },
+  { value: "SG", label: "Singapore" },
+];
+
 const SIGNIN = "signin";
 const SIGNUP = "signup";
 
