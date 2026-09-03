@@ -194,10 +194,10 @@ async function computeBoard(period) {
     },
     {
       $addFields: {
-        // Falling back to today's own value yields a change of exactly 0 for a
-        // trader with no history, rather than a spurious +100%.
+        // Falling back to the seed grant yields the trader's actual return since
+        // signup, rather than locking them at 0 until their first midnight passes.
         dayBaseValueCents: {
-          $ifNull: [{ $first: '$prevDay.portfolioValueCents' }, '$portfolioValueCents'],
+          $ifNull: [{ $first: '$prevDay.portfolioValueCents' }, SEED_CASH_CENTS],
         },
       },
     },
