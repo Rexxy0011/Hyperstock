@@ -100,9 +100,7 @@ const FOOTER_COLUMNS = [
   {
     key: 'security',
     links: [
-      // "Account Security" is the Disclosures section that covers it, not a
-      // page that does not exist — an anchor to real text beats a 404.
-      { label: 'accountSecurity', to: '/disclosures' },
+      { label: 'accountSecurity', to: '/account-security' },
       // A security report is an ADDRESS, not a screen. Shipping this one as a
       // dead link is the worst of the set: somebody with a vulnerability to
       // report is exactly who must not hit "Not found".

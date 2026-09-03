@@ -133,6 +133,7 @@ export const router = createBrowserRouter([
           // Legal documents are marketing-shell regardless of session: a
           // signed-in reader wants the same page as a visitor, plus the footer
           // that carries the rest of the legal links.
+          { path: '/account-security', element: <LegalDocument id="account-security" /> },
           { path: '/privacy', element: <LegalDocument id="privacy" /> },
           { path: '/financial-privacy', element: <LegalDocument id="financial-privacy" /> },
           { path: '/terms', element: <LegalDocument id="terms" /> },
