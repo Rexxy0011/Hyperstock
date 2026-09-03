@@ -50,7 +50,7 @@ export const supportMailto = (subject = undefined) =>
  * stripping characters out of a formatted string gets it wrong for half the
  * world's numbering plans.
  */
-export const SUPPORT_PHONE = { display: '+1 (555) 0100', dial: '+15550100' };
+export const SUPPORT_PHONE = { display: '(951) 776-7277', dial: '+19517767277' };
 
 /**
  * Where the office is, and where the map puts its pin.
