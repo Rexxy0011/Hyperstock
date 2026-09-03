@@ -94,7 +94,6 @@ const FOOTER_COLUMNS = [
     links: [
       { label: 'privacy', to: '/privacy' },
       { label: 'financialPrivacy', to: '/financial-privacy' },
-      { label: 'riskDisclosure', to: '/risk-disclosure' },
     ],
   },
   {
@@ -139,7 +138,6 @@ const FOOTER_COLUMNS = [
 export const BOTTOM_LINKS = [
   ['privacy', '/privacy'],
   ['terms', '/terms'],
-  ['disclosures', '/disclosures'],
 ];
 
 /**
