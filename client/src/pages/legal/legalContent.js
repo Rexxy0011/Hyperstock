@@ -201,207 +201,127 @@ export const TERMS = {
   title: 'Terms of Service',
   intro: [
     'Welcome to HyperStocks.',
-    'These Terms of Service govern your access to and use of the HyperStocks website, applications, accounts, and related services.',
+    'These Terms of Service govern your access to and use of the HyperStocks website, applications, accounts, trading platform, and related services.',
     'By creating an account or using HyperStocks, you acknowledge that you have read and agree to these Terms.',
   ],
   sections: [
     {
       heading: 'Eligibility',
       blocks: [
-        "You must satisfy HyperStocks's eligibility requirements to open and maintain an account.",
+        "You must meet HyperStocks' eligibility requirements to create and maintain an account.",
         'You may be required to:',
         {
           list: [
             'Meet applicable age requirements',
-            'Provide accurate personal information',
+            'Provide accurate and current information',
             'Complete identity verification',
             'Provide requested documentation',
             'Satisfy applicable regulatory requirements',
-            'Maintain only accounts permitted under our policies',
           ],
         },
-        'We may refuse, restrict, suspend, or terminate an account where permitted by law.',
+        'HyperStocks may refuse, restrict, suspend, or terminate an account where permitted by law.',
       ],
     },
     {
       heading: 'Your Account',
       blocks: [
-        'You are responsible for maintaining the confidentiality of your account credentials.',
-        'You must notify HyperStocks promptly if you believe:',
-        {
-          list: [
-            'Your password has been compromised',
-            'Your account has been accessed without authorization',
-            'You see an unfamiliar transaction',
-            'Your personal information has been compromised',
-          ],
-        },
-        'You are responsible for information submitted through your account being accurate and current.',
+        'You are responsible for maintaining accurate account information and protecting your account credentials.',
+        'You must notify HyperStocks promptly if you believe your account has been accessed without authorization or if you identify activity that you do not recognize.',
+        'You are responsible for maintaining the confidentiality of your login credentials and authentication information.',
       ],
     },
     {
-      heading: 'Investment Services',
+      heading: 'Trading Services',
       blocks: [
-        'HyperStocks may provide access to multiple investment products and markets, including, where available:',
+        'HyperStocks provides access to trading services and supported markets through its platform.',
+        'Depending on your account, eligibility, and available services, you may be able to trade:',
         {
           list: [
             'Stocks',
             'Mutual funds',
             'Gold',
-            'Cryptocurrency',
-            'Other supported investment products',
+            'Digital assets',
+            'Other supported products',
           ],
         },
-        'Availability varies according to account eligibility, jurisdiction, product availability, and applicable regulations.',
+        'The availability of particular products, markets, features, and services may vary by account and jurisdiction.',
       ],
     },
     {
-      heading: 'Investment Risk',
+      heading: 'Orders and Account Activity',
       blocks: [
-        'Investing involves risk.',
-        'The value of investments can increase or decrease, and you may lose some or all of your invested capital.',
-        'Cryptocurrency and other volatile assets may experience substantial price movements.',
-        'Past performance does not guarantee future results.',
-        'HyperStocks does not guarantee that any investment will achieve a particular return.',
+        'Orders and other instructions submitted through your account may be subject to applicable trading rules, verification procedures, market conditions, and platform requirements.',
+        'You are responsible for reviewing your orders and account activity and ensuring that information submitted through your account is accurate.',
+        'HyperStocks may cancel, reject, restrict, or review transactions where permitted or required by applicable law, regulation, or internal policies.',
       ],
     },
     {
-      heading: 'No Guarantee of Execution',
-      blocks: [
-        'Orders may not always execute at the price displayed when an order is submitted.',
-        'Market conditions, liquidity, trading halts, exchange rules, network conditions, technical interruptions, and other circumstances may affect execution.',
-      ],
-    },
-    {
-      heading: 'Account Funding',
+      heading: 'Account Funding and Withdrawals',
       blocks: [
         'You may fund your account using funding methods made available through HyperStocks.',
-        'Deposits may be subject to:',
-        {
-          list: [
-            'Verification',
-            'Processing periods',
-            'Funding limits',
-            'Compliance reviews',
-            'Transaction monitoring',
-            'Additional restrictions',
-          ],
-        },
-        'Funds may not immediately become available for trading after a deposit is initiated.',
-      ],
-    },
-    {
-      heading: 'Withdrawals',
-      blocks: [
-        'Withdrawal requests may be subject to verification, account restrictions, processing requirements, and applicable compliance procedures.',
-        'HyperStocks may delay or restrict a withdrawal when reasonably necessary to investigate suspected fraud, unauthorized activity, regulatory concerns, or other circumstances permitted by law.',
-      ],
-    },
-    {
-      heading: 'Cryptocurrency Transactions',
-      blocks: [
-        'Where cryptocurrency services are available, digital-asset transactions may involve additional risks and requirements.',
-        'Blockchain transactions may be irreversible.',
-        'You are responsible for selecting the correct asset, network, and destination information when initiating a cryptocurrency transaction.',
-        'HyperStocks is not responsible for losses caused by incorrect wallet addresses, unsupported networks, or user errors, except where applicable law provides otherwise.',
+        'Deposits and withdrawals may be subject to verification, processing requirements, account limits, and applicable compliance procedures.',
+        'HyperStocks may delay or restrict a transaction where reasonably necessary to verify account activity, protect the account, or satisfy legal or regulatory requirements.',
       ],
     },
     {
       heading: 'Fees',
       blocks: [
-        'Certain services, products, transactions, or payment methods may be subject to fees.',
-        'Applicable fees will be disclosed through the platform or relevant agreements.',
+        'Certain services, transactions, products, or funding methods may be subject to fees.',
+        'Applicable fees will be presented through the platform, applicable agreements, or other appropriate disclosures.',
         'You are responsible for reviewing applicable fees before completing a transaction.',
       ],
     },
     {
-      heading: 'Prohibited Activities',
+      heading: 'Acceptable Use',
       blocks: [
         'You may not use HyperStocks to:',
         {
           list: [
             'Commit fraud',
             'Launder money',
-            'Evade sanctions',
+            'Evade applicable sanctions',
             'Conduct unlawful transactions',
             'Misrepresent your identity',
             'Circumvent account restrictions',
-            'Abuse platform functionality',
             'Attempt unauthorized access',
-            'Interfere with platform security',
+            'Interfere with platform functionality or security',
             'Use the platform for unlawful purposes',
           ],
         },
-        'We may suspend or terminate accounts involved in prohibited activity.',
+        'HyperStocks may take appropriate action when prohibited activity is identified.',
       ],
     },
     {
       heading: 'Suspension and Termination',
       blocks: [
-        'HyperStocks may suspend, restrict, or terminate your access where permitted by law, including where:',
+        'HyperStocks may suspend, restrict, or terminate your access where permitted by law, including when:',
         {
           list: [
             'You violate these Terms',
             'Information provided is inaccurate',
-            'Suspicious activity is detected',
             'Required verification cannot be completed',
+            'Suspicious or unauthorized activity is identified',
+            'Continued access presents a security or compliance concern',
             'We are required to do so by law or regulation',
-            'Continued access presents a security or compliance risk',
           ],
         },
+        'Where applicable, account termination does not eliminate obligations that arose before termination.',
       ],
     },
     {
-      heading: 'Electronic Communications',
+      heading: 'Electronic Communications and Intellectual Property',
       blocks: [
-        'You agree that HyperStocks may communicate with you electronically regarding your account, transactions, notices, disclosures, security events, and other matters.',
+        'You agree that HyperStocks may communicate with you electronically regarding your account, transactions, notices, disclosures, security matters, and other services.',
         'You are responsible for maintaining a valid email address and reviewing communications sent to you.',
+        'All HyperStocks trademarks, logos, software, designs, content, and platform technology are owned by or licensed to HyperStocks. You may not copy, modify, distribute, or use HyperStocks intellectual property without authorization.',
       ],
     },
     {
-      heading: 'Intellectual Property',
+      heading: 'Contact HyperStocks',
       blocks: [
-        'All HyperStocks trademarks, logos, software, designs, content, and platform technology are owned by or licensed to HyperStocks and may not be copied, modified, distributed, or used without authorization.',
+        'Questions regarding these Terms of Service can be directed to:',
+        { contact: { name: 'HyperStocks Legal Department', email: SUPPORT_EMAIL } },
       ],
-    },
-    {
-      heading: 'Third-Party Services',
-      blocks: [
-        'HyperStocks may integrate with third-party service providers.',
-        'Third-party services may have their own terms and privacy policies. HyperStocks is not responsible for third-party services except to the extent required by applicable law.',
-      ],
-    },
-    {
-      heading: 'Disclaimer',
-      blocks: [
-        'Except where expressly required by law, HyperStocks does not guarantee that the platform will always be uninterrupted, error-free, or available.',
-        'Market data and other information may be delayed, incomplete, or inaccurate.',
-      ],
-    },
-    {
-      heading: 'Limitation of Liability',
-      blocks: [
-        'To the maximum extent permitted by applicable law, HyperStocks will not be liable for indirect, incidental, consequential, special, or punitive damages arising from your use of the platform.',
-        'Nothing in these Terms limits liability where such limitation is prohibited by law.',
-      ],
-    },
-    {
-      heading: 'Changes to These Terms',
-      blocks: [
-        'We may modify these Terms from time to time.',
-        'Updated Terms will be posted on the website with a revised effective date. Where required, we will provide additional notice.',
-        'Your continued use of the platform following the effective date constitutes acceptance of the revised Terms to the extent permitted by law.',
-      ],
-    },
-    {
-      heading: 'Governing Law',
-      blocks: [
-        "These Terms are governed by applicable federal law and the laws of the jurisdiction specified in HyperStocks's account agreements and other applicable legal documents.",
-      ],
-    },
-    {
-      heading: 'Contact',
-      blocks: [{ contact: { name: 'HyperStocks Legal Department', email: SUPPORT_EMAIL } }],
     },
   ],
 };
