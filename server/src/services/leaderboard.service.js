@@ -1,6 +1,6 @@
-import { User } from '../models/User.js';
-import { SEED_CASH_CENTS } from '../config/env.js';
-import { listActiveFeatured, mergeFeatured } from './featuredTrader.service.js';
+import { User } from "../models/User.js";
+import { SEED_CASH_CENTS } from "../config/env.js";
+import { listActiveFeatured, mergeFeatured } from "./featuredTrader.service.js";
 
 const PERIOD_DAYS = { weekly: 7, monthly: 30 };
 
@@ -40,16 +40,23 @@ async function computeBoard(period) {
   // which a plain JS object literal widens to `number`.
   /** @type {import('mongoose').PipelineStage[]} */
   const pipeline = [
-    { $match: { role: 'user', status: { $ne: 'Suspended' } } },
+    { $match: { role: "user", status: { $ne: "Suspended" } } },
 
     // Value each user's positions at the mirrored USD price on Stock.
     {
       $lookup: {
-        from: 'holdings',
-        let: { uid: '$_id' },
+        from: "holdings",
+        let: { uid: "$_id" },
         pipeline: [
-          { $match: { $expr: { $eq: ['$userId', '$$uid'] } } },
-          { $lookup: { from: 'stocks', localField: 'symbol', foreignField: 'symbol', as: 's' } },
+          { $match: { $expr: { $eq: ["$userId", "$$uid"] } } },
+          {
+            $lookup: {
+              from: "stocks",
+              localField: "symbol",
+              foreignField: "symbol",
+              as: "s",
+            },
+          },
           /**
            * TWO PRICE SOURCES, because a holding is no longer necessarily an
            * equity. This used to be `$unwind: '$s'`, which does not merely fail
@@ -63,28 +70,31 @@ async function computeBoard(period) {
            */
           {
             $lookup: {
-              from: 'marketprices',
+              from: "marketprices",
               let: {
-                cls: { $ifNull: ['$assetClass', 'stocks'] },
-                sym: '$symbol',
+                cls: { $ifNull: ["$assetClass", "stocks"] },
+                sym: "$symbol",
               },
               pipeline: /** @type {any} */ ([
                 {
                   $match: {
                     $expr: {
-                      $and: [{ $eq: ['$assetClass', '$$cls'] }, { $eq: ['$symbol', '$$sym'] }],
+                      $and: [
+                        { $eq: ["$assetClass", "$$cls"] },
+                        { $eq: ["$symbol", "$$sym"] },
+                      ],
                     },
                   },
                 },
                 { $project: { _id: 0, priceUsdNanos: 1, exchange: 1 } },
               ]),
-              as: 'm',
+              as: "m",
             },
           },
           {
             $addFields: {
-              _s: { $first: '$s' },
-              _m: { $first: '$m' },
+              _s: { $first: "$s" },
+              _m: { $first: "$m" },
             },
           },
           {
@@ -93,8 +103,13 @@ async function computeBoard(period) {
               // nanos is its cents figure times 10^7 and therefore exact.
               _priceNanos: {
                 $ifNull: [
-                  '$_m.priceUsdNanos',
-                  { $multiply: [{ $ifNull: ['$_s.priceUsdCents', 0] }, 10000000] },
+                  "$_m.priceUsdNanos",
+                  {
+                    $multiply: [
+                      { $ifNull: ["$_s.priceUsdCents", 0] },
+                      10000000,
+                    ],
+                  },
                 ],
               },
             },
@@ -111,7 +126,17 @@ async function computeBoard(period) {
                * `shares x priceUsdCents` — the integer this computed before —
                * so the seeded ranks the tests pin do not move.
                */
-              _valueCents: { $round: [{ $divide: [{ $multiply: ['$shares', '$_priceNanos'] }, 10000000] }, 0] },
+              _valueCents: {
+                $round: [
+                  {
+                    $divide: [
+                      { $multiply: ["$shares", "$_priceNanos"] },
+                      10000000,
+                    ],
+                  },
+                  0,
+                ],
+              },
             },
           },
           {
@@ -120,19 +145,19 @@ async function computeBoard(period) {
               symbol: 1,
               // Carried so the board can report how many venues a trader spans
               // without a second pass over holdings.
-              exchange: { $ifNull: ['$_s.exchange', '$_m.exchange'] },
-              valueCents: '$_valueCents',
+              exchange: { $ifNull: ["$_s.exchange", "$_m.exchange"] },
+              valueCents: "$_valueCents",
               // Position return against its stored cost basis, not against a
               // derived per-share average — the basis is the figure actually paid.
               returnPct: {
                 $cond: [
-                  { $gt: ['$costBasisCents', 0] },
+                  { $gt: ["$costBasisCents", 0] },
                   {
                     $multiply: [
                       {
                         $divide: [
-                          { $subtract: ['$_valueCents', '$costBasisCents'] },
-                          '$costBasisCents',
+                          { $subtract: ["$_valueCents", "$costBasisCents"] },
+                          "$costBasisCents",
                         ],
                       },
                       100,
@@ -144,13 +169,15 @@ async function computeBoard(period) {
             },
           },
         ],
-        as: 'h',
+        as: "h",
       },
     },
     {
       $addFields: {
-        holdingsValueCents: { $sum: '$h.valueCents' },
-        best: { $first: { $sortArray: { input: '$h', sortBy: { returnPct: -1 } } } },
+        holdingsValueCents: { $sum: "$h.valueCents" },
+        best: {
+          $first: { $sortArray: { input: "$h", sortBy: { returnPct: -1 } } },
+        },
 
         // Split the book into winning and losing positions, by VALUE rather
         // than by count: "3 of 5 up" says nothing if the two losers hold most
@@ -158,38 +185,58 @@ async function computeBoard(period) {
         winValueCents: {
           $sum: {
             $map: {
-              input: '$h',
-              as: 'p',
-              in: { $cond: [{ $gte: ['$$p.returnPct', 0] }, '$$p.valueCents', 0] },
+              input: "$h",
+              as: "p",
+              in: {
+                $cond: [{ $gte: ["$$p.returnPct", 0] }, "$$p.valueCents", 0],
+              },
             },
           },
         },
         wins: {
-          $size: { $filter: { input: '$h', as: 'p', cond: { $gte: ['$$p.returnPct', 0] } } },
+          $size: {
+            $filter: {
+              input: "$h",
+              as: "p",
+              cond: { $gte: ["$$p.returnPct", 0] },
+            },
+          },
         },
-        positions: { $size: '$h' },
+        positions: { $size: "$h" },
       },
     },
-    { $addFields: { portfolioValueCents: { $add: ['$cashBalanceCents', '$holdingsValueCents'] } } },
+    {
+      $addFields: {
+        portfolioValueCents: {
+          $add: ["$cashBalanceCents", "$holdingsValueCents"],
+        },
+      },
+    },
 
     // Yesterday's mark, for the day-over-day figure the board leads with. This
     // is separate from the weekly/monthly baseline below because it is needed
     // for every period, including all-time.
     {
       $lookup: {
-        from: 'portfoliosnapshots',
-        let: { uid: '$_id' },
-        pipeline: /** @type {import('mongoose').PipelineStage.FacetPipelineStage[]} */ ([
-          {
-            $match: {
-              $expr: { $and: [{ $eq: ['$userId', '$$uid'] }, { $lt: ['$date', startOfTodayUtc()] }] },
+        from: "portfoliosnapshots",
+        let: { uid: "$_id" },
+        pipeline:
+          /** @type {import('mongoose').PipelineStage.FacetPipelineStage[]} */ ([
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ["$userId", "$$uid"] },
+                    { $lt: ["$date", startOfTodayUtc()] },
+                  ],
+                },
+              },
             },
-          },
-          { $sort: { date: -1 } },
-          { $limit: 1 },
-          { $project: { _id: 0, portfolioValueCents: 1 } },
-        ]),
-        as: 'prevDay',
+            { $sort: { date: -1 } },
+            { $limit: 1 },
+            { $project: { _id: 0, portfolioValueCents: 1 } },
+          ]),
+        as: "prevDay",
       },
     },
     {
@@ -197,22 +244,29 @@ async function computeBoard(period) {
         // Falling back to the seed grant yields the trader's actual return since
         // signup, rather than locking them at 0 until their first midnight passes.
         dayBaseValueCents: {
-          $ifNull: [{ $first: '$prevDay.portfolioValueCents' }, SEED_CASH_CENTS],
+          $ifNull: [
+            { $first: "$prevDay.portfolioValueCents" },
+            SEED_CASH_CENTS,
+          ],
         },
       },
     },
     {
       $addFields: {
-        dayChangeCents: { $subtract: ['$portfolioValueCents', '$dayBaseValueCents'] },
+        dayChangeCents: {
+          $subtract: ["$portfolioValueCents", "$dayBaseValueCents"],
+        },
         dayChangePct: {
           $cond: [
-            { $gt: ['$dayBaseValueCents', 0] },
+            { $gt: ["$dayBaseValueCents", 0] },
             {
               $multiply: [
                 {
                   $divide: [
-                    { $subtract: ['$portfolioValueCents', '$dayBaseValueCents'] },
-                    '$dayBaseValueCents',
+                    {
+                      $subtract: ["$portfolioValueCents", "$dayBaseValueCents"],
+                    },
+                    "$dayBaseValueCents",
                   ],
                 },
                 100,
@@ -229,23 +283,36 @@ async function computeBoard(period) {
       ? [
           {
             $lookup: {
-              from: 'portfoliosnapshots',
-              let: { uid: '$_id' },
+              from: "portfoliosnapshots",
+              let: { uid: "$_id" },
               // Annotated separately: a nested pipeline's sort direction widens
               // to `number`, which does not satisfy Mongoose's -1 | 1 literal.
-              pipeline: /** @type {import('mongoose').PipelineStage.FacetPipelineStage[]} */ ([
-                { $match: { $expr: { $and: [{ $eq: ['$userId', '$$uid'] }, { $lte: ['$date', since] }] } } },
-                { $sort: { date: -1 } },
-                { $limit: 1 },
-                { $project: { _id: 0, portfolioValueCents: 1 } },
-              ]),
-              as: 'baseline',
+              pipeline:
+                /** @type {import('mongoose').PipelineStage.FacetPipelineStage[]} */ ([
+                  {
+                    $match: {
+                      $expr: {
+                        $and: [
+                          { $eq: ["$userId", "$$uid"] },
+                          { $lte: ["$date", since] },
+                        ],
+                      },
+                    },
+                  },
+                  { $sort: { date: -1 } },
+                  { $limit: 1 },
+                  { $project: { _id: 0, portfolioValueCents: 1 } },
+                ]),
+              as: "baseline",
             },
           },
           {
             $addFields: {
               baseValueCents: {
-                $ifNull: [{ $first: '$baseline.portfolioValueCents' }, SEED_CASH_CENTS],
+                $ifNull: [
+                  { $first: "$baseline.portfolioValueCents" },
+                  SEED_CASH_CENTS,
+                ],
               },
             },
           },
@@ -256,10 +323,15 @@ async function computeBoard(period) {
       $addFields: {
         returnPct: {
           $cond: [
-            { $gt: ['$baseValueCents', 0] },
+            { $gt: ["$baseValueCents", 0] },
             {
               $multiply: [
-                { $divide: [{ $subtract: ['$portfolioValueCents', '$baseValueCents'] }, '$baseValueCents'] },
+                {
+                  $divide: [
+                    { $subtract: ["$portfolioValueCents", "$baseValueCents"] },
+                    "$baseValueCents",
+                  ],
+                },
                 100,
               ],
             },
@@ -269,28 +341,38 @@ async function computeBoard(period) {
       },
     },
 
-    { $setWindowFields: { sortBy: { portfolioValueCents: -1 }, output: { rank: { $rank: {} } } } },
+    {
+      $setWindowFields: {
+        sortBy: { portfolioValueCents: -1 },
+        output: { rank: { $rank: {} } },
+      },
+    },
     {
       $project: {
         _id: 0,
-        userId: '$_id',
+        userId: "$_id",
         username: 1,
         displayName: 1,
         rank: 1,
-        trades: '$tradeCount',
-        portfolioValueCents: '$portfolioValueCents',
-        returnPct: { $round: ['$returnPct', 2] },
-        dayChangeCents: '$dayChangeCents',
-        dayChangePct: { $round: ['$dayChangePct', 2] },
-        exchanges: { $size: { $setUnion: ['$h.exchange', []] } },
-        wins: '$wins',
-        positions: '$positions',
+        trades: "$tradeCount",
+        portfolioValueCents: "$portfolioValueCents",
+        returnPct: { $round: ["$returnPct", 2] },
+        dayChangeCents: "$dayChangeCents",
+        dayChangePct: { $round: ["$dayChangePct", 2] },
+        exchanges: { $size: { $setUnion: ["$h.exchange", []] } },
+        wins: "$wins",
+        positions: "$positions",
         winSharePct: {
           $round: [
             {
               $cond: [
-                { $gt: ['$holdingsValueCents', 0] },
-                { $multiply: [{ $divide: ['$winValueCents', '$holdingsValueCents'] }, 100] },
+                { $gt: ["$holdingsValueCents", 0] },
+                {
+                  $multiply: [
+                    { $divide: ["$winValueCents", "$holdingsValueCents"] },
+                    100,
+                  ],
+                },
                 0,
               ],
             },
@@ -298,8 +380,8 @@ async function computeBoard(period) {
           ],
         },
         best: {
-          symbol: '$best.symbol',
-          returnPct: { $round: [{ $ifNull: ['$best.returnPct', 0] }, 2] },
+          symbol: "$best.symbol",
+          returnPct: { $round: [{ $ifNull: ["$best.returnPct", 0] }, 2] },
         },
       },
     },
@@ -358,37 +440,56 @@ export function invalidateLeaderboard() {
  * theirs — matching on the user id alone would miss it and report a rank one
  * too low for exactly the traders most likely to be edited again.
  */
-export async function rankForValue(valueCents, { excludeUserId = null, period = 'alltime' } = {}) {
-  const [computed, featured] = await Promise.all([getBoard(period), listActiveFeatured()]);
+export async function rankForValue(
+  valueCents,
+  { excludeUserId = null, period = "alltime" } = {}
+) {
+  const [computed, featured] = await Promise.all([
+    getBoard(period),
+    listActiveFeatured(),
+  ]);
 
-  const ownCurated = featured.find((f) => String(f.userId) === String(excludeUserId));
-  const skip = new Set([String(excludeUserId), String(ownCurated?._id ?? '')]);
+  const ownCurated = featured.find(
+    (f) => String(f.userId) === String(excludeUserId)
+  );
+  const skip = new Set([String(excludeUserId), String(ownCurated?._id ?? "")]);
 
   const rows = mergeFeatured(computed, featured);
   const above = rows.filter(
-    (r) => !skip.has(String(r.userId)) && r.portfolioValueCents > valueCents,
+    (r) => !skip.has(String(r.userId)) && r.portfolioValueCents > valueCents
   ).length;
 
   return { rank: above + 1, totalTraders: rows.length };
 }
 
-export async function computedRowsFor(userIds, period = 'alltime') {
+export async function computedRowsFor(userIds, period = "alltime") {
   const want = new Set(userIds.map(String));
   if (!want.size) return new Map();
 
   const rows = await getBoard(period);
   return new Map(
-    rows.filter((r) => want.has(String(r.userId))).map((r) => [String(r.userId), r]),
+    rows
+      .filter((r) => want.has(String(r.userId)))
+      .map((r) => [String(r.userId), r])
   );
 }
 
-export async function getLeaderboard({ period = 'alltime', limit = 50, userId = null } = {}) {
+export async function getLeaderboard({
+  period = "alltime",
+  limit = 50,
+  userId = null,
+} = {}) {
   const computed = await getBoard(period);
 
   // `name` is what a row renders; `username` stays available as the handle.
   const decorate = (r) => {
     const name = r.displayName || r.username;
-    return { ...r, userId: String(r.userId), name, avatarLetter: name[0].toUpperCase() };
+    return {
+      ...r,
+      userId: String(r.userId),
+      name,
+      avatarLetter: name[0].toUpperCase(),
+    };
   };
 
   /**
@@ -414,7 +515,9 @@ export async function getLeaderboard({ period = 'alltime', limit = 50, userId = 
     // Already decorated by the merge. A trader whose row has been overridden by
     // a curated one is deliberately not found here: their own row is no longer
     // on the board, so pinning it underneath would show them twice.
-    const mine = rows.find((r) => !r.featured && String(r.userId) === String(userId));
+    const mine = rows.find(
+      (r) => !r.featured && String(r.userId) === String(userId)
+    );
     if (mine) you = { ...mine, you: true };
   }
 
