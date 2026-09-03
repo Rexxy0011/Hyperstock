@@ -136,7 +136,6 @@ export const router = createBrowserRouter([
           { path: '/privacy', element: <LegalDocument id="privacy" /> },
           { path: '/financial-privacy', element: <LegalDocument id="financial-privacy" /> },
           { path: '/terms', element: <LegalDocument id="terms" /> },
-          { path: '/cookies', element: <LegalDocument id="cookies" /> },
           { path: '/risk-disclosure', element: <LegalDocument id="risk-disclosure" /> },
           { path: '/disclosures', element: <LegalDocument id="disclosures" /> },
           { path: '*', element: <ComingSoon title="Not found" /> },

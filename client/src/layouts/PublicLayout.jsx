@@ -141,7 +141,6 @@ const FOOTER_COLUMNS = [
 export const BOTTOM_LINKS = [
   ['privacy', '/privacy'],
   ['terms', '/terms'],
-  ['cookies', '/cookies'],
   ['disclosures', '/disclosures'],
 ];
 

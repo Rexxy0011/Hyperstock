@@ -190,26 +190,6 @@ export const PRIVACY = {
       ],
     },
     {
-      heading: 'Cookies and Tracking Technologies',
-      blocks: [
-        'HyperStocks uses cookies and similar technologies to operate and improve the website.',
-        'Cookies may help us:',
-        {
-          list: [
-            'Keep you signed in',
-            'Remember preferences',
-            'Maintain secure sessions',
-            'Understand website usage',
-            'Analyze performance',
-            'Improve functionality',
-            'Detect suspicious activity',
-          ],
-        },
-        { link: { to: '/cookies', before: 'You can learn more about our use of cookies in our ', label: 'Cookie Policy', after: '.' } },
-        'Cookies are commonly used to recognize a device, remember preferences, analyze website activity, and support functionality.',
-      ],
-    },
-    {
       heading: 'Data Retention',
       blocks: [
         'We retain personal and financial information for as long as reasonably necessary to:',
@@ -474,106 +454,6 @@ export const TERMS = {
     },
   ],
 };
-
-export const COOKIES = {
-  id: 'cookies',
-  title: 'Cookie Policy',
-  intro: [
-    'HyperStocks uses cookies and similar technologies to provide a secure, reliable, and personalized website experience.',
-    'Cookies are small files stored by your browser that allow a website to recognize your device and remember certain information.',
-    'This policy describes the categories of cookies a platform of this kind may use. For what this website stores today, see the final section.',
-  ],
-  sections: [
-    {
-      heading: 'What Are Cookies?',
-      blocks: [
-        'Cookies are small text files placed on your device when you visit a website.',
-        'They can help websites remember your preferences, maintain secure sessions, understand how visitors use the website, and improve functionality.',
-      ],
-    },
-    {
-      heading: 'How HyperStocks Uses Cookies',
-      blocks: [
-        'We may use cookies and similar technologies for several purposes.',
-        { subheading: 'Essential Cookies - always active' },
-        'These cookies are necessary for the website to function.',
-        'They may support:',
-        {
-          list: [
-            'Secure login sessions',
-            'Authentication',
-            'Account security',
-            'Fraud prevention',
-            'Navigation',
-            'Session management',
-            'Security features',
-          ],
-        },
-        'Because these cookies are necessary for core functionality, they generally cannot be disabled without preventing the website from working.',
-        { subheading: 'Functional Cookies' },
-        'These cookies allow HyperStocks to remember choices you make.',
-        'They may remember:',
-        {
-          list: [
-            'Language preferences',
-            'Display preferences',
-            'Session preferences',
-            'Other personalization settings',
-          ],
-        },
-        { subheading: 'Analytics Cookies' },
-        'These cookies help us understand how visitors interact with our website.',
-        'They may provide information about:',
-        {
-          list: [
-            'Pages visited',
-            'Time spent on pages',
-            'Navigation patterns',
-            'Device types',
-            'Website performance',
-            'Errors and technical issues',
-          ],
-        },
-        'Analytics information helps us improve the platform.',
-        { subheading: 'Marketing Cookies' },
-        'Where used, marketing cookies may help us understand campaign performance and deliver more relevant advertising.',
-        'These cookies should only be activated where applicable and with the consent required by law.',
-      ],
-    },
-    {
-      heading: 'Managing Cookies',
-      blocks: [
-        'Most browsers allow you to view, block, and delete cookies through their own settings, and to be warned before a cookie is stored.',
-        'Blocking essential cookies will prevent you from signing in and using core parts of the platform.',
-        'Where a cookie preference centre is offered on this website, your choices can be changed there at any time.',
-      ],
-    },
-    /**
-     * NOT IN THE SUPPLIED COPY, and added because the rest of the document
-     * describes categories rather than this deployment. A cookie policy listing
-     * four categories on a site that stores two things is accurate about the
-     * categories and misleading about the site, so this says what is real.
-     *
-     * It is also what keeps the document honest now that the consent banner has
-     * been removed: without this section, the policy would describe a preference
-     * centre that a reader cannot find anywhere.
-     */
-    {
-      heading: 'What This Site Actually Stores Today',
-      blocks: [
-        'For transparency, the current HyperStocks platform stores the following in your browser:',
-        {
-          list: [
-            'An essential authentication cookie, scoped to the sign-in endpoint and readable only by the server, which keeps you signed in.',
-            'A functional language preference, stored locally, which remembers whether you chose English or Ukrainian.',
-          ],
-        },
-        'No analytics or advertising cookies are set at present, and no cookie preference banner is currently shown. The categories described above are retained in this policy so that it remains accurate if analytics or marketing technologies are introduced later.',
-      ],
-    },
-  ],
-};
-
 
 export const FINANCIAL_PRIVACY = {
   id: 'financial-privacy',
@@ -1221,7 +1101,7 @@ export const DOCUMENTS = {
   privacy: PRIVACY,
   'financial-privacy': FINANCIAL_PRIVACY,
   terms: TERMS,
-  cookies: COOKIES,
+
   'risk-disclosure': RISK,
   disclosures: DISCLOSURES,
 };
