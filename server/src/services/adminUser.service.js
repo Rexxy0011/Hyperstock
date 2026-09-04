@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import { User } from "../models/User.js";
 import { Stock } from "../models/Stock.js";
 import { ApiError } from "../lib/ApiError.js";
-import { computedRowsFor } from "./leaderboard.service.js";
+import { computedRowsFor, invalidateLeaderboard } from "./leaderboard.service.js";
 import { getPortfolio } from "./portfolio.service.js";
 import { post as ledgerPost } from "./ledger.service.js";
 import { LEDGER_TYPE } from "../models/LedgerEntry.js";
@@ -377,6 +377,8 @@ export async function adminUpdateCash(userId, targetCashCents, adminId) {
       detail: `Admin adjustment by ${adminId}`,
       session,
     });
+    
+    invalidateLeaderboard();
     return { cashBalanceCents: balanceAfterCents };
   });
 }
@@ -418,6 +420,8 @@ export async function adminAddHolding(userId, { symbol, shares, costBasisCents }
       { upsert: true, session }
     );
 
+    
+    invalidateLeaderboard();
     return holding;
   });
 }
