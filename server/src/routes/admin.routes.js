@@ -21,7 +21,32 @@ import {
   listPositions,
 } from '../services/adminUser.service.js';
 
+router.get(
+  '/users',
+  validate({
+    query: z.object({
+      q: z.string().trim().max(60).optional(),
+      page: z.coerce.number().int().min(1).default(1),
+      limit: z.coerce.number().int().min(1).max(100).default(25),
+    }),
+  }),
+  asyncHandler(async (req, res) => {
+    const { q, page, limit } = req.validatedQuery;
+    const [listing, counts] = await Promise.all([listUsers({ q, page, limit }), userCounts()]);
+    res.json({ ...listing, counts });
+  }),
+);
 
+router.patch(
+  '/users/:id/status',
+  validate({
+    params: idParam,
+    body: z.object({ status: z.enum(['Active', 'Flagged', 'Suspended']) }),
+  }),
+  asyncHandler(async (req, res) => {
+    res.json(await setUserStatus(req.params.id, req.body.status, req.user.id));
+  }),
+);
 
 /**
  * Where a typed figure would land, before it is saved.
