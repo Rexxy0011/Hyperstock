@@ -366,13 +366,13 @@
     "termsNotice": "By continuing you agree to our <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy>."
   },
   "leaderboard": {
-    "title": "Leaderboard",
+    "title": "Top investors today",
     "rank": "Rank",
     "trader": "Trader",
     "portfolioValue": "Portfolio value",
     "return": "Return",
     "you": "You",
-    "rankedBy": "Ranked by {{period}} portfolio value across {{count}} traders.",
+    "rankedBy": "Ranked by today's return across {{count}} traders.",
     "periodWeekly": "weekly",
     "periodMonthly": "monthly",
     "periodAlltime": "all-time",
