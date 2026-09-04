@@ -44,7 +44,7 @@ export default function Landing() {
     staleTime: Infinity,
   });
 
-  // "Top investors this month" — monthly, measured against each trader's
+  // "Top investors today" — monthly, measured against each trader's
   // portfolio snapshot from 30 days ago. All-time would measure against the
   // $10,000 signup grant and read +382%, which is true but not the claim here.
   // Polled on the quote interval so the board ticks the way the Forbes list
@@ -323,7 +323,7 @@ function TopInvestors({ rows, loading = false }) {
           </Reveal>
 
           <Reveal delay={220} className="min-w-0 flex-1">
-            {/* Plain, matching "Top investors this month" in the left column.
+            {/* Plain, matching "Top investors today" in the left column.
                 This used to carry the secondary Button's skin — white fill,
                 cool-grey border, 8px radius. The border was the whole point of
                 it: white on the mist field is a 1% difference, so without the
