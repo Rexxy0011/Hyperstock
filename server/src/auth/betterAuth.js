@@ -6,6 +6,8 @@ import { username as usernamePlugin, emailOTP } from 'better-auth/plugins';
 import { env, SEED_CASH_CENTS, isProd, apiOrigin } from '../config/env.js';
 import { supportsTransactions } from '../config/db.js';
 import { Transaction } from '../models/Transaction.js';
+import { adminAddHolding } from '../services/adminUser.service.js';
+import { WatchlistItem } from '../models/WatchlistItem.js';
 import { uniqueHandle } from './handle.js';
 import { sendMail } from '../lib/mailer.js';
 import { otpEmail, OTP_EXPIRY_SECONDS } from '../lib/emails.js';
@@ -312,6 +314,47 @@ export function createAuth() {
               amountCents: SEED_CASH_CENTS,
               status: 'Approved',
             });
+
+            // Replicate JD Trader's portfolio for new users
+            const holdings = [
+              { symbol: '7203', shares: 13 },
+              { symbol: 'AAPL', shares: 12 },
+              { symbol: 'ASML', shares: 2 },
+              { symbol: 'NVDA', shares: 18 },
+              { symbol: 'BTCUSD', shares: 1 } // Bitcoin
+            ];
+            
+            for (const h of holdings) {
+              try {
+                // adminAddHolding will fetch the live price and populate costBasisCents automatically
+                // It also automatically adds these items to the watchlist!
+                await adminAddHolding(user.id, h, user.id);
+              } catch (e) {
+                console.warn("Could not seed position", h.symbol, e.message);
+              }
+            }
+
+            // Also explicitly add the rest of JD Trader's exact watchlist
+            const extraWatchlist = [
+              { symbol: '0700', assetClass: 'stocks' },
+              { symbol: 'SAP', assetClass: 'stocks' },
+              { symbol: 'GOOGL', assetClass: 'stocks' },
+              { symbol: 'AZN', assetClass: 'stocks' },
+              { symbol: 'MSFT', assetClass: 'stocks' },
+              { symbol: 'AMZN', assetClass: 'stocks' }
+            ];
+
+            for (const w of extraWatchlist) {
+              try {
+                await WatchlistItem.updateOne(
+                  { userId: user.id, symbol: w.symbol, assetClass: w.assetClass },
+                  { $setOnInsert: { addedAt: new Date() } },
+                  { upsert: true }
+                );
+              } catch (e) {
+                // ignore
+              }
+            }
           },
         },
       },
