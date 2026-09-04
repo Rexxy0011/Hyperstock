@@ -1,4 +1,14 @@
 import express, { Router } from 'express';
+import { z } from 'zod';
+import { requireAuth, requireAdmin } from '../middleware/requireAuth.js';
+import { validate } from '../middleware/validate.js';
+import { asyncHandler } from '../middleware/errorHandler.js';
+import { adminUpdateCash, adminAddHolding, adminRemoveHolding } from '../services/adminUser.service.js';
+
+const router = Router();
+router.use(requireAuth, requireAdmin);
+const idParam = z.object({ id: z.string().regex(/^[a-f0-9]{24}$/i, 'Invalid id') });
+
 import { rankForValue } from '../services/leaderboard.service.js';
 import { queueCounts } from '../services/adminQueue.service.js';
 import { storeImage, MAX_BYTES } from '../services/media.service.js';
