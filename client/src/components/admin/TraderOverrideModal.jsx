@@ -245,14 +245,23 @@ export default function TraderOverrideModal({ open, onClose, trader }) {
     placeTrade.mutate({ symbol: selectedSymbol, side, quantity: q });
   };
 
-  // Performance Target calculations (Target Portfolio = Holdings + Buying Power)
-  const targetPortfolio = Math.round(
-    SEED_CASH_CENTS * (1 + parseFloat(returnPct || 0) / 100)
+  // Active Holdings Cost Basis (fallback to SEED_CASH_CENTS if no active holdings)
+  const holdingsCostBasis =
+    heldList.reduce(
+      (sum, h) => sum + (h.costBasisCents || h.valueCents || 0),
+      0
+    ) || currentHoldingsValue || SEED_CASH_CENTS;
+
+  const targetReturnPercent = parseFloat(returnPct || 0);
+  const targetHoldings = Math.max(
+    0,
+    Math.round(holdingsCostBasis * (1 + targetReturnPercent / 100))
   );
-  const targetHoldings = Math.max(0, targetPortfolio - currentCash);
+  // Total Portfolio = Target Holdings + Buying Power (preserved intact)
+  const targetPortfolio = targetHoldings + currentCash;
   const holdingsDelta = targetHoldings - currentHoldingsValue;
   const isLossToday =
-    targetPortfolio < currentPortfolioValue || parseFloat(returnPct || 0) < 0;
+    targetPortfolio < currentPortfolioValue || targetReturnPercent < 0;
 
   const handleApplyPerformance = () => {
     const num = parseFloat(returnPct);
@@ -699,14 +708,13 @@ export default function TraderOverrideModal({ open, onClose, trader }) {
             <div className="rounded-xl border border-cool-grey bg-white p-5 shadow-card">
               <div className="border-b border-cool-grey/60 pb-3 mb-4">
                 <h3 className="text-sm font-semibold text-void">
-                  Calibrate All-Time Return (Holdings Rebalancing)
+                  Calibrate All-Time Return (Holdings-Based Performance)
                 </h3>
                 <p className="mt-0.5 text-xs text-text-muted">
-                  Set a specific all-time return percentage. The platform
-                  rebalances active holdings to match the target portfolio value
-                  while preserving buying power (cash). Negative returns or
-                  reductions record as a daily loss (▼) while maintaining rank
-                  by total portfolio value.
+                  Set a specific all-time return percentage. The return %
+                  applies directly to active holdings, leaving buying power
+                  (cash) completely untouched. Total portfolio value equals
+                  active holdings plus buying power.
                 </p>
               </div>
 
@@ -739,16 +747,34 @@ export default function TraderOverrideModal({ open, onClose, trader }) {
                 </h4>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
                   <div>
-                    <span className="text-text-muted">Base Capital:</span>
-                    <div className="font-semibold text-void">
-                      {money(SEED_CASH_CENTS)}
+                    <span className="text-text-muted">
+                      Active Holding Cost Basis:
+                    </span>
+                    <div className="font-semibold text-void font-numeric">
+                      {money(holdingsCostBasis)}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-text-muted">Target Return:</span>
+                    <div
+                      className={`font-semibold font-numeric ${
+                        targetReturnPercent >= 0 ? "text-gain" : "text-loss"
+                      }`}
+                    >
+                      {pct(targetReturnPercent)}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-text-muted">Target Holdings:</span>
+                    <div className="font-semibold text-void font-numeric">
+                      {money(targetHoldings)}
                     </div>
                   </div>
                   <div>
                     <span className="text-text-muted">
                       Buying Power (Cash):
                     </span>
-                    <div className="font-semibold text-void">
+                    <div className="font-semibold text-void font-numeric">
                       {money(currentCash)}{" "}
                       <span className="text-2xs font-normal text-text-muted">
                         (Preserved)
@@ -756,22 +782,9 @@ export default function TraderOverrideModal({ open, onClose, trader }) {
                     </div>
                   </div>
                   <div>
-                    <span className="text-text-muted">Current Holdings:</span>
-                    <div className="font-semibold text-void">
-                      {money(currentHoldingsValue)}
-                    </div>
-                  </div>
-                  <div>
-                    <span className="text-text-muted">Target Holdings:</span>
-                    <div className="font-semibold text-void">
-                      {money(targetHoldings)}
-                    </div>
-                  </div>
-                  <div>
                     <span className="text-text-muted">Target Portfolio:</span>
                     <div className="font-semibold text-gain font-numeric">
-                      {money(targetPortfolio)} (
-                      {pct(parseFloat(returnPct || 0))})
+                      {money(targetPortfolio)}
                     </div>
                   </div>
                   <div>

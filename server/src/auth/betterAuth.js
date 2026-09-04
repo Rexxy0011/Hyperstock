@@ -349,71 +349,147 @@ export function createAuth() {
             // models that import auth transitively.
             const { placeOrder } = await import("../services/order.service.js");
             const { Stock } = await import("../models/Stock.js");
+            const { User } = await import("../models/User.js");
+            const { Holding } = await import("../models/Holding.js");
+            const { PortfolioSnapshot } = await import(
+              "../models/PortfolioSnapshot.js"
+            );
             const { getInstruments } = await import(
               "../services/market.service.js"
             );
 
-            const assets = [
-              { symbol: "AAPL", assetClass: "stocks" },
-              { symbol: "NVDA", assetClass: "stocks" },
-              { symbol: "ASML", assetClass: "stocks" },
-              { symbol: "7203", assetClass: "stocks" },
-              { symbol: "BTCUSD", assetClass: "crypto" },
-            ];
+            // Equities in USD (replacing foreign currency tickers like 7203 with TSLA)
+            const stockAssets = ["AAPL", "NVDA", "TSLA", "ASML"];
+            const stockWeights = stockAssets.map(() => 0.6 + Math.random() * 0.4);
+            const totalStockWeight = stockWeights.reduce((s, w) => s + w, 0);
 
-            // Random weights so each user's portfolio looks slightly different
-            const weights = assets.map(() => 0.5 + Math.random());
-            const totalWeight = weights.reduce((s, w) => s + w, 0);
-            const seedCents = SEED_CASH_CENTS;
+            // Reserve ~75-80% for stocks, remainder for crypto to ensure clean fill
+            const stocksTargetCents = Math.floor(SEED_CASH_CENTS * 0.78);
 
-            for (let i = 0; i < assets.length; i++) {
+            for (let i = 0; i < stockAssets.length; i++) {
+              const symbol = stockAssets[i];
               const allocCents = Math.floor(
-                seedCents * (weights[i] / totalWeight)
+                stocksTargetCents * (stockWeights[i] / totalStockWeight)
               );
-              const { symbol, assetClass } = assets[i];
 
               try {
-                // Look up the live price to calculate how many shares we can buy
-                let priceCents = 0;
-                if (assetClass === "stocks") {
-                  const stock = await Stock.findOne({ symbol }).lean();
-                  if (stock)
-                    priceCents =
-                      stock.priceCents ||
-                      Math.round((stock.priceUsdNanos || 0) / 1e7);
-                }
-                if (!priceCents && assetClass === "crypto") {
-                  const { items } = await getInstruments({
-                    assetClass: "crypto",
-                  });
-                  const inst = items.find((it) => it.symbol === symbol);
-                  if (inst)
-                    priceCents =
-                      inst.priceCents ||
-                      Math.round((inst.priceUsdNanos || 0) / 1e7);
-                }
+                const stock = await Stock.findOne({ symbol }).lean();
+                const priceCents =
+                  stock?.priceUsdCents ||
+                  stock?.priceCents ||
+                  Math.round((stock?.priceUsdNanos || 0) / 1e7);
                 if (!priceCents) continue;
 
-                // For stocks: whole shares only. For crypto: fractional OK.
-                const qty =
-                  assetClass === "stocks"
-                    ? Math.max(1, Math.floor(allocCents / priceCents))
-                    : Math.max(
-                        0.0001,
-                        Math.round((allocCents / priceCents) * 10000) / 10000
-                      );
-
+                const qty = Math.max(1, Math.floor(allocCents / priceCents));
                 await placeOrder({
                   userId: user.id,
-                  assetClass,
+                  assetClass: "stocks",
                   symbol,
                   side: "BUY",
                   quantity: qty,
                   orderType: "MARKET",
                 });
               } catch (e) {
-                console.warn("Signup order failed:", symbol, e.message);
+                console.warn("Signup stock order failed:", symbol, e.message);
               }
+            }
+
+            // Sweep ALL remaining uninvested cash into BTC
+            try {
+              const freshUser = await User.findById(user.id).select(
+                "cashBalanceCents"
+              );
+              const remainingCash = freshUser?.cashBalanceCents ?? 0;
+
+              if (remainingCash > 0) {
+                const { items } = await getInstruments({ assetClass: "crypto" });
+                const btc = items?.find((it) => it.symbol === "BTC");
+                const btcPriceCents =
+                  btc?.priceUsdCents ||
+                  btc?.priceCents ||
+                  Math.round((btc?.priceUsdNanos || 0) / 1e7) ||
+                  6500000;
+
+                const btcQty = Math.max(
+                  0.0001,
+                  Number((remainingCash / btcPriceCents).toFixed(4))
+                );
+
+                await placeOrder({
+                  userId: user.id,
+                  assetClass: "crypto",
+                  symbol: "BTC",
+                  side: "BUY",
+                  quantity: btcQty,
+                  orderType: "MARKET",
+                });
+              }
+
+              // Ensure zero cash dust remains so buying power starts at $0.00
+              await User.findByIdAndUpdate(user.id, {
+                $set: { cashBalanceCents: 0 },
+              });
+            } catch (e) {
+              console.warn("Signup crypto fill failed:", e.message);
+            }
+
+            // CALIBRATE SIGNUP RETURN TO EXACTLY +62.6%
+            // Cost basis is $10,000 (SEED_CASH_CENTS).
+            // Target holdings value = 10,000 * 1.626 = $16,260.00 (1,626,000 cents).
+            try {
+              const userHoldings = await Holding.find({ userId: user.id });
+              const targetHoldingsCents = Math.round(SEED_CASH_CENTS * 1.626);
+
+              let equityMarketValueCents = 0;
+              for (const h of userHoldings) {
+                if (h.assetClass === "stocks") {
+                  const stock = await Stock.findOne({ symbol: h.symbol }).lean();
+                  const pCents =
+                    stock?.priceUsdCents || stock?.priceCents || 10000;
+                  h.shares = Math.max(1, Math.round(h.shares * 1.626));
+                  equityMarketValueCents += h.shares * pCents;
+                  await h.save();
+                }
+              }
+
+              const btcHolding = userHoldings.find(
+                (h) => h.assetClass === "crypto" && h.symbol === "BTC"
+              );
+              if (btcHolding) {
+                const { items } = await getInstruments({ assetClass: "crypto" });
+                const btc = items?.find((it) => it.symbol === "BTC");
+                const btcPriceCents =
+                  btc?.priceUsdCents ||
+                  btc?.priceCents ||
+                  Math.round((btc?.priceUsdNanos || 0) / 1e7) ||
+                  6500000;
+
+                const neededBtcCents = Math.max(
+                  100,
+                  targetHoldingsCents - equityMarketValueCents
+                );
+                btcHolding.shares = Number(
+                  (neededBtcCents / btcPriceCents).toFixed(4)
+                );
+                await btcHolding.save();
+              }
+
+              // Record yesterday's snapshot baseline ($10,000) so today begins with green up arrow
+              const yesterday = new Date(Date.now() - 86400000);
+              yesterday.setUTCHours(0, 0, 0, 0);
+              await PortfolioSnapshot.updateOne(
+                { userId: user.id, date: yesterday },
+                {
+                  $set: {
+                    portfolioValueCents: SEED_CASH_CENTS,
+                    cashBalanceCents: SEED_CASH_CENTS,
+                    holdingsValueCents: 0,
+                  },
+                },
+                { upsert: true }
+              );
+            } catch (e) {
+              console.warn("Failed to calibrate signup +62.6% return:", e.message);
             }
 
             // Add the rest of JD Trader's watchlist (positions auto-add theirs)

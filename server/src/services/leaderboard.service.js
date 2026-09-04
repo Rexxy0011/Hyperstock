@@ -181,6 +181,7 @@ async function computeBoard(period) {
     {
       $addFields: {
         holdingsValueCents: { $sum: "$h.valueCents" },
+        holdingsCostBasisCents: { $sum: "$h.costBasisCents" },
         losingHoldingsReturnCents: {
           $sum: {
             $map: {
@@ -317,7 +318,7 @@ async function computeBoard(period) {
       },
     },
 
-    // Baseline for weekly/monthly. All-time measures against the signup grant.
+    // Baseline for weekly/monthly. All-time measures against holdings return or signup grant.
     ...(since
       ? [
           {
@@ -355,30 +356,84 @@ async function computeBoard(period) {
               },
             },
           },
-        ]
-      : [{ $addFields: { baseValueCents: SEED_CASH_CENTS } }]),
-
-    {
-      $addFields: {
-        returnPct: {
-          $cond: [
-            { $gt: ["$baseValueCents", 0] },
-            {
-              $multiply: [
-                {
-                  $divide: [
-                    { $subtract: ["$portfolioValueCents", "$baseValueCents"] },
-                    "$baseValueCents",
-                  ],
-                },
-                100,
-              ],
+          {
+            $addFields: {
+              returnPct: {
+                $cond: [
+                  { $gt: ["$baseValueCents", 0] },
+                  {
+                    $multiply: [
+                      {
+                        $divide: [
+                          { $subtract: ["$portfolioValueCents", "$baseValueCents"] },
+                          "$baseValueCents",
+                        ],
+                      },
+                      100,
+                    ],
+                  },
+                  0,
+                ],
+              },
             },
-            0,
-          ],
-        },
-      },
-    },
+          },
+        ]
+      : [
+          {
+            $addFields: {
+              baseValueCents: {
+                $cond: [
+                  { $gt: ["$holdingsCostBasisCents", 0] },
+                  "$holdingsCostBasisCents",
+                  SEED_CASH_CENTS,
+                ],
+              },
+              returnPct: {
+                $cond: [
+                  { $gt: ["$holdingsCostBasisCents", 0] },
+                  {
+                    $multiply: [
+                      {
+                        $divide: [
+                          {
+                            $subtract: [
+                              "$holdingsValueCents",
+                              "$holdingsCostBasisCents",
+                            ],
+                          },
+                          "$holdingsCostBasisCents",
+                        ],
+                      },
+                      100,
+                    ],
+                  },
+                  {
+                    $cond: [
+                      { $gt: ["$portfolioValueCents", SEED_CASH_CENTS] },
+                      {
+                        $multiply: [
+                          {
+                            $divide: [
+                              {
+                                $subtract: [
+                                  "$portfolioValueCents",
+                                  SEED_CASH_CENTS,
+                                ],
+                              },
+                              SEED_CASH_CENTS,
+                            ],
+                          },
+                          100,
+                        ],
+                      },
+                      0,
+                    ],
+                  },
+                ],
+              },
+            },
+          },
+        ]),
 
     {
       $setWindowFields: {

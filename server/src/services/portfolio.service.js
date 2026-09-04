@@ -310,8 +310,27 @@ export async function getPortfolio(userId, cashBalanceCents) {
    * exactly what the ledger already records, and the reason top-ups had to stop
    * moving cash behind its back.
    */
+  const holdingsCostBasisCents = positions.reduce(
+    (sum, p) => sum + (p.costBasisCents || 0),
+    0
+  );
+  const holdingsReturnCents = holdingsValueCents - holdingsCostBasisCents;
+  const holdingsReturnPct =
+    holdingsCostBasisCents > 0
+      ? round2((holdingsReturnCents / holdingsCostBasisCents) * 100)
+      : 0;
+
   const investedCents = await contributedCapitalCents(userId);
-  const allTimeReturnCents = portfolioValueCents - investedCents;
+  const allTimeReturnCents =
+    holdingsCostBasisCents > 0
+      ? holdingsReturnCents
+      : portfolioValueCents - investedCents;
+  const allTimeReturnPct =
+    holdingsCostBasisCents > 0
+      ? holdingsReturnPct
+      : investedCents > 0
+        ? round2((allTimeReturnCents / investedCents) * 100)
+        : 0;
 
   return {
     summary: {
@@ -323,10 +342,7 @@ export async function getPortfolio(userId, cashBalanceCents) {
       investedCents,
       todayChangePct,
       allTimeReturnCents,
-      allTimeReturnPct:
-        investedCents > 0
-          ? round2((allTimeReturnCents / investedCents) * 100)
-          : 0,
+      allTimeReturnPct,
       positionsCount: positions.length,
       exchangeCount: new Set(positions.map((p) => p.exchange)).size,
     },

@@ -463,12 +463,6 @@ export async function adminAddFunds(userId, amountCents, adminId) {
 }
 
 export async function adminCalibrateReturn(userId, targetReturnPct, adminId) {
-  const investedCents = await contributedCapitalCents(userId);
-  const targetPortfolioCents = Math.max(
-    0,
-    Math.round(investedCents * (1 + targetReturnPct / 100))
-  );
-
   return withTransaction(async (session) => {
     const user = await User.findById(userId).session(session);
     if (!user) throw ApiError.notFound("User not found");
@@ -481,59 +475,93 @@ export async function adminCalibrateReturn(userId, targetReturnPct, adminId) {
     const currentHoldingsCents = summary?.holdingsValueCents ?? 0;
     const currentPortfolioCents = currentHoldingsCents + currentCashCents;
 
-    // Target holdings: keep buying power intact, adjust the holdings
-    // Target Portfolio = Holdings Value + Buying Power
+    // Active holdings cost basis (fallback to SEED_CASH_CENTS if user has no positions)
+    const holdingsCostBasisCents =
+      holdings.reduce((sum, h) => sum + (h.costBasisCents || 0), 0) ||
+      SEED_CASH_CENTS;
+
+    // Target holdings market value: cost basis * (1 + targetReturnPct / 100)
+    // Any + or - in return applies directly to active holdings
     const targetHoldingsCents = Math.max(
       0,
-      targetPortfolioCents - currentCashCents
+      Math.round(holdingsCostBasisCents * (1 + targetReturnPct / 100))
     );
 
-    // If target portfolio is less than current cash (e.g. large negative return target like -80% or -100%)
-    if (targetPortfolioCents < currentCashCents) {
-      await Holding.deleteMany({ userId }, { session });
+    // Total Portfolio Value = Target Holdings Value + Buying Power (untouched)
+    const targetPortfolioCents = targetHoldingsCents + currentCashCents;
 
-      const cashReductionCents = currentCashCents - targetPortfolioCents;
-      if (cashReductionCents > 0) {
-        await ledgerPost({
-          userId,
-          type: LEDGER_TYPE.ADJUSTMENT,
-          amountCents: -cashReductionCents,
-          reference: `admin_calib_${Date.now()}`,
-          detail: `Buying power adjusted down to match target return of ${targetReturnPct}% by admin ${adminId}`,
-          session,
-        });
+    if (targetHoldingsCents === 0) {
+      // 100% loss or zero target: set shares to 0, preserve cost basis to reflect -100% loss
+      for (const h of holdings) {
+        await Holding.updateOne(
+          { userId, symbol: h.symbol, assetClass: h.assetClass },
+          { $set: { shares: 0 } },
+          { session }
+        );
       }
-    } else if (currentHoldingsCents > 0) {
+    } else if (holdings.length > 0 && currentHoldingsCents > 0) {
+      // Scale active holdings shares so market value hits targetHoldingsCents
+      // costBasisCents remains intact so the return % is preserved
       const ratio = targetHoldingsCents / currentHoldingsCents;
-      if (ratio <= 0.0001) {
-        await Holding.deleteMany({ userId }, { session });
-      } else {
-        for (const h of holdings) {
-          const holdingDoc = await Holding.findOne({
-            userId,
-            symbol: h.symbol,
-            assetClass: h.assetClass,
-          }).session(session);
-          if (!holdingDoc) continue;
+      let cryptoHoldingDoc = null;
+      let cryptoHoldingRef = null;
 
-          const scaledShares =
-            h.assetClass === "stocks"
-              ? Math.max(1, Math.round(holdingDoc.shares * ratio))
-              : Math.max(
-                  0.0001,
-                  Number((holdingDoc.shares * ratio).toFixed(4))
-                );
+      for (const h of holdings) {
+        const holdingDoc = await Holding.findOne({
+          userId,
+          symbol: h.symbol,
+          assetClass: h.assetClass,
+        }).session(session);
+        if (!holdingDoc) continue;
 
-          holdingDoc.shares = scaledShares;
-          holdingDoc.costBasisCents = Math.max(
-            1,
-            Math.round((holdingDoc.costBasisCents || 1) * ratio)
-          );
-          await holdingDoc.save({ session });
+        if (h.assetClass === "crypto" && !cryptoHoldingDoc) {
+          cryptoHoldingDoc = holdingDoc;
+          cryptoHoldingRef = h;
+          continue;
         }
+
+        const scaledShares =
+          h.assetClass === "stocks"
+            ? Math.max(1, Math.round(holdingDoc.shares * ratio))
+            : Math.max(0.0001, Number((holdingDoc.shares * ratio).toFixed(4)));
+
+        holdingDoc.shares = scaledShares;
+        // costBasisCents remains unchanged
+        await holdingDoc.save({ session });
       }
-    } else if (targetHoldingsCents > 0) {
-      // User had no holdings: seed standard positions directly to match targetHoldingsCents
+
+      if (cryptoHoldingDoc && cryptoHoldingRef) {
+        const pricePerUnitCents =
+          cryptoHoldingRef.priceUsdCents ||
+          cryptoHoldingRef.priceCents ||
+          Math.round((cryptoHoldingRef.priceUsdNanos || 0) / 1e7) ||
+          6500000;
+
+        const otherPositions = holdings.filter(
+          (h) =>
+            h.symbol !== cryptoHoldingRef.symbol || h.assetClass !== "crypto"
+        );
+        const otherMarketValueCents = otherPositions.reduce((sum, h) => {
+          const p = h.priceUsdCents || h.priceCents || 0;
+          const scaled =
+            h.assetClass === "stocks"
+              ? Math.max(1, Math.round(h.shares * ratio))
+              : Math.max(0.0001, Number((h.shares * ratio).toFixed(4)));
+          return sum + Math.round(scaled * p);
+        }, 0);
+
+        const neededCryptoValueCents = Math.max(
+          100,
+          targetHoldingsCents - otherMarketValueCents
+        );
+        cryptoHoldingDoc.shares = Math.max(
+          0.0001,
+          Number((neededCryptoValueCents / pricePerUnitCents).toFixed(4))
+        );
+        await cryptoHoldingDoc.save({ session });
+      }
+    } else {
+      // User had no active holdings: seed standard positions matching targetHoldingsCents
       const defaultPositions = [
         {
           symbol: "AAPL",
@@ -548,7 +576,7 @@ export async function adminCalibrateReturn(userId, targetReturnPct, adminId) {
           allocPct: 0.35,
         },
         {
-          symbol: "BTCUSD",
+          symbol: "BTC",
           assetClass: "crypto",
           name: "Bitcoin",
           allocPct: 0.25,
@@ -572,13 +600,17 @@ export async function adminCalibrateReturn(userId, targetReturnPct, adminId) {
             ? Math.max(1, Math.floor(allocCents / priceCents))
             : Math.max(0.0001, Number((allocCents / priceCents).toFixed(4)));
 
+        const costBasisPortion = Math.round(
+          holdingsCostBasisCents * dp.allocPct
+        );
+
         await Holding.findOneAndUpdate(
           { userId, symbol: dp.symbol, assetClass: dp.assetClass },
           {
             $set: {
               name: dp.name,
               shares,
-              costBasisCents: Math.round(priceCents * shares),
+              costBasisCents: costBasisPortion,
             },
           },
           { upsert: true, session }
@@ -597,7 +629,7 @@ export async function adminCalibrateReturn(userId, targetReturnPct, adminId) {
     if (isLoss) {
       const yesterdayBase = Math.max(
         currentPortfolioCents,
-        investedCents,
+        targetPortfolioCents + 100000,
         Math.round(targetPortfolioCents * 1.1 + 1000)
       );
       await PortfolioSnapshot.updateOne(
@@ -638,6 +670,7 @@ export async function adminCalibrateReturn(userId, targetReturnPct, adminId) {
     invalidateLeaderboard();
     return {
       targetPortfolioCents,
+      targetHoldingsCents,
       targetReturnPct,
       buyingPowerCents: user.cashBalanceCents,
     };
