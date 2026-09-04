@@ -6,7 +6,6 @@ import { username as usernamePlugin, emailOTP } from 'better-auth/plugins';
 import { env, SEED_CASH_CENTS, isProd, apiOrigin } from '../config/env.js';
 import { supportsTransactions } from '../config/db.js';
 import { Transaction } from '../models/Transaction.js';
-import { adminAddHolding } from '../services/adminUser.service.js';
 import { WatchlistItem } from '../models/WatchlistItem.js';
 import { uniqueHandle } from './handle.js';
 import { sendMail } from '../lib/mailer.js';
@@ -315,33 +314,70 @@ export function createAuth() {
               status: 'Approved',
             });
 
-            // Replicate JD Trader's portfolio for new users
-            const holdings = [
-              { symbol: '7203', shares: 13 },
-              { symbol: 'AAPL', shares: 12 },
-              { symbol: 'ASML', shares: 2 },
-              { symbol: 'NVDA', shares: 18 },
-              { symbol: 'BTCUSD', shares: 1 } // Bitcoin
+            // Spend the entire $10,000 buying positions via real market orders.
+            // Dynamic import avoids circular dependency — order.service imports
+            // models that import auth transitively.
+            const { placeOrder } = await import('../services/order.service.js');
+            const { Stock } = await import('../models/Stock.js');
+            const { getInstruments } = await import('../services/market.service.js');
+
+            const assets = [
+              { symbol: 'AAPL', assetClass: 'stocks' },
+              { symbol: 'NVDA', assetClass: 'stocks' },
+              { symbol: 'ASML', assetClass: 'stocks' },
+              { symbol: '7203', assetClass: 'stocks' },
+              { symbol: 'BTCUSD', assetClass: 'crypto' },
             ];
-            
-            for (const h of holdings) {
+
+            // Random weights so each user's portfolio looks slightly different
+            const weights = assets.map(() => 0.5 + Math.random());
+            const totalWeight = weights.reduce((s, w) => s + w, 0);
+            const seedCents = SEED_CASH_CENTS;
+
+            for (let i = 0; i < assets.length; i++) {
+              const allocCents = Math.floor(seedCents * (weights[i] / totalWeight));
+              const { symbol, assetClass } = assets[i];
+
               try {
-                // adminAddHolding will fetch the live price and populate costBasisCents automatically
-                // It also automatically adds these items to the watchlist!
-                await adminAddHolding(user.id, h, user.id);
+                // Look up the live price to calculate how many shares we can buy
+                let priceCents = 0;
+                if (assetClass === 'stocks') {
+                  const stock = await Stock.findOne({ symbol }).lean();
+                  if (stock) priceCents = stock.priceCents || Math.round((stock.priceUsdNanos || 0) / 1e7);
+                }
+                if (!priceCents && assetClass === 'crypto') {
+                  const { items } = await getInstruments({ assetClass: 'crypto' });
+                  const inst = items.find(it => it.symbol === symbol);
+                  if (inst) priceCents = inst.priceCents || Math.round((inst.priceUsdNanos || 0) / 1e7);
+                }
+                if (!priceCents) continue;
+
+                // For stocks: whole shares only. For crypto: fractional OK.
+                const qty = assetClass === 'stocks'
+                  ? Math.max(1, Math.floor(allocCents / priceCents))
+                  : Math.max(0.0001, Math.round((allocCents / priceCents) * 10000) / 10000);
+
+                await placeOrder({
+                  userId: user.id,
+                  assetClass,
+                  symbol,
+                  side: 'BUY',
+                  quantity: qty,
+                  orderType: 'MARKET',
+                });
               } catch (e) {
-                console.warn("Could not seed position", h.symbol, e.message);
+                console.warn('Signup order failed:', symbol, e.message);
               }
             }
 
-            // Also explicitly add the rest of JD Trader's exact watchlist
+            // Add the rest of JD Trader's watchlist (positions auto-add theirs)
             const extraWatchlist = [
               { symbol: '0700', assetClass: 'stocks' },
               { symbol: 'SAP', assetClass: 'stocks' },
               { symbol: 'GOOGL', assetClass: 'stocks' },
               { symbol: 'AZN', assetClass: 'stocks' },
               { symbol: 'MSFT', assetClass: 'stocks' },
-              { symbol: 'AMZN', assetClass: 'stocks' }
+              { symbol: 'AMZN', assetClass: 'stocks' },
             ];
 
             for (const w of extraWatchlist) {
