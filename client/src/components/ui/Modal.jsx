@@ -1,6 +1,6 @@
-import { useEffect, useRef } from 'react';
-import { useTranslation } from 'react-i18next';
-import Icon from './Icon';
+import { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
+import Icon from "./Icon";
 
 /**
  * A dialog built on the native `<dialog>` element.
@@ -15,7 +15,14 @@ import Icon from './Icon';
  * attribute — the attribute produces a NON-modal dialog, which looks correct
  * and silently skips the focus trap and the backdrop.
  */
-export default function Modal({ open, onClose, title, children, footer = undefined, className = '' }) {
+export default function Modal({
+  open,
+  onClose,
+  title,
+  children,
+  footer = undefined,
+  className = "",
+}) {
   const { t } = useTranslation();
   const ref = useRef(/** @type {HTMLDialogElement | null} */ (null));
 
@@ -38,8 +45,8 @@ export default function Modal({ open, onClose, title, children, footer = undefin
       e.preventDefault();
       onClose();
     };
-    dialog.addEventListener('cancel', onCancel);
-    return () => dialog.removeEventListener('cancel', onCancel);
+    dialog.addEventListener("cancel", onCancel);
+    return () => dialog.removeEventListener("cancel", onCancel);
   }, [onClose]);
 
   return (
@@ -48,9 +55,9 @@ export default function Modal({ open, onClose, title, children, footer = undefin
       // The backdrop is styled through the pseudo-element; `p-0` and `m-auto`
       // undo the UA's default centring box so the panel controls its own size.
       className={[
-        'm-auto rounded-xl border border-cool-grey bg-white p-0 text-text-body shadow-panel backdrop:bg-ink/40',
-        className || 'w-[min(30rem,calc(100vw-2rem))]',
-      ].join(' ')}
+        "m-auto rounded-xl border border-cool-grey bg-white p-0 text-text-body shadow-panel backdrop:bg-ink/40",
+        className || "w-[min(30rem,calc(100vw-2rem))]",
+      ].join(" ")}
       onClick={(e) => {
         // Click-outside. The dialog element's own box IS the panel, so a click
         // whose target is the dialog itself landed on the backdrop.
@@ -62,7 +69,7 @@ export default function Modal({ open, onClose, title, children, footer = undefin
         <button
           type="button"
           onClick={onClose}
-          aria-label={t('common.close')}
+          aria-label={t("common.close")}
           className="inline-flex size-7 cursor-pointer items-center justify-center rounded-lg border border-transparent text-text-muted transition-colors hover:bg-mist hover:text-text-body"
         >
           <Icon name="close" size={16} />
@@ -71,7 +78,9 @@ export default function Modal({ open, onClose, title, children, footer = undefin
 
       <div className="px-5 py-5">{children}</div>
 
-      {footer && <div className="border-t border-cool-grey px-5 py-4">{footer}</div>}
+      {footer && (
+        <div className="border-t border-cool-grey px-5 py-4">{footer}</div>
+      )}
     </dialog>
   );
 }

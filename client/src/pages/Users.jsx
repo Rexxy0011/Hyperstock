@@ -1,15 +1,15 @@
-import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { get, patch } from '../lib/api';
-import { useAuth } from '../auth/AuthProvider';
-import { useDebouncedValue } from '../hooks/useDebouncedValue';
-import Badge, { statusVariant } from '../components/ui/Badge';
-import Avatar from '../components/ui/Avatar';
-import Money from '../components/market/Money';
-import TraderOverrideModal from '../components/admin/TraderOverrideModal';
-import { money } from '../lib/format';
-import notify from '../lib/toast';
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { get, patch } from "../lib/api";
+import { useAuth } from "../auth/AuthProvider";
+import { useDebouncedValue } from "../hooks/useDebouncedValue";
+import Badge, { statusVariant } from "../components/ui/Badge";
+import Avatar from "../components/ui/Avatar";
+import Money from "../components/market/Money";
+import TraderOverrideModal from "../components/admin/TraderOverrideModal";
+import { money } from "../lib/format";
+import notify from "../lib/toast";
 
 /**
  * Every account on the platform.
@@ -28,7 +28,7 @@ export default function Users() {
   const { user: me } = useAuth();
   const queryClient = useQueryClient();
 
-  const [term, setTerm] = useState('');
+  const [term, setTerm] = useState("");
   const [page, setPage] = useState(1);
   // 300ms, the same debounce the market search uses — a keystroke per request
   // against a 209-row collection is the kind of thing that is free until it is
@@ -36,8 +36,9 @@ export default function Users() {
   const search = useDebouncedValue(term, 300);
 
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ['admin', 'users', search, page],
-    queryFn: () => get(`/admin/users?q=${encodeURIComponent(search)}&page=${page}`),
+    queryKey: ["admin", "users", search, page],
+    queryFn: () =>
+      get(`/admin/users?q=${encodeURIComponent(search)}&page=${page}`),
     // Keeps the previous page on screen while the next one loads, so paging
     // does not flash the whole table back to skeletons.
     placeholderData: (previous) => previous,
@@ -45,16 +46,19 @@ export default function Users() {
 
   const setStatus = useMutation({
     /** @param {{ id: string, status: string }} vars */
-    mutationFn: ({ id, status }) => patch(`/admin/users/${id}/status`, { status }),
+    mutationFn: ({ id, status }) =>
+      patch(`/admin/users/${id}/status`, { status }),
     onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
       // The revoked count is the part an operator cannot see anywhere else —
       // suspending somebody who is signed in right now is a different event
       // from suspending a dormant account.
       notify.success(
         result.sessionsRevoked
-          ? t('admin.users.suspendedWithSessions', { count: result.sessionsRevoked })
-          : t('admin.users.statusChanged'),
+          ? t("admin.users.suspendedWithSessions", {
+              count: result.sessionsRevoked,
+            })
+          : t("admin.users.statusChanged")
       );
     },
   });
@@ -76,23 +80,33 @@ export default function Users() {
 
   // Re-read the row from the freshest page data, so saving an override and
   // reopening shows the new values rather than the snapshot taken on click.
-  const editingRow = editing ? (rows.find((r) => r.id === editing.id) ?? editing) : null;
+  const editingRow = editing
+    ? (rows.find((r) => r.id === editing.id) ?? editing)
+    : null;
 
   return (
     <div className="w-full px-4 py-10 sm:px-5 lg:px-7 2xl:px-9">
       <div className="mb-6">
-        <h1 className="m-0 text-xl font-bold">{t('admin.users.title')}</h1>
-        <p className="mt-2 max-w-2xl text-sm text-text-muted">{t('admin.users.intro')}</p>
+        <h1 className="m-0 text-xl font-bold">{t("admin.users.title")}</h1>
+        <p className="mt-2 max-w-2xl text-sm text-text-muted">
+          {t("admin.users.intro")}
+        </p>
       </div>
 
       <div className="mb-5 flex flex-wrap gap-3">
-        <Stat label={t('admin.users.total')} value={counts?.total ?? 0} />
+        <Stat label={t("admin.users.total")} value={counts?.total ?? 0} />
         {/* Leads on the two that answer "who is real": the platform has 209
             rows and two people who can actually get in. */}
-        <Stat label={t('admin.users.canSignIn')} value={counts?.withCredentials ?? 0} />
-        <Stat label={t('admin.users.fixtures')} value={counts?.fixtures ?? 0} />
-        <Stat label={t('admin.users.admins')} value={counts?.admins ?? 0} />
-        <Stat label={t('admin.users.suspended')} value={counts?.suspended ?? 0} />
+        <Stat
+          label={t("admin.users.canSignIn")}
+          value={counts?.withCredentials ?? 0}
+        />
+        <Stat label={t("admin.users.fixtures")} value={counts?.fixtures ?? 0} />
+        <Stat label={t("admin.users.admins")} value={counts?.admins ?? 0} />
+        <Stat
+          label={t("admin.users.suspended")}
+          value={counts?.suspended ?? 0}
+        />
       </div>
 
       <input
@@ -104,7 +118,7 @@ export default function Users() {
           // shows an empty table because the reader was on page nine.
           setPage(1);
         }}
-        placeholder={t('admin.users.searchPlaceholder')}
+        placeholder={t("admin.users.searchPlaceholder")}
         className="mb-4 w-full max-w-80 rounded-md border border-cool-grey bg-white px-3 py-2 text-sm outline-none focus:border-slate"
       />
 
@@ -112,13 +126,20 @@ export default function Users() {
         <table className="w-full border-collapse">
           <thead>
             <tr>
-              {['account', 'signIn', 'role', 'status', 'board', 'cash', 'trades', 'joined'].map(
-                (k) => (
-                  <th key={k} className={th}>
-                    {t(`admin.users.col.${k}`)}
-                  </th>
-                ),
-              )}
+              {[
+                "account",
+                "signIn",
+                "role",
+                "status",
+                "board",
+                "cash",
+                "trades",
+                "joined",
+              ].map((k) => (
+                <th key={k} className={th}>
+                  {t(`admin.users.col.${k}`)}
+                </th>
+              ))}
               <th className={th} />
             </tr>
           </thead>
@@ -136,13 +157,15 @@ export default function Users() {
             {isError && (
               <tr>
                 <td className={`${td} py-10 text-center`} colSpan={9}>
-                  <p className="m-0 text-text-muted">{t('common.loadFailed')}</p>
+                  <p className="m-0 text-text-muted">
+                    {t("common.loadFailed")}
+                  </p>
                   <button
                     type="button"
                     onClick={() => refetch()}
                     className="mt-2 text-sm font-medium text-gain underline underline-offset-2"
                   >
-                    {t('common.retry')}
+                    {t("common.retry")}
                   </button>
                 </td>
               </tr>
@@ -150,8 +173,11 @@ export default function Users() {
 
             {!isLoading && !isError && !rows.length && (
               <tr>
-                <td className={`${td} py-10 text-center text-text-muted`} colSpan={9}>
-                  {t('admin.users.empty')}
+                <td
+                  className={`${td} py-10 text-center text-text-muted`}
+                  colSpan={9}
+                >
+                  {t("admin.users.empty")}
                 </td>
               </tr>
             )}
@@ -162,17 +188,23 @@ export default function Users() {
                 <tr key={r.id}>
                   <td className={td}>
                     <div className="flex items-center gap-3">
-                      <Avatar name={r.username} src={r.avatarUrl || r.image} size={32} />
+                      <Avatar
+                        name={r.username}
+                        src={r.avatarUrl || r.image}
+                        size={32}
+                      />
                       <div className="min-w-0">
                         <span className="block font-medium truncate">
                           {r.displayName || r.username}
                           {isMe && (
                             <span className="ml-2 text-2xs text-text-muted">
-                              {t('admin.users.you')}
+                              {t("admin.users.you")}
                             </span>
                           )}
                         </span>
-                        <span className="block font-mono text-xs text-text-muted truncate">{r.email}</span>
+                        <span className="block font-mono text-xs text-text-muted truncate">
+                          {r.email}
+                        </span>
                       </div>
                     </div>
                   </td>
@@ -181,16 +213,24 @@ export default function Users() {
                     {/* The whole point of the screen. `neutral` rather than a
                         loss red for a fixture: having no credential is the
                         correct state for 207 of these rows, not a fault. */}
-                    <Badge variant={r.canSignIn ? 'approved' : 'neutral'}>
-                      {t(r.canSignIn ? 'admin.users.hasCredential' : 'admin.users.noCredential')}
+                    <Badge variant={r.canSignIn ? "approved" : "neutral"}>
+                      {t(
+                        r.canSignIn
+                          ? "admin.users.hasCredential"
+                          : "admin.users.noCredential"
+                      )}
                     </Badge>
                   </td>
 
                   <td className={td}>
-                    {r.role === 'admin' ? (
-                      <Badge variant="amber">{t('admin.users.role.admin')}</Badge>
+                    {r.role === "admin" ? (
+                      <Badge variant="amber">
+                        {t("admin.users.role.admin")}
+                      </Badge>
                     ) : (
-                      <span className="text-text-muted">{t('admin.users.role.user')}</span>
+                      <span className="text-text-muted">
+                        {t("admin.users.role.user")}
+                      </span>
                     )}
                   </td>
 
@@ -210,9 +250,12 @@ export default function Users() {
                   <td className={`${td} text-right whitespace-nowrap`}>
                     {r.override ? (
                       <>
-                        <Money value={r.override.portfolioValueCents} size={13} />
+                        <Money
+                          value={r.override.portfolioValueCents}
+                          size={13}
+                        />
                         <span className="mt-0.5 block text-2xs text-amber">
-                          {t('admin.users.curated')} ·{' '}
+                          {t("admin.users.curated")} ·{" "}
                           <span className="font-numeric tabular-nums text-text-muted">
                             {money(r.computed?.portfolioValueCents ?? 0)}
                           </span>
@@ -220,13 +263,20 @@ export default function Users() {
                       </>
                     ) : r.computed ? (
                       <>
-                        <Money value={r.computed.portfolioValueCents} size={13} />
+                        <Money
+                          value={r.computed.portfolioValueCents}
+                          size={13}
+                        />
                         <span className="mt-0.5 block font-numeric text-2xs tabular-nums text-text-muted">
-                          {t('admin.users.rankShort', { rank: r.computed.rank })}
+                          {t("admin.users.rankShort", {
+                            rank: r.computed.rank,
+                          })}
                         </span>
                       </>
                     ) : (
-                      <span className="text-xs text-text-muted">{t('admin.users.notRanked')}</span>
+                      <span className="text-xs text-text-muted">
+                        {t("admin.users.notRanked")}
+                      </span>
                     )}
                   </td>
 
@@ -234,11 +284,15 @@ export default function Users() {
                     <Money value={r.cashBalanceCents} size={13} />
                   </td>
 
-                  <td className={`${td} text-right font-numeric tabular-nums text-text-muted`}>
-                    {r.tradeCount.toLocaleString('en-US')}
+                  <td
+                    className={`${td} text-right font-numeric tabular-nums text-text-muted`}
+                  >
+                    {r.tradeCount.toLocaleString("en-US")}
                   </td>
 
-                  <td className={`${td} whitespace-nowrap text-xs text-text-muted`}>
+                  <td
+                    className={`${td} whitespace-nowrap text-xs text-text-muted`}
+                  >
                     {new Date(r.createdAt).toLocaleDateString()}
                   </td>
 
@@ -247,7 +301,7 @@ export default function Users() {
                         board's `role: 'user'` aggregation, so an override on
                         one would write a row for an account the leaderboard
                         never ranks — a control that silently does nothing. */}
-                    {r.role !== 'admin' && (
+                    {r.role !== "admin" && (
                       <button
                         type="button"
                         onClick={() => {
@@ -256,7 +310,7 @@ export default function Users() {
                         }}
                         className="mr-4 cursor-pointer text-sm font-medium text-void underline underline-offset-2"
                       >
-                        {t('admin.users.edit')}
+                        {t("admin.users.edit")}
                       </button>
                     )}
 
@@ -272,15 +326,16 @@ export default function Users() {
                         onClick={() =>
                           setStatus.mutate({
                             id: r.id,
-                            status: r.status === 'Suspended' ? 'Active' : 'Suspended',
+                            status:
+                              r.status === "Suspended" ? "Active" : "Suspended",
                           })
                         }
                         className="cursor-pointer text-sm font-medium text-gain underline underline-offset-2 disabled:opacity-45"
                       >
                         {t(
-                          r.status === 'Suspended'
-                            ? 'admin.users.reactivate'
-                            : 'admin.users.suspend',
+                          r.status === "Suspended"
+                            ? "admin.users.reactivate"
+                            : "admin.users.suspend"
                         )}
                       </button>
                     )}
@@ -300,10 +355,10 @@ export default function Users() {
             onClick={() => setPage((p) => p - 1)}
             className="cursor-pointer text-sm font-medium underline underline-offset-2 disabled:cursor-default disabled:opacity-40"
           >
-            {t('common.previous')}
+            {t("common.previous")}
           </button>
           <span className="font-numeric text-sm tabular-nums text-text-muted">
-            {t('admin.users.pageOf', { page, pages })}
+            {t("admin.users.pageOf", { page, pages })}
           </span>
           <button
             type="button"
@@ -311,7 +366,7 @@ export default function Users() {
             onClick={() => setPage((p) => p + 1)}
             className="cursor-pointer text-sm font-medium underline underline-offset-2 disabled:cursor-default disabled:opacity-40"
           >
-            {t('common.next')}
+            {t("common.next")}
           </button>
         </div>
       )}
@@ -330,12 +385,12 @@ function Stat({ label, value }) {
     <div className="rounded-md border border-cool-grey bg-white px-4 py-3 shadow-card">
       <div className="text-2xs text-text-muted">{label}</div>
       <div className="font-numeric text-lg font-semibold tabular-nums">
-        {value.toLocaleString('en-US')}
+        {value.toLocaleString("en-US")}
       </div>
     </div>
   );
 }
 
 const th =
-  'border-b border-cool-grey px-4 py-2.5 text-left text-xs font-medium text-text-muted whitespace-nowrap';
-const td = 'border-b border-cool-grey px-4 py-3 text-sm';
+  "border-b border-cool-grey px-4 py-2.5 text-left text-xs font-medium text-text-muted whitespace-nowrap";
+const td = "border-b border-cool-grey px-4 py-3 text-sm";

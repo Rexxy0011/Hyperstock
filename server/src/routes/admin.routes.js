@@ -186,7 +186,9 @@ router.patch(
     }),
   }),
   asyncHandler(async (req, res) => {
-    res.json(await adminUpdateAvatar(req.params.id, req.body.image, req.user.id));
+    res.json(
+      await adminUpdateAvatar(req.params.id, req.body.image, req.user.id)
+    );
   })
 );
 
@@ -199,7 +201,9 @@ router.post(
     }),
   }),
   asyncHandler(async (req, res) => {
-    res.json(await adminAddFunds(req.params.id, req.body.amountCents, req.user.id));
+    res.json(
+      await adminAddFunds(req.params.id, req.body.amountCents, req.user.id)
+    );
   })
 );
 

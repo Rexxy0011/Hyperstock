@@ -2,7 +2,10 @@ import mongoose from "mongoose";
 import { User } from "../models/User.js";
 import { Stock } from "../models/Stock.js";
 import { ApiError } from "../lib/ApiError.js";
-import { computedRowsFor, invalidateLeaderboard } from "./leaderboard.service.js";
+import {
+  computedRowsFor,
+  invalidateLeaderboard,
+} from "./leaderboard.service.js";
 import { getPortfolio } from "./portfolio.service.js";
 import { post as ledgerPost } from "./ledger.service.js";
 import { LEDGER_TYPE } from "../models/LedgerEntry.js";
@@ -10,8 +13,6 @@ import { withTransaction } from "../config/db.js";
 import { Holding } from "../models/Holding.js";
 import { WatchlistItem } from "../models/WatchlistItem.js";
 import { getInstruments } from "./market.service.js";
-
-
 
 /**
  * The user listing behind /admin/users.
@@ -157,11 +158,7 @@ export async function listUsers({ q = "", page = 1, limit = PAGE_SIZE } = {}) {
   return {
     items: rows.map((r) => {
       const key = String(r._id);
-      return publicRow(
-        r,
-        withCredentials.has(key),
-        computed.get(key) ?? null
-      );
+      return publicRow(r, withCredentials.has(key), computed.get(key) ?? null);
     }),
     total,
     page: current,
@@ -236,17 +233,19 @@ export async function listPositions(userId = null) {
     .sort((a, b) => b.returnPct - a.returnPct);
 
   const owned = new Set(held.map((p) => p.symbol));
-  
+
   const [stocks, cryptoRes, forexRes] = await Promise.all([
-    Stock.find({ status: { $ne: "Halted" } }).select("symbol name exchange priceCents priceUsdCents").lean(),
-    getInstruments({ assetClass: 'crypto' }),
-    getInstruments({ assetClass: 'forex' })
+    Stock.find({ status: { $ne: "Halted" } })
+      .select("symbol name exchange priceCents priceUsdCents")
+      .lean(),
+    getInstruments({ assetClass: "crypto" }),
+    getInstruments({ assetClass: "forex" }),
   ]);
 
   const allListed = [
-    ...stocks.map(s => ({ ...s, assetClass: 'stocks' })),
-    ...(cryptoRes?.items || []).map(s => ({ ...s, assetClass: 'crypto' })),
-    ...(forexRes?.items || []).map(s => ({ ...s, assetClass: 'forex' }))
+    ...stocks.map((s) => ({ ...s, assetClass: "stocks" })),
+    ...(cryptoRes?.items || []).map((s) => ({ ...s, assetClass: "crypto" })),
+    ...(forexRes?.items || []).map((s) => ({ ...s, assetClass: "forex" })),
   ];
 
   const available = allListed
@@ -263,7 +262,6 @@ export async function listPositions(userId = null) {
       held: false,
     }))
     .sort((a, b) => a.symbol.localeCompare(b.symbol));
-
 
   return { held, available };
 }
@@ -365,26 +363,30 @@ export async function adminUpdateCash(userId, targetCashCents, adminId) {
       detail: `Admin adjustment by ${adminId}`,
       session,
     });
-    
+
     invalidateLeaderboard();
     return { cashBalanceCents: balanceAfterCents };
   });
 }
 
-export async function adminAddHolding(userId, { symbol, shares, costBasisCents }, adminId) {
+export async function adminAddHolding(
+  userId,
+  { symbol, shares, costBasisCents },
+  adminId
+) {
   symbol = symbol.toUpperCase();
   // Find asset class and current price
   let asset = await Stock.findOne({ symbol }).lean();
-  let assetClass = 'stocks';
+  let assetClass = "stocks";
   if (!asset) {
-    const { items } = await getInstruments({ assetClass: 'crypto' });
-    asset = items.find(i => i.symbol === symbol);
-    if (asset) assetClass = 'crypto';
+    const { items } = await getInstruments({ assetClass: "crypto" });
+    asset = items.find((i) => i.symbol === symbol);
+    if (asset) assetClass = "crypto";
   }
   if (!asset) {
-    const { items } = await getInstruments({ assetClass: 'forex' });
-    asset = items.find(i => i.symbol === symbol);
-    if (asset) assetClass = 'forex';
+    const { items } = await getInstruments({ assetClass: "forex" });
+    asset = items.find((i) => i.symbol === symbol);
+    if (asset) assetClass = "forex";
   }
   if (!asset) throw ApiError.notFound("Symbol not found");
 
@@ -395,11 +397,18 @@ export async function adminAddHolding(userId, { symbol, shares, costBasisCents }
       { userId, symbol },
       {
         $set: { assetClass, name: asset.name },
-        $inc: { shares: shares, costBasisCents: Math.round(priceCents * shares) },
+        $inc: {
+          shares: shares,
+          costBasisCents: Math.round(priceCents * shares),
+        },
       },
       { upsert: true, new: true, session }
     );
-    await User.updateOne({ _id: userId }, { $inc: { tradeCount: 1 } }, { session });
+    await User.updateOne(
+      { _id: userId },
+      { $inc: { tradeCount: 1 } },
+      { session }
+    );
 
     // Add to watchlist
     await WatchlistItem.updateOne(
@@ -408,7 +417,6 @@ export async function adminAddHolding(userId, { symbol, shares, costBasisCents }
       { upsert: true, session }
     );
 
-    
     invalidateLeaderboard();
     return holding;
   });
