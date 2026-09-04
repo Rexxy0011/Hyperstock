@@ -9,6 +9,7 @@ import { Navigate, useSearchParams } from "react-router-dom";
 import Link from "../components/ui/Link";
 import Button from "../components/ui/Button";
 import Input from "../components/ui/Input";
+import Select from "../components/ui/Select";
 import SegmentedControl from "../components/ui/SegmentedControl";
 import Logo from "../components/ui/Logo";
 import { useAuth } from "../auth/AuthProvider";
@@ -63,6 +64,7 @@ export default function Auth() {
   });
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [animating, setAnimating] = useState(false);
   /** Which confirmation to raise once the session lands, or null. */
   const [welcomeKind, setWelcomeKind] = useState(
     /** @type {string | null} */ (null)
@@ -223,6 +225,7 @@ export default function Auth() {
                 onChange={(m) => {
                   setMode(m);
                   setError(null);
+                  setAnimating(true);
                 }}
                 size="sm"
                 className="mb-7 w-full [&>button]:flex-1"
@@ -284,9 +287,12 @@ export default function Auth() {
                   className={`grid transition-[grid-template-rows] duration-200 ease-out ${
                     isSignup ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
                   }`}
+                  onTransitionEnd={() => setAnimating(false)}
                 >
                   <div
-                    className={`overflow-hidden ${isSignup ? "" : "invisible"}`}
+                    className={`${
+                      isSignup && !animating ? "overflow-visible" : "overflow-hidden"
+                    } ${isSignup ? "" : "invisible"}`}
                   >
                     <Input
                       label={t("auth.username")}
@@ -302,15 +308,13 @@ export default function Auth() {
                       <label className="font-display text-xs font-semibold uppercase text-text-body">
                         Country
                       </label>
-                      <select
+                      <Select
                         value={form.country}
-                        onChange={(e) => setForm((f) => ({ ...f, country: e.target.value }))}
+                        onChange={(value) => setForm((f) => ({ ...f, country: value }))}
+                        options={COUNTRIES}
+                        placeholder="Select Country"
                         disabled={!isSignup}
-                        className="flex w-full cursor-pointer items-center gap-3 rounded-lg border border-cool-grey bg-white px-3 py-2.5 text-left text-sm text-void transition-colors hover:border-slate/40 focus-visible:border-gain focus-visible:outline-none disabled:cursor-not-allowed disabled:bg-mist disabled:text-text-muted"
-                      >
-                        <option value="" disabled>Select Country</option>
-                        {COUNTRIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
-                      </select>
+                      />
                     </div>
                   </div>
                 </div>
