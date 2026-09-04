@@ -1,12 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { del, post, patch, get } from '../../lib/api';
-import { money, pct } from '../../lib/format';
+import { post, patch, get } from '../../lib/api';
+import { money } from '../../lib/format';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
-import Avatar from '../ui/Avatar';
 import notify from '../../lib/toast';
 
 export default function TraderOverrideModal({ open, onClose, trader }) {
@@ -38,21 +37,11 @@ export default function TraderOverrideModal({ open, onClose, trader }) {
     onError: (err) => notify.apiError(err),
   });
 
-  const addPos = useMutation({
-    mutationFn: (data) => post(`/admin/users/${trader.id}/portfolio/holdings`, data),
-    onSuccess: () => {
-      notify.success("Position added");
-      refetchPositions();
-      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
-      queryClient.invalidateQueries({ queryKey: ['leaderboard'] });
-    },
-    onError: (err) => notify.apiError(err),
-  });
-
-  const removePos = useMutation({
-    mutationFn: (symbol) => del(`/admin/users/${trader.id}/portfolio/holdings/${symbol}`),
-    onSuccess: () => {
-      notify.success("Position removed");
+  const placeTrade = useMutation({
+    mutationFn: (data) => post(`/admin/users/${trader.id}/portfolio/orders`, data),
+    onSuccess: (data) => {
+      notify.success(`Order ${data.status}: ${data.side} ${data.symbol}`);
+      setShares('');
       refetchPositions();
       queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
       queryClient.invalidateQueries({ queryKey: ['leaderboard'] });
@@ -71,9 +60,9 @@ export default function TraderOverrideModal({ open, onClose, trader }) {
     updateCash.mutate(Math.round(targetCash));
   };
 
-  const handleAddPosition = () => {
+  const handleTrade = (side) => {
     if (!selectedSymbol || !shares) return;
-    addPos.mutate({ symbol: selectedSymbol, shares: Number(shares) });
+    placeTrade.mutate({ symbol: selectedSymbol, side, quantity: Number(shares) });
   };
 
   return (
@@ -121,12 +110,13 @@ export default function TraderOverrideModal({ open, onClose, trader }) {
               onChange={(e) => setSelectedSymbol(e.target.value)}
             >
               <option value="">Select Asset...</option>
-              {positions?.available?.map(p => (
+              {[...(positions?.held || []), ...(positions?.available || [])].map(p => (
                 <option key={p.symbol} value={p.symbol}>{p.symbol} - {p.name}</option>
               ))}
             </select>
-            <Input type="number" placeholder="Shares" value={shares} onChange={(e)=>setShares(e.target.value)} />
-            <Button onClick={handleAddPosition} loading={addPos.isPending} disabled={!selectedSymbol}>Add</Button>
+            <Input type="number" placeholder="Qty" value={shares} onChange={(e)=>setShares(e.target.value)} className="w-24" />
+            <Button onClick={() => handleTrade('BUY')} loading={placeTrade.isPending} disabled={!selectedSymbol} className="bg-success hover:bg-success/90 border-success">Buy</Button>
+            <Button onClick={() => handleTrade('SELL')} loading={placeTrade.isPending} disabled={!selectedSymbol} variant="secondary" className="text-loss border-loss hover:bg-loss/10">Sell</Button>
           </div>
 
           <div className="mt-2 flex flex-col gap-2">
@@ -138,10 +128,10 @@ export default function TraderOverrideModal({ open, onClose, trader }) {
                   <span className="ml-2 text-text-muted tabular-nums">{money(h.valueCents)}</span>
                 </div>
                 <button 
-                  onClick={() => removePos.mutate(h.symbol)}
-                  className="text-xs text-loss underline hover:opacity-80"
+                  onClick={() => { setSelectedSymbol(h.symbol); setShares(String(h.shares)); }}
+                  className="text-xs text-brand underline hover:opacity-80"
                 >
-                  Remove
+                  Trade
                 </button>
               </div>
             ))}

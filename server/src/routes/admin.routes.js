@@ -169,4 +169,47 @@ router.delete(
   }),
 );
 
+
+router.post(
+  '/users/:id/portfolio/orders',
+  validate({
+    params: idParam,
+    body: z.object({
+      symbol: z.string().trim().max(12),
+      side: z.enum(['BUY', 'SELL']),
+      quantity: z.number().positive(),
+    }),
+  }),
+  asyncHandler(async (req, res) => {
+    // We import placeOrder inside the handler to avoid circular dependencies
+    const { placeOrder } = await import('../services/order.service.js');
+    const { getInstruments } = await import('../services/market.service.js');
+    
+    const symbol = req.body.symbol.toUpperCase();
+    
+    // Auto-detect asset class
+    let assetClass = 'stocks';
+    const { Stock } = await import('../models/Stock.js');
+    let asset = await Stock.findOne({ symbol }).lean();
+    if (!asset) {
+      const { items } = await getInstruments({ assetClass: 'crypto' });
+      if (items.find(i => i.symbol === symbol)) assetClass = 'crypto';
+    }
+    if (!asset && assetClass === 'stocks') {
+      const { items } = await getInstruments({ assetClass: 'forex' });
+      if (items.find(i => i.symbol === symbol)) assetClass = 'forex';
+    }
+
+    const order = await placeOrder({
+      userId: req.params.id,
+      assetClass,
+      symbol,
+      side: req.body.side,
+      quantity: req.body.quantity,
+      orderType: 'MARKET',
+    });
+    res.json(order);
+  }),
+);
+
 export default router;
