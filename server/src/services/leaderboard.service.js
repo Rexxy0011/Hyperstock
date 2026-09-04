@@ -182,6 +182,7 @@ async function computeBoard(period) {
       $addFields: {
         holdingsValueCents: { $sum: "$h.valueCents" },
         holdingsCostBasisCents: { $sum: "$h.costBasisCents" },
+        sumActiveHoldingsPct: { $sum: "$h.returnPct" },
         losingHoldingsReturnCents: {
           $sum: {
             $map: {
@@ -365,7 +366,12 @@ async function computeBoard(period) {
                     $multiply: [
                       {
                         $divide: [
-                          { $subtract: ["$portfolioValueCents", "$baseValueCents"] },
+                          {
+                            $subtract: [
+                              "$portfolioValueCents",
+                              "$baseValueCents",
+                            ],
+                          },
                           "$baseValueCents",
                         ],
                       },
@@ -390,23 +396,8 @@ async function computeBoard(period) {
               },
               returnPct: {
                 $cond: [
-                  { $gt: ["$holdingsCostBasisCents", 0] },
-                  {
-                    $multiply: [
-                      {
-                        $divide: [
-                          {
-                            $subtract: [
-                              "$holdingsValueCents",
-                              "$holdingsCostBasisCents",
-                            ],
-                          },
-                          "$holdingsCostBasisCents",
-                        ],
-                      },
-                      100,
-                    ],
-                  },
+                  { $gt: [{ $size: "$h" }, 0] },
+                  { $round: ["$sumActiveHoldingsPct", 2] },
                   {
                     $cond: [
                       { $gt: ["$portfolioValueCents", SEED_CASH_CENTS] },

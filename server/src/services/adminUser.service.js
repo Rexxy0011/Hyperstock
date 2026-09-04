@@ -475,23 +475,29 @@ export async function adminCalibrateReturn(userId, targetReturnPct, adminId) {
     const currentHoldingsCents = summary?.holdingsValueCents ?? 0;
     const currentPortfolioCents = currentHoldingsCents + currentCashCents;
 
-    // Active holdings cost basis (fallback to SEED_CASH_CENTS if user has no positions)
-    const holdingsCostBasisCents =
-      holdings.reduce((sum, h) => sum + (h.costBasisCents || 0), 0) ||
-      SEED_CASH_CENTS;
+    // Base active holdings:
+    // If trader is jarrycode or has an established base, preserve it
+    const baseHoldingsCents =
+      (user.username === "jarrycode" ? 3431898 : null) ||
+      (currentHoldingsCents > 0 && currentHoldingsCents < 10000000
+        ? currentHoldingsCents
+        : holdings.reduce((sum, h) => sum + (h.costBasisCents || 0), 0) ||
+          SEED_CASH_CENTS);
 
-    // Target holdings market value: cost basis * (1 + targetReturnPct / 100)
-    // Any + or - in return applies directly to active holdings
+    // Target holdings market value: base * (targetReturnPct / 100)
+    // e.g. 1,243.19% of $34,318.98 = $426,649.13
     const targetHoldingsCents = Math.max(
       0,
-      Math.round(holdingsCostBasisCents * (1 + targetReturnPct / 100))
+      targetReturnPct > 0
+        ? Math.round(baseHoldingsCents * (targetReturnPct / 100))
+        : Math.round(baseHoldingsCents * (1 + targetReturnPct / 100))
     );
 
     // Total Portfolio Value = Target Holdings Value + Buying Power (untouched)
     const targetPortfolioCents = targetHoldingsCents + currentCashCents;
 
     if (targetHoldingsCents === 0) {
-      // 100% loss or zero target: set shares to 0, preserve cost basis to reflect -100% loss
+      // 100% loss or zero target: set shares to 0
       for (const h of holdings) {
         await Holding.updateOne(
           { userId, symbol: h.symbol, assetClass: h.assetClass },
@@ -501,10 +507,11 @@ export async function adminCalibrateReturn(userId, targetReturnPct, adminId) {
       }
     } else if (holdings.length > 0 && currentHoldingsCents > 0) {
       // Scale active holdings shares so market value hits targetHoldingsCents
-      // costBasisCents remains intact so the return % is preserved
       const ratio = targetHoldingsCents / currentHoldingsCents;
-      let cryptoHoldingDoc = null;
-      let cryptoHoldingRef = null;
+      const currentSumReturnPct = holdings.reduce(
+        (sum, h) => sum + (h.totalReturnPct || 0),
+        0
+      );
 
       for (const h of holdings) {
         const holdingDoc = await Holding.findOne({
@@ -514,51 +521,27 @@ export async function adminCalibrateReturn(userId, targetReturnPct, adminId) {
         }).session(session);
         if (!holdingDoc) continue;
 
-        if (h.assetClass === "crypto" && !cryptoHoldingDoc) {
-          cryptoHoldingDoc = holdingDoc;
-          cryptoHoldingRef = h;
-          continue;
-        }
-
         const scaledShares =
           h.assetClass === "stocks"
             ? Math.max(1, Math.round(holdingDoc.shares * ratio))
             : Math.max(0.0001, Number((holdingDoc.shares * ratio).toFixed(4)));
 
         holdingDoc.shares = scaledShares;
-        // costBasisCents remains unchanged
+
+        // Distribute target return percentage so sum across holdings equals targetReturnPct
+        const targetHReturn =
+          currentSumReturnPct > 0
+            ? h.totalReturnPct * (targetReturnPct / currentSumReturnPct)
+            : targetReturnPct / holdings.length;
+
+        const priceCents = h.priceUsdCents || h.priceCents || 1000;
+        const estMarketValueCents = Math.round(scaledShares * priceCents);
+        holdingDoc.costBasisCents = Math.max(
+          1,
+          Math.round(estMarketValueCents / (1 + targetHReturn / 100))
+        );
+
         await holdingDoc.save({ session });
-      }
-
-      if (cryptoHoldingDoc && cryptoHoldingRef) {
-        const pricePerUnitCents =
-          cryptoHoldingRef.priceUsdCents ||
-          cryptoHoldingRef.priceCents ||
-          Math.round((cryptoHoldingRef.priceUsdNanos || 0) / 1e7) ||
-          6500000;
-
-        const otherPositions = holdings.filter(
-          (h) =>
-            h.symbol !== cryptoHoldingRef.symbol || h.assetClass !== "crypto"
-        );
-        const otherMarketValueCents = otherPositions.reduce((sum, h) => {
-          const p = h.priceUsdCents || h.priceCents || 0;
-          const scaled =
-            h.assetClass === "stocks"
-              ? Math.max(1, Math.round(h.shares * ratio))
-              : Math.max(0.0001, Number((h.shares * ratio).toFixed(4)));
-          return sum + Math.round(scaled * p);
-        }, 0);
-
-        const neededCryptoValueCents = Math.max(
-          100,
-          targetHoldingsCents - otherMarketValueCents
-        );
-        cryptoHoldingDoc.shares = Math.max(
-          0.0001,
-          Number((neededCryptoValueCents / pricePerUnitCents).toFixed(4))
-        );
-        await cryptoHoldingDoc.save({ session });
       }
     } else {
       // User had no active holdings: seed standard positions matching targetHoldingsCents
@@ -600,8 +583,10 @@ export async function adminCalibrateReturn(userId, targetReturnPct, adminId) {
             ? Math.max(1, Math.floor(allocCents / priceCents))
             : Math.max(0.0001, Number((allocCents / priceCents).toFixed(4)));
 
-        const costBasisPortion = Math.round(
-          holdingsCostBasisCents * dp.allocPct
+        const targetHReturn = targetReturnPct / defaultPositions.length;
+        const costBasisPortion = Math.max(
+          1,
+          Math.round(allocCents / (1 + targetHReturn / 100))
         );
 
         await Holding.findOneAndUpdate(

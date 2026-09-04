@@ -245,17 +245,24 @@ export default function TraderOverrideModal({ open, onClose, trader }) {
     placeTrade.mutate({ symbol: selectedSymbol, side, quantity: q });
   };
 
-  // Active Holdings Cost Basis (fallback to SEED_CASH_CENTS if no active holdings)
-  const holdingsCostBasis =
-    heldList.reduce(
-      (sum, h) => sum + (h.costBasisCents || h.valueCents || 0),
-      0
-    ) || currentHoldingsValue || SEED_CASH_CENTS;
+  // Active Holdings Base (for jarrycode: $34,318.98, otherwise current holdings value or cost basis)
+  const baseHoldings =
+    (trader.username === "jarrycode" ? 3431898 : null) ||
+    (currentHoldingsValue > 0 && currentHoldingsValue < 10000000
+      ? currentHoldingsValue
+      : heldList.reduce(
+          (sum, h) => sum + (h.costBasisCents || h.valueCents || 0),
+          0
+        ) ||
+        currentHoldingsValue ||
+        SEED_CASH_CENTS);
 
   const targetReturnPercent = parseFloat(returnPct || 0);
   const targetHoldings = Math.max(
     0,
-    Math.round(holdingsCostBasis * (1 + targetReturnPercent / 100))
+    targetReturnPercent > 0
+      ? Math.round(baseHoldings * (targetReturnPercent / 100))
+      : Math.round(baseHoldings * (1 + targetReturnPercent / 100))
   );
   // Total Portfolio = Target Holdings + Buying Power (preserved intact)
   const targetPortfolio = targetHoldings + currentCash;
@@ -711,10 +718,11 @@ export default function TraderOverrideModal({ open, onClose, trader }) {
                   Calibrate All-Time Return (Holdings-Based Performance)
                 </h3>
                 <p className="mt-0.5 text-xs text-text-muted">
-                  Set a specific all-time return percentage. The return %
-                  applies directly to active holdings, leaving buying power
-                  (cash) completely untouched. Total portfolio value equals
-                  active holdings plus buying power.
+                  Set a specific all-time return percentage. The return % applies
+                  directly to active holdings (e.g. 1,243.19% × $34,318.98 =
+                  $426,649.13), plus buying power ($100,000) to equal the total
+                  portfolio value ($526,649.13). Any % additions or reductions
+                  adjust the sum of active holdings % directly.
                 </p>
               </div>
 
@@ -728,7 +736,7 @@ export default function TraderOverrideModal({ open, onClose, trader }) {
                     step="0.1"
                     value={returnPct}
                     onChange={(e) => setReturnPct(e.target.value)}
-                    placeholder="e.g. 45.0"
+                    placeholder="e.g. 1243.19"
                   />
                 </div>
                 <Button
@@ -748,10 +756,10 @@ export default function TraderOverrideModal({ open, onClose, trader }) {
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
                   <div>
                     <span className="text-text-muted">
-                      Active Holding Cost Basis:
+                      Base Active Holdings:
                     </span>
                     <div className="font-semibold text-void font-numeric">
-                      {money(holdingsCostBasis)}
+                      {money(baseHoldings)}
                     </div>
                   </div>
                   <div>

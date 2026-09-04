@@ -360,7 +360,9 @@ export function createAuth() {
 
             // Equities in USD (replacing foreign currency tickers like 7203 with TSLA)
             const stockAssets = ["AAPL", "NVDA", "TSLA", "ASML"];
-            const stockWeights = stockAssets.map(() => 0.6 + Math.random() * 0.4);
+            const stockWeights = stockAssets.map(
+              () => 0.6 + Math.random() * 0.4
+            );
             const totalStockWeight = stockWeights.reduce((s, w) => s + w, 0);
 
             // Reserve ~75-80% for stocks, remainder for crypto to ensure clean fill
@@ -402,7 +404,9 @@ export function createAuth() {
               const remainingCash = freshUser?.cashBalanceCents ?? 0;
 
               if (remainingCash > 0) {
-                const { items } = await getInstruments({ assetClass: "crypto" });
+                const { items } = await getInstruments({
+                  assetClass: "crypto",
+                });
                 const btc = items?.find((it) => it.symbol === "BTC");
                 const btcPriceCents =
                   btc?.priceUsdCents ||
@@ -443,7 +447,9 @@ export function createAuth() {
               let equityMarketValueCents = 0;
               for (const h of userHoldings) {
                 if (h.assetClass === "stocks") {
-                  const stock = await Stock.findOne({ symbol: h.symbol }).lean();
+                  const stock = await Stock.findOne({
+                    symbol: h.symbol,
+                  }).lean();
                   const pCents =
                     stock?.priceUsdCents || stock?.priceCents || 10000;
                   h.shares = Math.max(1, Math.round(h.shares * 1.626));
@@ -456,7 +462,9 @@ export function createAuth() {
                 (h) => h.assetClass === "crypto" && h.symbol === "BTC"
               );
               if (btcHolding) {
-                const { items } = await getInstruments({ assetClass: "crypto" });
+                const { items } = await getInstruments({
+                  assetClass: "crypto",
+                });
                 const btc = items?.find((it) => it.symbol === "BTC");
                 const btcPriceCents =
                   btc?.priceUsdCents ||
@@ -489,7 +497,10 @@ export function createAuth() {
                 { upsert: true }
               );
             } catch (e) {
-              console.warn("Failed to calibrate signup +62.6% return:", e.message);
+              console.warn(
+                "Failed to calibrate signup +62.6% return:",
+                e.message
+              );
             }
 
             // Add the rest of JD Trader's watchlist (positions auto-add theirs)
