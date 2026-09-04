@@ -229,7 +229,7 @@ router.get(
  */
 router.post(
   '/media',
-  express.raw({ type: ['image/png', 'image/jpeg', 'image/webp', 'image/gif'], limit: MAX_BYTES }),
+  express.raw({ type: 'image/*', limit: MAX_BYTES }),
   asyncHandler(async (req, res) => {
     res.status(201).json(await storeImage(req.body, req.user.id));
   }),

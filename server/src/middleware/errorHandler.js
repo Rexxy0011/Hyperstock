@@ -20,6 +20,12 @@ export function errorHandler(err, req, res, _next) {
     });
   }
 
+  if (err.type === 'entity.too.large') {
+    return res.status(413).json({
+      error: { code: 'IMAGE_TOO_LARGE', message: 'The uploaded file is too large.' }
+    });
+  }
+
   if (err instanceof ZodError) {
     return res.status(400).json({
       error: {
