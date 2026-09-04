@@ -46,7 +46,13 @@ const literal = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
  * shape: an admin listing needs to know that a credential EXISTS, never what it
  * is.
  */
-const publicRow = (user, canSignIn, computed = null, override = null, provider = null) => ({
+const publicRow = (
+  user,
+  canSignIn,
+  computed = null,
+  override = null,
+  provider = null
+) => ({
   id: String(user._id),
   username: user.username,
   displayName: user.displayName ?? null,
@@ -166,7 +172,9 @@ export async function listUsers({ q = "", page = 1, limit = PAGE_SIZE } = {}) {
   ]);
 
   const withCredentials = new Set(credentialRows.map((a) => String(a.userId)));
-  const providerMap = new Map(credentialRows.map((a) => [String(a.userId), a.providerId]));
+  const providerMap = new Map(
+    credentialRows.map((a) => [String(a.userId), a.providerId])
+  );
 
   return {
     items: rows.map((r) => {
@@ -695,3 +703,70 @@ export async function adminCalibrateReturn(userId, targetReturnPct, adminId) {
     };
   });
 }
+
+/**
+ * Updates a trader's name (displayName and/or username handle).
+ * Immediately invalidates the leaderboard cache so the updated name reflects platform-wide.
+ */
+export async function adminUpdateProfile(
+  userId,
+  { displayName, username },
+  adminId
+) {
+  const user = await User.findById(userId);
+  if (!user) throw ApiError.notFound("User not found");
+
+  const updates = {};
+  if (displayName !== undefined) {
+    const trimmed = String(displayName || "").trim();
+    updates.displayName = trimmed;
+    updates.name = trimmed || user.username;
+  }
+
+  if (username !== undefined) {
+    const trimmedUser = String(username || "").trim().toLowerCase();
+    if (!/^[a-z0-9_]{3,24}$/i.test(trimmedUser)) {
+      throw ApiError.badRequest(
+        "INVALID_USERNAME",
+        "Username must be 3-24 characters and contain only letters, numbers, and underscores"
+      );
+    }
+    const existing = await User.findOne({
+      username: trimmedUser,
+      _id: { $ne: user._id },
+    }).lean();
+    if (existing) {
+      throw ApiError.conflict(
+        "USERNAME_TAKEN",
+        "Username is already taken by another user"
+      );
+    }
+    updates.username = trimmedUser;
+    updates.displayUsername = trimmedUser;
+  }
+
+  if (Object.keys(updates).length > 0) {
+    await User.updateOne({ _id: user._id }, { $set: updates });
+    try {
+      await mongoose.connection
+        .collection("users")
+        .updateOne({ _id: user._id }, { $set: updates });
+    } catch {
+      // ignore native collection update error if it fails
+    }
+  }
+
+  invalidateLeaderboard();
+
+  const updatedUser = await User.findById(userId).lean();
+  return {
+    success: true,
+    user: {
+      id: String(updatedUser._id),
+      displayName: updatedUser.displayName,
+      name: updatedUser.name,
+      username: updatedUser.username,
+    },
+  };
+}
+

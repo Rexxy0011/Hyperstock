@@ -10,7 +10,7 @@ import Avatar from "../ui/Avatar";
 import Badge, { statusVariant } from "../ui/Badge";
 import SegmentedControl from "../ui/SegmentedControl";
 import CopyField from "../ui/CopyField";
-import { FiEye, FiEyeOff, FiLock, FiMail, FiUser } from "react-icons/fi";
+import { FiEye, FiEyeOff, FiLock, FiMail, FiUser, FiEdit2 } from "react-icons/fi";
 import Icon from "../ui/Icon";
 import notify from "../../lib/toast";
 
@@ -43,6 +43,13 @@ export default function TraderOverrideModal({ open, onClose, trader }) {
   // Credentials tab state
   const [credRevealed, setCredRevealed] = useState(false);
 
+  // Edit Name & Profile state
+  const [displayName, setDisplayName] = useState(trader?.displayName || "");
+  const [username, setUsername] = useState(trader?.username || "");
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editDisplayName, setEditDisplayName] = useState("");
+  const [editUsername, setEditUsername] = useState("");
+
   // Reset/sync state when a different trader is opened
   useEffect(() => {
     if (open && trader) {
@@ -53,6 +60,11 @@ export default function TraderOverrideModal({ open, onClose, trader }) {
       setShares("1");
       setFundAmount("");
       setCredRevealed(false);
+      setDisplayName(trader.displayName || "");
+      setUsername(trader.username || "");
+      setIsEditingName(false);
+      setEditDisplayName(trader.displayName || "");
+      setEditUsername(trader.username || "");
       setActiveTab("trade");
     }
   }, [open, trader?.id]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -231,6 +243,25 @@ export default function TraderOverrideModal({ open, onClose, trader }) {
     onError: (err) => notify.apiError(err),
   });
 
+  // 6. Update Trader Name & Handle
+  const updateProfileMutation = useMutation({
+    mutationFn: (data) => patch(`/admin/users/${trader.id}/profile`, data),
+    onSuccess: (data) => {
+      notify.success("Trader name updated successfully!");
+      if (data?.user) {
+        setDisplayName(data.user.displayName || "");
+        setUsername(data.user.username || "");
+        trader.displayName = data.user.displayName;
+        trader.name = data.user.name;
+        trader.username = data.user.username;
+      }
+      setIsEditingName(false);
+      queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+      queryClient.invalidateQueries({ queryKey: ["leaderboard"] });
+    },
+    onError: (err) => notify.apiError(err),
+  });
+
   if (!trader) return null;
 
   // File picker handler
@@ -303,7 +334,7 @@ export default function TraderOverrideModal({ open, onClose, trader }) {
     <Modal
       open={open}
       onClose={onClose}
-      title={`Manage User: ${trader.displayName || trader.username}`}
+      title={`Manage User: ${displayName || username || trader.displayName || trader.username}`}
       className="w-[min(46rem,calc(100vw-2rem))] max-h-[92vh] overflow-y-auto"
       footer={
         <div className="flex w-full items-center justify-between">
@@ -323,7 +354,7 @@ export default function TraderOverrideModal({ open, onClose, trader }) {
           <div className="flex items-center gap-4">
             <div className="relative group">
               <Avatar
-                name={trader.username}
+                name={username || trader.username}
                 src={avatarUrl || undefined}
                 size={60}
                 className="ring-2 ring-cool-grey shadow-sm"
@@ -335,27 +366,115 @@ export default function TraderOverrideModal({ open, onClose, trader }) {
               )}
             </div>
 
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-semibold text-void text-base">
-                  {trader.displayName || trader.username}
-                </span>
-                <Badge variant={statusVariant(trader.status)}>
-                  {trader.status}
-                </Badge>
-                {trader.role === "admin" && (
-                  <Badge variant="amber">Admin</Badge>
-                )}
+            {isEditingName ? (
+              <div className="flex flex-col gap-2 min-w-[260px] sm:min-w-[320px]">
+                <div className="flex flex-col gap-1">
+                  <label className="text-2xs font-semibold text-text-muted uppercase tracking-wider">
+                    Display Name
+                  </label>
+                  <input
+                    type="text"
+                    value={editDisplayName}
+                    onChange={(e) => setEditDisplayName(e.target.value)}
+                    placeholder="e.g. Warren Buffett"
+                    className="w-full text-xs px-2.5 py-1.5 rounded-md border border-cool-grey bg-white text-void focus:outline-none focus:ring-1 focus:ring-brand font-medium"
+                    autoFocus
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-2xs font-semibold text-text-muted uppercase tracking-wider">
+                    Username (@)
+                  </label>
+                  <div className="relative flex items-center">
+                    <span className="absolute left-2.5 text-xs text-text-muted select-none">
+                      @
+                    </span>
+                    <input
+                      type="text"
+                      value={editUsername}
+                      onChange={(e) =>
+                        setEditUsername(
+                          e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, "")
+                        )
+                      }
+                      placeholder="username"
+                      className="w-full text-xs pl-6 pr-2.5 py-1.5 rounded-md border border-cool-grey bg-white font-mono text-void focus:outline-none focus:ring-1 focus:ring-brand"
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 pt-1">
+                  <Button
+                    size="sm"
+                    loading={updateProfileMutation.isPending}
+                    onClick={() => {
+                      if (!editUsername.trim()) {
+                        notify.error("Username cannot be empty");
+                        return;
+                      }
+                      updateProfileMutation.mutate({
+                        displayName: editDisplayName.trim(),
+                        username: editUsername.trim().toLowerCase(),
+                      });
+                    }}
+                  >
+                    Save Name
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    disabled={updateProfileMutation.isPending}
+                    onClick={() => {
+                      setEditDisplayName(
+                        displayName || trader.displayName || ""
+                      );
+                      setEditUsername(username || trader.username || "");
+                      setIsEditingName(false);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
               </div>
-              <div className="mt-0.5 text-xs text-text-muted font-mono">
-                {trader.email}
+            ) : (
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-semibold text-void text-base">
+                    {displayName ||
+                      username ||
+                      trader.displayName ||
+                      trader.username}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditDisplayName(
+                        displayName || trader.displayName || ""
+                      );
+                      setEditUsername(username || trader.username || "");
+                      setIsEditingName(true);
+                    }}
+                    className="p-1 text-text-muted hover:text-void rounded hover:bg-cloud transition-colors cursor-pointer"
+                    title="Edit Name & Username"
+                  >
+                    <FiEdit2 size={13} />
+                  </button>
+                  <Badge variant={statusVariant(trader.status)}>
+                    {trader.status}
+                  </Badge>
+                  {trader.role === "admin" && (
+                    <Badge variant="amber">Admin</Badge>
+                  )}
+                </div>
+                <div className="mt-0.5 text-xs text-text-muted font-mono">
+                  {trader.email}
+                </div>
+                <div className="mt-1 flex items-center gap-2 text-2xs text-text-muted">
+                  <span>@{username || trader.username}</span>
+                  <span>•</span>
+                  <span>{trader.tradeCount} lifetime trades</span>
+                </div>
               </div>
-              <div className="mt-1 flex items-center gap-2 text-2xs text-text-muted">
-                <span>@{trader.username}</span>
-                <span>•</span>
-                <span>{trader.tradeCount} lifetime trades</span>
-              </div>
-            </div>
+            )}
           </div>
 
           <div className="flex items-center gap-2">

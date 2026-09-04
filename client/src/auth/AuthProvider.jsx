@@ -1,6 +1,12 @@
-import { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import { api, post } from '../lib/api';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { api, post } from "../lib/api";
 
 const AuthContext = createContext(null);
 
@@ -16,7 +22,7 @@ const shape = (u) =>
   u && {
     ...u,
     id: u.id,
-    avatarLetter: (u.username ?? u.name ?? u.email ?? '?')[0].toUpperCase(),
+    avatarLetter: (u.username ?? u.name ?? u.email ?? "?")[0].toUpperCase(),
   };
 
 /**
@@ -49,7 +55,7 @@ export function AuthProvider({ children }) {
     // Returns 200 with a null body for an anonymous visitor rather than 401,
     // so "am I signed in" is not an error path.
     api
-      .get('/auth/get-session')
+      .get("/auth/get-session")
       .then((res) => !cancelled && setUser(shape(res.data?.user)))
       .catch(() => {
         // No session — a normal signed-out visitor.
@@ -78,28 +84,37 @@ export function AuthProvider({ children }) {
       queryClient.clear();
       return next;
     },
-    [queryClient],
+    [queryClient]
   );
 
   const login = useCallback(
     async ({ email, username, password }) => {
-      const identifier = String(email || username || '').trim();
-      if (identifier.includes('@')) {
-        return adopt(await post('/auth/sign-in/email', { email: identifier, password }));
+      const identifier = String(email || username || "").trim();
+      if (identifier.includes("@")) {
+        return adopt(
+          await post("/auth/sign-in/email", { email: identifier, password })
+        );
       }
       try {
-        return adopt(await post('/auth/sign-in/username', { username: identifier, password }));
+        return adopt(
+          await post("/auth/sign-in/username", {
+            username: identifier,
+            password,
+          })
+        );
       } catch {
-        return adopt(await post('/auth/sign-in/email', { email: identifier, password }));
+        return adopt(
+          await post("/auth/sign-in/email", { email: identifier, password })
+        );
       }
     },
-    [adopt],
+    [adopt]
   );
 
   const register = useCallback(
     async ({ email, password, username, displayName, country }) =>
       adopt(
-        await post('/auth/sign-up/email', {
+        await post("/auth/sign-up/email", {
           email,
           password,
           username,
@@ -109,9 +124,9 @@ export function AuthProvider({ children }) {
           // design does not have.
           name: displayName || username,
           ...(country && { country }),
-        }),
+        })
       ),
-    [adopt],
+    [adopt]
   );
 
   /**
@@ -129,15 +144,19 @@ export function AuthProvider({ children }) {
    */
   const requestCode = useCallback(
     async ({ email, purpose }) =>
-      purpose === 'reset'
-        ? post('/auth/email-otp/request-password-reset', { email })
-        : post('/auth/email-otp/send-verification-otp', { email, type: 'sign-in' }),
-    [],
+      purpose === "reset"
+        ? post("/auth/email-otp/request-password-reset", { email })
+        : post("/auth/email-otp/send-verification-otp", {
+            email,
+            type: "sign-in",
+          }),
+    []
   );
 
   const signInWithCode = useCallback(
-    async ({ email, otp }) => adopt(await post('/auth/sign-in/email-otp', { email, otp })),
-    [adopt],
+    async ({ email, otp }) =>
+      adopt(await post("/auth/sign-in/email-otp", { email, otp })),
+    [adopt]
   );
 
   /**
@@ -150,10 +169,10 @@ export function AuthProvider({ children }) {
    */
   const resetPasswordWithCode = useCallback(
     async ({ email, otp, password }) => {
-      await post('/auth/email-otp/reset-password', { email, otp, password });
-      return adopt(await post('/auth/sign-in/email', { email, password }));
+      await post("/auth/email-otp/reset-password", { email, otp, password });
+      return adopt(await post("/auth/sign-in/email", { email, password }));
     },
-    [adopt],
+    [adopt]
   );
 
   /**
@@ -172,9 +191,9 @@ export function AuthProvider({ children }) {
    */
   // Default matches Auth.jsx's: signing in lands on the landing page unless
   // a `?next=` said otherwise. Every caller passes one explicitly.
-  const signInWithGoogle = useCallback(async (next = '/') => {
-    const { url } = await post('/auth/sign-in/social', {
-      provider: 'google',
+  const signInWithGoogle = useCallback(async (next = "/") => {
+    const { url } = await post("/auth/sign-in/social", {
+      provider: "google",
       callbackURL: `${window.location.origin}${next}`,
       errorCallbackURL: `${window.location.origin}/auth?error=oauth`,
     });
@@ -182,16 +201,20 @@ export function AuthProvider({ children }) {
   }, []);
 
   const logout = useCallback(async () => {
-    await post('/auth/sign-out').catch(() => {});
+    await post("/auth/sign-out").catch(() => {});
     setUser(null);
     queryClient.clear();
   }, [queryClient]);
 
   /** Called after a fill so the nav's cash balance reflects the new total. */
-  const patchUser = useCallback((changes) => setUser((u) => (u ? { ...u, ...changes } : u)), []);
+  const patchUser = useCallback(
+    (changes) => setUser((u) => (u ? { ...u, ...changes } : u)),
+    []
+  );
 
   return (
-    <AuthContext.Provider value={{
+    <AuthContext.Provider
+      value={{
         user,
         authReady,
         login,
@@ -202,7 +225,8 @@ export function AuthProvider({ children }) {
         resetPasswordWithCode,
         logout,
         patchUser,
-      }}>
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -210,6 +234,6 @@ export function AuthProvider({ children }) {
 
 export function useAuth() {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used inside <AuthProvider>');
+  if (!ctx) throw new Error("useAuth must be used inside <AuthProvider>");
   return ctx;
 }

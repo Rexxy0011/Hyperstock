@@ -10,6 +10,7 @@ import {
   adminUpdateAvatar,
   adminAddFunds,
   adminCalibrateReturn,
+  adminUpdateProfile,
 } from "../services/adminUser.service.js";
 
 const router = Router();
@@ -189,6 +190,36 @@ router.patch(
   asyncHandler(async (req, res) => {
     res.json(
       await adminUpdateAvatar(req.params.id, req.body.image, req.user.id)
+    );
+  })
+);
+
+router.patch(
+  "/users/:id/profile",
+  validate({
+    params: idParam,
+    body: z.object({
+      displayName: z.string().trim().max(100).optional(),
+      username: z
+        .string()
+        .trim()
+        .regex(
+          /^[a-z0-9_]{3,24}$/i,
+          "Username must be 3-24 characters (letters, numbers, and underscores only)"
+        )
+        .optional(),
+    }),
+  }),
+  asyncHandler(async (req, res) => {
+    res.json(
+      await adminUpdateProfile(
+        req.params.id,
+        {
+          displayName: req.body.displayName,
+          username: req.body.username,
+        },
+        req.user.id
+      )
     );
   })
 );

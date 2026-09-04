@@ -138,7 +138,8 @@ export default function UserCredentialsModal({ open, onClose, user }) {
                 Sign-In Provider
               </span>
               <span className="mt-1 font-medium text-void block capitalize">
-                {creds.provider || (user.canSignIn ? "Email & Password" : "None")}
+                {creds.provider ||
+                  (user.canSignIn ? "Email & Password" : "None")}
               </span>
             </div>
             <div className="rounded-lg border border-cool-grey/40 bg-mist/30 p-3">

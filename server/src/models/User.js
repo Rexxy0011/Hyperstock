@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema(
   {
@@ -9,7 +9,10 @@ const userSchema = new mongoose.Schema(
       trim: true,
       minlength: 3,
       maxlength: 24,
-      match: [/^[a-z0-9_]+$/i, 'Username may only contain letters, numbers and underscores'],
+      match: [
+        /^[a-z0-9_]+$/i,
+        "Username may only contain letters, numbers and underscores",
+      ],
     },
     email: {
       type: String,
@@ -57,8 +60,17 @@ const userSchema = new mongoose.Schema(
 
     country: { type: String },
 
-    role: { type: String, enum: ['user', 'admin'], default: 'user', index: true },
-    status: { type: String, enum: ['Active', 'Flagged', 'Suspended'], default: 'Active' },
+    role: {
+      type: String,
+      enum: ["user", "admin"],
+      default: "user",
+      index: true,
+    },
+    status: {
+      type: String,
+      enum: ["Active", "Flagged", "Suspended"],
+      default: "Active",
+    },
 
     /**
      * Virtual USD cash in integer cents. Seeded at signup; only the order and
@@ -69,7 +81,10 @@ const userSchema = new mongoose.Schema(
       required: true,
       default: 1_000_000,
       min: 0,
-      validate: { validator: Number.isInteger, message: 'cashBalanceCents must be an integer' },
+      validate: {
+        validator: Number.isInteger,
+        message: "cashBalanceCents must be an integer",
+      },
     },
 
     /** Denormalised so the leaderboard doesn't need a second aggregation. */
@@ -83,17 +98,17 @@ const userSchema = new mongoose.Schema(
     /** Bumped to invalidate every outstanding refresh token for this user. */
     tokenVersion: { type: Number, default: 0 },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 userSchema.index({ status: 1, role: 1 });
 
 /** The design derives avatars from the username's first letter, in one place. */
-userSchema.virtual('avatarLetter').get(function () {
-  return this.username?.[0]?.toUpperCase() ?? '?';
+userSchema.virtual("avatarLetter").get(function () {
+  return this.username?.[0]?.toUpperCase() ?? "?";
 });
 
-userSchema.set('toJSON', {
+userSchema.set("toJSON", {
   virtuals: true,
   transform(_doc, /** @type {any} */ ret) {
     delete ret.passwordHash;
@@ -106,4 +121,4 @@ userSchema.set('toJSON', {
   },
 });
 
-export const User = mongoose.model('User', userSchema);
+export const User = mongoose.model("User", userSchema);

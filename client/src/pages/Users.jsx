@@ -74,7 +74,9 @@ export default function Users() {
    */
   const [editing, setEditing] = useState(/** @type {any} */ (null));
   const [editOpen, setEditOpen] = useState(false);
-  const [credentialsUser, setCredentialsUser] = useState(/** @type {any} */ (null));
+  const [credentialsUser, setCredentialsUser] = useState(
+    /** @type {any} */ (null)
+  );
   const [credentialsOpen, setCredentialsOpen] = useState(false);
 
   const rows = data?.items ?? [];
