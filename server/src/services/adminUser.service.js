@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { User } from "../models/User.js";
+import { Stock } from "../models/Stock.js";
 import { ApiError } from "../lib/ApiError.js";
 import { computedRowsFor } from "./leaderboard.service.js";
 import { getPortfolio } from "./portfolio.service.js";
