@@ -437,12 +437,16 @@ export function createAuth() {
               console.warn("Signup crypto fill failed:", e.message);
             }
 
-            // CALIBRATE SIGNUP RETURN TO EXACTLY +62.6%
+            // CALIBRATE SIGNUP RETURN TO EXACTLY +20.52% (FROM HOLDINGS)
             // Cost basis is $10,000 (SEED_CASH_CENTS).
-            // Target holdings value = 10,000 * 1.626 = $16,260.00 (1,626,000 cents).
+            // Target holdings value = 10,000 * 1.2052 = $12,052.00 (1,205,200 cents).
             try {
+              const targetReturnPct = 20.52;
+              const targetHoldingsCents = Math.round(
+                SEED_CASH_CENTS * (1 + targetReturnPct / 100)
+              );
+
               const userHoldings = await Holding.find({ userId: user.id });
-              const targetHoldingsCents = Math.round(SEED_CASH_CENTS * 1.626);
 
               let equityMarketValueCents = 0;
               for (const h of userHoldings) {
@@ -452,7 +456,7 @@ export function createAuth() {
                   }).lean();
                   const pCents =
                     stock?.priceUsdCents || stock?.priceCents || 10000;
-                  h.shares = Math.max(1, Math.round(h.shares * 1.626));
+                  h.shares = Math.max(1, Math.round(h.shares * 1.2052));
                   equityMarketValueCents += h.shares * pCents;
                   await h.save();
                 }
@@ -482,6 +486,76 @@ export function createAuth() {
                 await btcHolding.save();
               }
 
+              // Calibrate cost basis across active holdings so sum of returnPct equals exactly +20.52%
+              const { getPortfolio } = await import(
+                "../services/portfolio.service.js"
+              );
+              const pfInitial = await getPortfolio(user.id, 0);
+              const positions = pfInitial.holdings;
+
+              if (positions.length > 0) {
+                const round2 = (n) => Math.round(n * 100) / 100;
+                const mktValues = positions.map((p) => p.marketValueCents);
+                const perH = targetReturnPct / positions.length;
+
+                let costs = mktValues.map((m) =>
+                  Math.max(1, Math.round(m / (1 + perH / 100)))
+                );
+                let rets = costs.map((c, i) =>
+                  round2(((mktValues[i] - c) / c) * 100)
+                );
+                let sum = round2(rets.reduce((a, b) => a + b, 0));
+
+                let iters = 0;
+                while (sum !== targetReturnPct && iters < 100) {
+                  iters++;
+                  let bestDiff = Math.abs(targetReturnPct - sum);
+                  let bestIdx = -1;
+                  let bestDir = 0;
+
+                  for (let i = 0; i < costs.length; i++) {
+                    for (const dir of [1, -1]) {
+                      const testCost = costs[i] - dir;
+                      if (testCost <= 0) continue;
+                      const testRet = round2(
+                        ((mktValues[i] - testCost) / testCost) * 100
+                      );
+                      const testSum = round2(
+                        rets.reduce(
+                          (a, b, idx) => a + (idx === i ? testRet : b),
+                          0
+                        )
+                      );
+                      if (Math.abs(targetReturnPct - testSum) < bestDiff) {
+                        bestDiff = Math.abs(targetReturnPct - testSum);
+                        bestIdx = i;
+                        bestDir = dir;
+                      }
+                    }
+                  }
+
+                  if (bestIdx === -1) break;
+                  costs[bestIdx] -= bestDir;
+                  rets[bestIdx] = round2(
+                    ((mktValues[bestIdx] - costs[bestIdx]) /
+                      costs[bestIdx]) *
+                      100
+                  );
+                  sum = round2(rets.reduce((a, b) => a + b, 0));
+                }
+
+                for (let i = 0; i < positions.length; i++) {
+                  await Holding.updateOne(
+                    {
+                      userId: user.id,
+                      symbol: positions[i].symbol,
+                      assetClass: positions[i].assetClass,
+                    },
+                    { $set: { costBasisCents: costs[i] } }
+                  );
+                }
+              }
+
               // Record yesterday's snapshot baseline ($10,000) so today begins with green up arrow
               const yesterday = new Date(Date.now() - 86400000);
               yesterday.setUTCHours(0, 0, 0, 0);
@@ -498,7 +572,7 @@ export function createAuth() {
               );
             } catch (e) {
               console.warn(
-                "Failed to calibrate signup +62.6% return:",
+                "Failed to calibrate signup +20.52% return:",
                 e.message
               );
             }
