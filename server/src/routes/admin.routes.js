@@ -9,6 +9,7 @@ import {
   adminRemoveHolding,
   adminUpdateAvatar,
   adminAddFunds,
+  adminCalibrateReturn,
 } from "../services/adminUser.service.js";
 
 const router = Router();
@@ -203,6 +204,25 @@ router.post(
   asyncHandler(async (req, res) => {
     res.json(
       await adminAddFunds(req.params.id, req.body.amountCents, req.user.id)
+    );
+  })
+);
+
+router.post(
+  "/users/:id/portfolio/calibrate",
+  validate({
+    params: idParam,
+    body: z.object({
+      targetReturnPct: z.number(),
+    }),
+  }),
+  asyncHandler(async (req, res) => {
+    res.json(
+      await adminCalibrateReturn(
+        req.params.id,
+        req.body.targetReturnPct,
+        req.user.id
+      )
     );
   })
 );

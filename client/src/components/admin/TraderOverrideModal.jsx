@@ -189,14 +189,19 @@ export default function TraderOverrideModal({ open, onClose, trader }) {
     onError: (err) => notify.apiError(err),
   });
 
-  // 5. Update Cash / Performance Target
-  const updateCash = useMutation({
-    mutationFn: (cashBalanceCents) =>
-      patch(`/admin/users/${trader.id}/portfolio/cash`, { cashBalanceCents }),
+  // 5. Calibrate Return (Rebalances holdings, keeps buying power intact)
+  const calibrateReturn = useMutation({
+    mutationFn: (targetReturnPct) =>
+      post(`/admin/users/${trader.id}/portfolio/calibrate`, {
+        targetReturnPct: Number(targetReturnPct),
+      }),
     onSuccess: () => {
-      notify.success("Portfolio return target updated");
+      notify.success(
+        `All-time return calibrated to ${pct(parseFloat(returnPct || 0))}. Active holdings rebalanced.`
+      );
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
       queryClient.invalidateQueries({ queryKey: ["leaderboard"] });
+      queryClient.invalidateQueries({ queryKey: ["portfolio"] });
       refetchPositions();
     },
     onError: (err) => notify.apiError(err),
@@ -240,15 +245,22 @@ export default function TraderOverrideModal({ open, onClose, trader }) {
     placeTrade.mutate({ symbol: selectedSymbol, side, quantity: q });
   };
 
-  // Performance Target handler
+  // Performance Target calculations (Target Portfolio = Holdings + Buying Power)
   const targetPortfolio = Math.round(
     SEED_CASH_CENTS * (1 + parseFloat(returnPct || 0) / 100)
   );
-  const targetCash = Math.max(0, targetPortfolio - currentHoldingsValue);
-  const cashDelta = targetCash - currentCash;
+  const targetHoldings = Math.max(0, targetPortfolio - currentCash);
+  const holdingsDelta = targetHoldings - currentHoldingsValue;
+  const isLossToday =
+    targetPortfolio < currentPortfolioValue || parseFloat(returnPct || 0) < 0;
 
   const handleApplyPerformance = () => {
-    updateCash.mutate(Math.round(targetCash));
+    const num = parseFloat(returnPct);
+    if (isNaN(num)) {
+      notify.error("Please enter a valid return percentage");
+      return;
+    }
+    calibrateReturn.mutate(num);
   };
 
   return (
@@ -687,12 +699,14 @@ export default function TraderOverrideModal({ open, onClose, trader }) {
             <div className="rounded-xl border border-cool-grey bg-white p-5 shadow-card">
               <div className="border-b border-cool-grey/60 pb-3 mb-4">
                 <h3 className="text-sm font-semibold text-void">
-                  Calibrate All-Time Return
+                  Calibrate All-Time Return (Holdings Rebalancing)
                 </h3>
                 <p className="mt-0.5 text-xs text-text-muted">
                   Set a specific all-time return percentage. The platform
-                  balances uninvested cash against active holdings so the user
-                  ranks accurately on the leaderboard.
+                  rebalances active holdings to match the target portfolio value
+                  while preserving buying power (cash). Negative returns or
+                  reductions record as a daily loss (▼) while maintaining rank
+                  by total portfolio value.
                 </p>
               </div>
 
@@ -711,7 +725,7 @@ export default function TraderOverrideModal({ open, onClose, trader }) {
                 </div>
                 <Button
                   onClick={handleApplyPerformance}
-                  loading={updateCash.isPending}
+                  loading={calibrateReturn.isPending}
                   className="whitespace-nowrap"
                 >
                   Apply Return Target
@@ -723,47 +737,76 @@ export default function TraderOverrideModal({ open, onClose, trader }) {
                 <h4 className="text-2xs font-semibold uppercase tracking-wider text-text-muted mb-3">
                   Accounting & Rebalancing Breakdown
                 </h4>
-                <div className="grid grid-cols-2 gap-3 text-xs">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
                   <div>
-                    <span className="text-text-muted">
-                      Base Contributed Capital:
-                    </span>
+                    <span className="text-text-muted">Base Capital:</span>
                     <div className="font-semibold text-void">
                       {money(SEED_CASH_CENTS)}
                     </div>
                   </div>
                   <div>
                     <span className="text-text-muted">
-                      Current Portfolio Value:
+                      Buying Power (Cash):
                     </span>
                     <div className="font-semibold text-void">
-                      {money(currentPortfolioValue)}
+                      {money(currentCash)}{" "}
+                      <span className="text-2xs font-normal text-text-muted">
+                        (Preserved)
+                      </span>
                     </div>
                   </div>
                   <div>
-                    <span className="text-text-muted">
-                      Computed Target Portfolio:
-                    </span>
+                    <span className="text-text-muted">Current Holdings:</span>
+                    <div className="font-semibold text-void">
+                      {money(currentHoldingsValue)}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-text-muted">Target Holdings:</span>
+                    <div className="font-semibold text-void">
+                      {money(targetHoldings)}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-text-muted">Target Portfolio:</span>
                     <div className="font-semibold text-gain font-numeric">
                       {money(targetPortfolio)} (
                       {pct(parseFloat(returnPct || 0))})
                     </div>
                   </div>
                   <div>
-                    <span className="text-text-muted">
-                      Cash Adjustment Required:
-                    </span>
+                    <span className="text-text-muted">Holdings Rebalance:</span>
                     <div
                       className={`font-semibold font-numeric ${
-                        cashDelta >= 0 ? "text-gain" : "text-loss"
+                        holdingsDelta >= 0 ? "text-gain" : "text-loss"
                       }`}
                     >
-                      {cashDelta >= 0
-                        ? `+${money(cashDelta)}`
-                        : money(cashDelta)}
+                      {holdingsDelta >= 0
+                        ? `+${money(holdingsDelta)}`
+                        : money(holdingsDelta)}
                     </div>
                   </div>
                 </div>
+
+                {/* Daily Loss / Gain Indicator Preview */}
+                {isLossToday ? (
+                  <div className="mt-4 flex items-center gap-2 rounded-lg bg-red-tint/60 border border-loss/20 p-2.5 text-xs text-loss">
+                    <span className="font-bold shrink-0">▼ Daily Loss:</span>
+                    <span>
+                      Red down arrow (▼) will be reflected today for this
+                      trader. If total portfolio value still exceeds other
+                      traders, they remain in Top Investors.
+                    </span>
+                  </div>
+                ) : (
+                  <div className="mt-4 flex items-center gap-2 rounded-lg bg-green-tint/60 border border-gain/20 p-2.5 text-xs text-gain">
+                    <span className="font-bold shrink-0">▲ Daily Gain:</span>
+                    <span>
+                      Green up arrow (▲) will be reflected today for this
+                      trader.
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           </div>

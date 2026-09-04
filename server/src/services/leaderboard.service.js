@@ -342,7 +342,7 @@ async function computeBoard(period) {
 
     {
       $setWindowFields: {
-        sortBy: { dayChangePct: -1 },
+        sortBy: { portfolioValueCents: -1 },
         output: { rank: { $rank: {} } },
       },
     },

@@ -6,13 +6,15 @@ import {
   computedRowsFor,
   invalidateLeaderboard,
 } from "./leaderboard.service.js";
-import { getPortfolio } from "./portfolio.service.js";
+import { getPortfolio, contributedCapitalCents } from "./portfolio.service.js";
 import { post as ledgerPost } from "./ledger.service.js";
 import { LEDGER_TYPE } from "../models/LedgerEntry.js";
 import { withTransaction } from "../config/db.js";
 import { Holding } from "../models/Holding.js";
 import { WatchlistItem } from "../models/WatchlistItem.js";
+import { PortfolioSnapshot } from "../models/PortfolioSnapshot.js";
 import { getInstruments } from "./market.service.js";
+import { SEED_CASH_CENTS } from "../config/env.js";
 
 /**
  * The user listing behind /admin/users.
@@ -457,5 +459,187 @@ export async function adminAddFunds(userId, amountCents, adminId) {
 
     invalidateLeaderboard();
     return { cashBalanceCents: balanceAfterCents };
+  });
+}
+
+export async function adminCalibrateReturn(userId, targetReturnPct, adminId) {
+  const investedCents = await contributedCapitalCents(userId);
+  const targetPortfolioCents = Math.max(
+    0,
+    Math.round(investedCents * (1 + targetReturnPct / 100))
+  );
+
+  return withTransaction(async (session) => {
+    const user = await User.findById(userId).session(session);
+    if (!user) throw ApiError.notFound("User not found");
+
+    const { holdings, summary } = await getPortfolio(
+      userId,
+      user.cashBalanceCents
+    );
+    const currentCashCents = user.cashBalanceCents || 0;
+    const currentHoldingsCents = summary?.holdingsValueCents ?? 0;
+    const currentPortfolioCents = currentHoldingsCents + currentCashCents;
+
+    // Target holdings: keep buying power intact, adjust the holdings
+    // Target Portfolio = Holdings Value + Buying Power
+    const targetHoldingsCents = Math.max(
+      0,
+      targetPortfolioCents - currentCashCents
+    );
+
+    // If target portfolio is less than current cash (e.g. large negative return target like -80% or -100%)
+    if (targetPortfolioCents < currentCashCents) {
+      await Holding.deleteMany({ userId }, { session });
+
+      const cashReductionCents = currentCashCents - targetPortfolioCents;
+      if (cashReductionCents > 0) {
+        await ledgerPost({
+          userId,
+          type: LEDGER_TYPE.ADJUSTMENT,
+          amountCents: -cashReductionCents,
+          reference: `admin_calib_${Date.now()}`,
+          detail: `Buying power adjusted down to match target return of ${targetReturnPct}% by admin ${adminId}`,
+          session,
+        });
+      }
+    } else if (currentHoldingsCents > 0) {
+      const ratio = targetHoldingsCents / currentHoldingsCents;
+      if (ratio <= 0.0001) {
+        await Holding.deleteMany({ userId }, { session });
+      } else {
+        for (const h of holdings) {
+          const holdingDoc = await Holding.findOne({
+            userId,
+            symbol: h.symbol,
+            assetClass: h.assetClass,
+          }).session(session);
+          if (!holdingDoc) continue;
+
+          const scaledShares =
+            h.assetClass === "stocks"
+              ? Math.max(1, Math.round(holdingDoc.shares * ratio))
+              : Math.max(
+                  0.0001,
+                  Number((holdingDoc.shares * ratio).toFixed(4))
+                );
+
+          holdingDoc.shares = scaledShares;
+          holdingDoc.costBasisCents = Math.max(
+            1,
+            Math.round((holdingDoc.costBasisCents || 1) * ratio)
+          );
+          await holdingDoc.save({ session });
+        }
+      }
+    } else if (targetHoldingsCents > 0) {
+      // User had no holdings: seed standard positions directly to match targetHoldingsCents
+      const defaultPositions = [
+        {
+          symbol: "AAPL",
+          assetClass: "stocks",
+          name: "Apple Inc.",
+          allocPct: 0.4,
+        },
+        {
+          symbol: "NVDA",
+          assetClass: "stocks",
+          name: "NVIDIA Corporation",
+          allocPct: 0.35,
+        },
+        {
+          symbol: "BTCUSD",
+          assetClass: "crypto",
+          name: "Bitcoin",
+          allocPct: 0.25,
+        },
+      ];
+
+      for (const dp of defaultPositions) {
+        const allocCents = Math.round(targetHoldingsCents * dp.allocPct);
+        let priceCents = 20000;
+        if (dp.assetClass === "stocks") {
+          const s = await Stock.findOne({ symbol: dp.symbol }).lean();
+          if (s?.priceUsdCents) priceCents = s.priceUsdCents;
+        } else if (dp.assetClass === "crypto") {
+          const { items } = await getInstruments({ assetClass: "crypto" });
+          const inst = items?.find((it) => it.symbol === dp.symbol);
+          if (inst?.priceUsdCents) priceCents = inst.priceUsdCents;
+        }
+
+        const shares =
+          dp.assetClass === "stocks"
+            ? Math.max(1, Math.floor(allocCents / priceCents))
+            : Math.max(0.0001, Number((allocCents / priceCents).toFixed(4)));
+
+        await Holding.findOneAndUpdate(
+          { userId, symbol: dp.symbol, assetClass: dp.assetClass },
+          {
+            $set: {
+              name: dp.name,
+              shares,
+              costBasisCents: Math.round(priceCents * shares),
+            },
+          },
+          { upsert: true, session }
+        );
+      }
+    }
+
+    // Daily loss / gain arrow tracking:
+    // If target is less than current OR targetReturnPct < 0:
+    // Trader made a loss for the day -> down arrow (▼)
+    const isLoss =
+      targetReturnPct < 0 || targetPortfolioCents < currentPortfolioCents;
+    const yesterday = new Date(Date.now() - 86400000);
+    yesterday.setUTCHours(0, 0, 0, 0);
+
+    if (isLoss) {
+      const yesterdayBase = Math.max(
+        currentPortfolioCents,
+        investedCents,
+        Math.round(targetPortfolioCents * 1.1 + 1000)
+      );
+      await PortfolioSnapshot.updateOne(
+        { userId, date: yesterday },
+        {
+          $set: {
+            portfolioValueCents: yesterdayBase,
+            cashBalanceCents: user.cashBalanceCents,
+            holdingsValueCents: Math.max(
+              0,
+              yesterdayBase - (user.cashBalanceCents || 0)
+            ),
+          },
+        },
+        { upsert: true, session }
+      );
+    } else if (targetPortfolioCents > currentPortfolioCents) {
+      const yesterdayBase = Math.min(
+        currentPortfolioCents,
+        Math.max(1, Math.round(targetPortfolioCents * 0.9 - 1000))
+      );
+      await PortfolioSnapshot.updateOne(
+        { userId, date: yesterday },
+        {
+          $set: {
+            portfolioValueCents: yesterdayBase,
+            cashBalanceCents: user.cashBalanceCents,
+            holdingsValueCents: Math.max(
+              0,
+              yesterdayBase - (user.cashBalanceCents || 0)
+            ),
+          },
+        },
+        { upsert: true, session }
+      );
+    }
+
+    invalidateLeaderboard();
+    return {
+      targetPortfolioCents,
+      targetReturnPct,
+      buyingPowerCents: user.cashBalanceCents,
+    };
   });
 }

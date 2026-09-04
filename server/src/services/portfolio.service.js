@@ -1,14 +1,19 @@
-import mongoose from 'mongoose';
-import { Holding } from '../models/Holding.js';
-import { LedgerEntry, LEDGER_TYPE } from '../models/LedgerEntry.js';
-import { Stock } from '../models/Stock.js';
-import { getInstruments, logoFor } from './market.service.js';
-import { MarketPrice } from '../models/MarketPrice.js';
-import { PortfolioSnapshot } from '../models/PortfolioSnapshot.js';
-import { SEED_CASH_CENTS } from '../config/env.js';
-import { avgCostCents, costCents, NANOS_PER_CENT, round2 } from '../lib/money.js';
+import mongoose from "mongoose";
+import { Holding } from "../models/Holding.js";
+import { LedgerEntry, LEDGER_TYPE } from "../models/LedgerEntry.js";
+import { Stock } from "../models/Stock.js";
+import { getInstruments, logoFor } from "./market.service.js";
+import { MarketPrice } from "../models/MarketPrice.js";
+import { PortfolioSnapshot } from "../models/PortfolioSnapshot.js";
+import { SEED_CASH_CENTS } from "../config/env.js";
+import {
+  avgCostCents,
+  costCents,
+  NANOS_PER_CENT,
+  round2,
+} from "../lib/money.js";
 
-const RANGE_DAYS = { '1W': 7, '1M': 30, '3M': 90, '1Y': 365, ALL: 3650 };
+const RANGE_DAYS = { "1W": 7, "1M": 30, "3M": 90, "1Y": 365, ALL: 3650 };
 
 /**
  * NET capital the user has put in: the opening grant, plus every deposit and
@@ -38,10 +43,12 @@ const CONTRIBUTION_TYPES = [
   LEDGER_TYPE.WITHDRAWAL_REVERSAL,
 ];
 
-async function contributedCapitalCents(userId) {
+export async function contributedCapitalCents(userId) {
   const [row] = await LedgerEntry.aggregate([
-    { $match: { userId: toObjectId(userId), type: { $in: CONTRIBUTION_TYPES } } },
-    { $group: { _id: null, totalCents: { $sum: '$amountCents' } } },
+    {
+      $match: { userId: toObjectId(userId), type: { $in: CONTRIBUTION_TYPES } },
+    },
+    { $group: { _id: null, totalCents: { $sum: "$amountCents" } } },
   ]);
 
   return SEED_CASH_CENTS + (row?.totalCents ?? 0);
@@ -49,7 +56,9 @@ async function contributedCapitalCents(userId) {
 
 /** `$match` needs a real ObjectId; callers pass one or its string form. */
 const toObjectId = (id) =>
-  id instanceof mongoose.Types.ObjectId ? id : new mongoose.Types.ObjectId(String(id));
+  id instanceof mongoose.Types.ObjectId
+    ? id
+    : new mongoose.Types.ObjectId(String(id));
 
 /**
  * Current price and identity for every held instrument, keyed `class:symbol`.
@@ -68,11 +77,11 @@ const toObjectId = (id) =>
  */
 async function priceHoldings(holdings) {
   const out = new Map();
-  const classes = new Set(holdings.map((h) => h.assetClass ?? 'stocks'));
+  const classes = new Set(holdings.map((h) => h.assetClass ?? "stocks"));
 
-  if (classes.has('stocks')) {
+  if (classes.has("stocks")) {
     const symbols = holdings
-      .filter((h) => (h.assetClass ?? 'stocks') === 'stocks')
+      .filter((h) => (h.assetClass ?? "stocks") === "stocks")
       .map((h) => h.symbol);
     const stocks = await Stock.find({ symbol: { $in: symbols } }).lean();
     for (const s of stocks) {
@@ -92,7 +101,7 @@ async function priceHoldings(holdings) {
     }
   }
 
-  for (const assetClass of ['crypto', 'forex']) {
+  for (const assetClass of ["crypto", "forex"]) {
     if (!classes.has(assetClass)) continue;
     const { items } = await getInstruments({ assetClass, limit: 250 });
     for (const r of items) {
@@ -101,10 +110,10 @@ async function priceHoldings(holdings) {
         exchange: r.exchange,
         // Neither class has a sector, and the donut groups by one. Their own
         // name is the honest bucket — a coin is not "Technology".
-        sector: assetClass === 'crypto' ? 'Crypto' : 'Forex',
-        currency: 'USD',
+        sector: assetClass === "crypto" ? "Crypto" : "Forex",
+        currency: "USD",
         // CoinGecko ships one per coin; forex has none and falls to a monogram.
-        logoUrl: r.logoUrl ?? '',
+        logoUrl: r.logoUrl ?? "",
         priceCents: r.priceCents,
         priceUsdCents: r.priceUsdCents,
         priceUsdNanos: r.priceUsdNanos,
@@ -124,24 +133,29 @@ async function priceHoldings(holdings) {
    * dropping the position and quietly shrinking the portfolio by its value.
    */
   const unresolved = holdings.filter(
-    (h) => (h.assetClass ?? 'stocks') !== 'stocks' && !out.has(`${h.assetClass}:${h.symbol}`),
+    (h) =>
+      (h.assetClass ?? "stocks") !== "stocks" &&
+      !out.has(`${h.assetClass}:${h.symbol}`)
   );
 
   if (unresolved.length > 0) {
     const rows = await MarketPrice.find({
-      $or: unresolved.map((h) => ({ assetClass: h.assetClass, symbol: h.symbol })),
+      $or: unresolved.map((h) => ({
+        assetClass: h.assetClass,
+        symbol: h.symbol,
+      })),
     }).lean();
 
     for (const r of rows) {
       out.set(`${r.assetClass}:${r.symbol}`, {
         name: r.name || r.symbol,
         exchange: r.exchange,
-        sector: r.assetClass === 'crypto' ? 'Crypto' : 'Forex',
-        currency: 'USD',
+        sector: r.assetClass === "crypto" ? "Crypto" : "Forex",
+        currency: "USD",
         // The mirror stores no logo, and only crypto and forex reach here, so
         // there is no ticker-derived URL to fall back on either. A monogram is
         // the honest answer for an instrument nothing can currently resolve.
-        logoUrl: '',
+        logoUrl: "",
         priceCents: Math.round(r.priceUsdNanos / NANOS_PER_CENT),
         priceUsdCents: Math.round(r.priceUsdNanos / NANOS_PER_CENT),
         priceUsdNanos: r.priceUsdNanos,
@@ -167,16 +181,23 @@ async function priceHoldings(holdings) {
  * say why rather than presenting it as a live figure.
  */
 function atCostBasis(holding) {
-  const assetClass = holding.assetClass ?? 'stocks';
-  const perUnit = holding.shares ? Math.round(holding.costBasisCents / holding.shares) : 0;
+  const assetClass = holding.assetClass ?? "stocks";
+  const perUnit = holding.shares
+    ? Math.round(holding.costBasisCents / holding.shares)
+    : 0;
   return {
     name: holding.symbol,
-    exchange: '',
-    sector: assetClass === 'crypto' ? 'Crypto' : assetClass === 'forex' ? 'Forex' : 'Other',
-    currency: 'USD',
+    exchange: "",
+    sector:
+      assetClass === "crypto"
+        ? "Crypto"
+        : assetClass === "forex"
+          ? "Forex"
+          : "Other",
+    currency: "USD",
     // An equity mark is built from the ticker, so it survives the document
     // going missing — which is the one case that lands here for that class.
-    logoUrl: assetClass === 'stocks' ? logoFor(holding.symbol) : '',
+    logoUrl: assetClass === "stocks" ? logoFor(holding.symbol) : "",
     priceCents: perUnit,
     priceUsdCents: perUnit,
     priceUsdNanos: perUnit * NANOS_PER_CENT,
@@ -198,7 +219,7 @@ export async function getPortfolio(userId, cashBalanceCents) {
 
   const positions = holdings
     .map((h) => {
-      const assetClass = h.assetClass ?? 'stocks';
+      const assetClass = h.assetClass ?? "stocks";
       // NEVER `return null` here. Dropping an unpriceable position removes real
       // money from `holdingsValueCents`, the allocation donut and the portfolio
       // total at once, with nothing on screen to say a holding went missing.
@@ -217,7 +238,7 @@ export async function getPortfolio(userId, cashBalanceCents) {
         exchange: ref.exchange,
         sector: ref.sector,
         currency: ref.currency,
-        logoUrl: ref.logoUrl ?? '',
+        logoUrl: ref.logoUrl ?? "",
         shares: h.shares,
         avgCostCents: avgCost,
         costBasisCents: h.costBasisCents,
@@ -232,25 +253,49 @@ export async function getPortfolio(userId, cashBalanceCents) {
         totalReturnCents: marketValueCents - h.costBasisCents,
         totalReturnPct:
           h.costBasisCents > 0
-            ? round2(((marketValueCents - h.costBasisCents) / h.costBasisCents) * 100)
+            ? round2(
+                ((marketValueCents - h.costBasisCents) / h.costBasisCents) * 100
+              )
             : 0,
       };
     })
     .sort((a, b) => b.marketValueCents - a.marketValueCents);
 
-  const holdingsValueCents = positions.reduce((sum, p) => sum + p.marketValueCents, 0);
+  const holdingsValueCents = positions.reduce(
+    (sum, p) => sum + p.marketValueCents,
+    0
+  );
   const portfolioValueCents = cashBalanceCents + holdingsValueCents;
 
-  // Today's move is value-weighted, not a plain average: a 1% move on the
-  // largest holding matters more than the same move on the smallest.
+  // Today's move: check yesterday's snapshot baseline (matching the leaderboard),
+  // falling back to value-weighted quote change across current positions.
+  const startOfToday = new Date();
+  startOfToday.setUTCHours(0, 0, 0, 0);
+  const yesterdaySnapshot = await PortfolioSnapshot.findOne({
+    userId,
+    date: { $lt: startOfToday },
+  })
+    .sort({ date: -1 })
+    .lean();
+
   const previousValueCents = positions.reduce(
     (sum, p) => sum + p.marketValueCents / (1 + p.changePct / 100),
-    0,
+    0
   );
+
   const todayChangePct =
-    previousValueCents > 0
-      ? round2(((holdingsValueCents - previousValueCents) / previousValueCents) * 100)
-      : 0;
+    yesterdaySnapshot?.portfolioValueCents > 0
+      ? round2(
+          ((portfolioValueCents - yesterdaySnapshot.portfolioValueCents) /
+            yesterdaySnapshot.portfolioValueCents) *
+            100
+        )
+      : previousValueCents > 0
+        ? round2(
+            ((holdingsValueCents - previousValueCents) / previousValueCents) *
+              100
+          )
+        : 0;
 
   /**
    * RETURN IS MEASURED AGAINST WHAT WAS PUT IN, NOT AGAINST THE OPENING GRANT.
@@ -278,12 +323,19 @@ export async function getPortfolio(userId, cashBalanceCents) {
       investedCents,
       todayChangePct,
       allTimeReturnCents,
-      allTimeReturnPct: investedCents > 0 ? round2((allTimeReturnCents / investedCents) * 100) : 0,
+      allTimeReturnPct:
+        investedCents > 0
+          ? round2((allTimeReturnCents / investedCents) * 100)
+          : 0,
       positionsCount: positions.length,
       exchangeCount: new Set(positions.map((p) => p.exchange)).size,
     },
     holdings: positions,
-    allocation: buildAllocation(positions, cashBalanceCents, portfolioValueCents),
+    allocation: buildAllocation(
+      positions,
+      cashBalanceCents,
+      portfolioValueCents
+    ),
   };
 }
 
@@ -293,19 +345,22 @@ function buildAllocation(positions, cashBalanceCents, portfolioValueCents) {
   for (const p of positions) {
     bySector.set(p.sector, (bySector.get(p.sector) ?? 0) + p.marketValueCents);
   }
-  if (cashBalanceCents > 0) bySector.set('Cash', cashBalanceCents);
+  if (cashBalanceCents > 0) bySector.set("Cash", cashBalanceCents);
 
   return [...bySector.entries()]
     .map(([label, valueCents]) => ({
       label,
       valueCents,
-      pct: portfolioValueCents > 0 ? round2((valueCents / portfolioValueCents) * 100) : 0,
+      pct:
+        portfolioValueCents > 0
+          ? round2((valueCents / portfolioValueCents) * 100)
+          : 0,
     }))
     .sort((a, b) => b.valueCents - a.valueCents);
 }
 
 /** The performance chart series, read from the daily snapshot marks. */
-export async function getPerformance(userId, range = '1M') {
+export async function getPerformance(userId, range = "1M") {
   const days = RANGE_DAYS[range] ?? 30;
   const since = new Date(Date.now() - days * 86_400_000);
 
@@ -315,6 +370,9 @@ export async function getPerformance(userId, range = '1M') {
 
   return {
     range,
-    points: rows.map((r) => ({ t: r.date.getTime(), valueCents: r.portfolioValueCents })),
+    points: rows.map((r) => ({
+      t: r.date.getTime(),
+      valueCents: r.portfolioValueCents,
+    })),
   };
 }
