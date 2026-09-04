@@ -82,7 +82,17 @@ export function AuthProvider({ children }) {
   );
 
   const login = useCallback(
-    async ({ email, password }) => adopt(await post('/auth/sign-in/email', { email, password })),
+    async ({ email, username, password }) => {
+      const identifier = String(email || username || '').trim();
+      if (identifier.includes('@')) {
+        return adopt(await post('/auth/sign-in/email', { email: identifier, password }));
+      }
+      try {
+        return adopt(await post('/auth/sign-in/username', { username: identifier, password }));
+      } catch {
+        return adopt(await post('/auth/sign-in/email', { email: identifier, password }));
+      }
+    },
     [adopt],
   );
 

@@ -17,13 +17,38 @@ const limited = ({ windowMs, max, message, keyGenerator = null }) =>
     message: { error: { code: 'RATE_LIMITED', message } },
   });
 
-/** Public credential endpoints are limited by network address before auth. */
-export const authLimiter = limited({
+/** Public credential mutation endpoints are strictly limited by IP to prevent brute-forcing. */
+export const authAttemptLimiter = limited({
   windowMs: 15 * 60_000,
-  max: 20,
+  max: 10,
   message: 'Too many authentication attempts. Try again in 15 minutes.',
   keyGenerator: (req) => req.ip,
 });
+
+/** Read-only auth polling and session validation endpoints. */
+export const authSessionLimiter = limited({
+  windowMs: 15 * 60_000,
+  max: 150,
+  message: 'Too many session requests. Try again later.',
+  keyGenerator: (req) => req.ip,
+});
+
+/** Directs sensitive auth actions to the strict limiter and reads to the session limiter. */
+export const selectiveAuthLimiter = (req, res, next) => {
+  const url = req.originalUrl || req.url || '';
+  if (
+    url.includes('/sign-in') ||
+    url.includes('/sign-up') ||
+    url.includes('/email-otp') ||
+    url.includes('/reset-password') ||
+    url.includes('/change-password')
+  ) {
+    return authAttemptLimiter(req, res, next);
+  }
+  return authSessionLimiter(req, res, next);
+};
+
+export const authLimiter = selectiveAuthLimiter;
 
 /**
  * Authenticated requests are limited per account. This prevents a distributed

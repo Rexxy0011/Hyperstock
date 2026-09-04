@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { FcGoogle } from "react-icons/fc";
-import { FiLock, FiMail, FiUser } from "react-icons/fi";
+import { FiLock, FiMail, FiUser, FiKey, FiInfo, FiCheck } from "react-icons/fi";
 import { get } from "../lib/api";
 import CodeForm from "../components/auth/CodeForm";
 import { Navigate, useSearchParams } from "react-router-dom";
@@ -15,6 +15,44 @@ import Logo from "../components/ui/Logo";
 import { useAuth } from "../auth/AuthProvider";
 import { WELCOME, withWelcome } from "../components/auth/WelcomeNotice";
 import { ADMIN_HOME } from "../components/nav/navItems";
+import notify from "../lib/toast";
+
+function generateStrongPassword() {
+  const upper = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+  const lower = "abcdefghijkmnopqrstuvwxyz";
+  const numbers = "23456789";
+  const symbols = "!@#$%^&*()_+~|}{[]:;?><,.-=";
+  const all = upper + lower + numbers + symbols;
+
+  const chars = [
+    upper[Math.floor(Math.random() * upper.length)],
+    lower[Math.floor(Math.random() * lower.length)],
+    numbers[Math.floor(Math.random() * numbers.length)],
+    symbols[Math.floor(Math.random() * symbols.length)],
+  ];
+
+  const array = new Uint32Array(12);
+  crypto.getRandomValues(array);
+  for (let i = 0; i < 12; i++) {
+    chars.push(all[array[i] % all.length]);
+  }
+
+  return chars.sort(() => Math.random() - 0.5).join("");
+}
+
+function getPasswordStrength(pwd) {
+  if (!pwd) return { score: 0, label: "", color: "" };
+  let score = 0;
+  if (pwd.length >= 8) score++;
+  if (pwd.length >= 12) score++;
+  if (/[A-Z]/.test(pwd) && /[a-z]/.test(pwd)) score++;
+  if (/[0-9]/.test(pwd) && /[^A-Za-z0-9]/.test(pwd)) score++;
+
+  if (score <= 1) return { score: 1, label: "Weak", color: "bg-loss" };
+  if (score === 2) return { score: 2, label: "Fair", color: "bg-amber" };
+  if (score === 3) return { score: 3, label: "Good", color: "bg-blue-500" };
+  return { score: 4, label: "Strong", color: "bg-gain" };
+}
 
 /**
  * THE VALUE IS STABLE, THE LABEL IS TRANSLATED, and separating them was a fix
@@ -1049,6 +1087,7 @@ export default function Auth() {
     country: "",
   });
   const [error, setError] = useState(null);
+  const [infoNotice, setInfoNotice] = useState(null);
   const [busy, setBusy] = useState(false);
   const [animating, setAnimating] = useState(false);
   /** Which confirmation to raise once the session lands, or null. */
@@ -1057,6 +1096,19 @@ export default function Auth() {
   );
 
   const isSignup = mode === SIGNUP;
+
+  const handleSuggestPassword = async () => {
+    const pwd = generateStrongPassword();
+    setForm((f) => ({ ...f, password: pwd }));
+    try {
+      await navigator.clipboard.writeText(pwd);
+      notify.success("Strong password generated and copied to clipboard!");
+    } catch {
+      notify.success("Strong password generated!");
+    }
+  };
+
+  const strength = isSignup ? getPasswordStrength(form.password) : null;
   /**
    * WHERE SIGNING IN LANDS YOU. The default is the landing page, not the
    * portfolio.
@@ -1134,6 +1186,7 @@ export default function Auth() {
 
   const onGoogle = async () => {
     setError(null);
+    setInfoNotice(null);
     setBusy(true);
     try {
       // Does not return — it navigates to Google. `busy` stays true so the
@@ -1148,22 +1201,72 @@ export default function Auth() {
   const onSubmit = async (e) => {
     e.preventDefault();
     setError(null);
+    setInfoNotice(null);
     setBusy(true);
     try {
-      // Set before the await: the redirect above fires the instant `user`
-      // lands, which is sooner than anything after this line.
-      setWelcomeKind(isSignup ? WELCOME.signUp : WELCOME.signIn);
       if (isSignup) {
+        // Fast proactive check via /auth-lookup to redirect existing accounts
+        try {
+          const check = await get(
+            `/auth-lookup?email=${encodeURIComponent(form.email)}&username=${encodeURIComponent(form.username)}`
+          );
+          if (check?.exists) {
+            setMode(SIGNIN);
+            setForm((f) => ({
+              ...f,
+              email: check.identifier || f.email || f.username,
+              password: "",
+            }));
+            setInfoNotice(
+              check.matchedField === "email"
+                ? "An account with this email already exists. Please enter your password to sign in."
+                : "An account with this username already exists. Please enter your password to sign in."
+            );
+            setBusy(false);
+            return;
+          }
+        } catch {
+          // Fall through to standard register
+        }
+
+        setWelcomeKind(WELCOME.signUp);
         await register({
           username: form.username,
           email: form.email,
           password: form.password,
+          country: form.country,
         });
       } else {
+        setWelcomeKind(WELCOME.signIn);
         await login({ email: form.email, password: form.password });
       }
     } catch (err) {
       setWelcomeKind(null);
+      const errMsg = err.message || "";
+      const errCode = err.code || "";
+      const isEmailTaken =
+        errCode === "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL" ||
+        errCode === "USER_ALREADY_EXISTS" ||
+        /already exists/i.test(errMsg);
+      const isUsernameTaken =
+        errCode === "USERNAME_IS_ALREADY_TAKEN" ||
+        /username is already taken/i.test(errMsg);
+
+      if (isSignup && (isEmailTaken || isUsernameTaken)) {
+        setMode(SIGNIN);
+        setForm((f) => ({
+          ...f,
+          email: isEmailTaken ? f.email : f.username || f.email,
+          password: "",
+        }));
+        setInfoNotice(
+          isEmailTaken
+            ? "An account with this email already exists. Please enter your password to sign in."
+            : "An account with this username already exists. Please enter your password to sign in."
+        );
+        return;
+      }
+
       setError(err.message ?? "Something went wrong. Try again.");
     } finally {
       setBusy(false);
@@ -1211,6 +1314,7 @@ export default function Auth() {
                 onChange={(m) => {
                   setMode(m);
                   setError(null);
+                  setInfoNotice(null);
                   setAnimating(true);
                 }}
                 size="sm"
@@ -1306,29 +1410,85 @@ export default function Auth() {
                 </div>
 
                 <Input
-                  label={t("auth.email")}
-                  type="email"
-                  placeholder={t("auth.emailPlaceholder")}
-                  autoComplete="email"
+                  label={isSignup ? t("auth.email") : "Email or Username"}
+                  type={isSignup ? "email" : "text"}
+                  placeholder={
+                    isSignup
+                      ? t("auth.emailPlaceholder")
+                      : "name@example.com or username"
+                  }
+                  autoComplete={isSignup ? "email" : "username"}
                   icon={<FiMail size={16} />}
                   required
                   {...field("email")}
                 />
 
-                {/* `revealable` matters most on signup, where a typo creates the
-                account with the wrong password and there is no second chance to
-                notice — but it is on both, since a blind retype is the commonest
-                reason a correct credential gets rejected on a phone. */}
-                <Input
-                  label={t("auth.password")}
-                  type="password"
-                  placeholder="••••••••"
-                  autoComplete={isSignup ? "new-password" : "current-password"}
-                  icon={<FiLock size={16} />}
-                  revealable
-                  required
-                  {...field("password")}
-                />
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium text-text-body">
+                      {t("auth.password")}
+                    </label>
+                    {isSignup && (
+                      <button
+                        type="button"
+                        onClick={handleSuggestPassword}
+                        className="inline-flex cursor-pointer items-center gap-1.5 text-xs font-medium text-gain hover:underline"
+                      >
+                        <FiKey size={13} aria-hidden="true" />
+                        Suggest strong password
+                      </button>
+                    )}
+                  </div>
+                  <Input
+                    type="password"
+                    placeholder="••••••••"
+                    autoComplete={isSignup ? "new-password" : "current-password"}
+                    icon={<FiLock size={16} />}
+                    revealable
+                    required
+                    {...field("password")}
+                  />
+                  {isSignup && form.password && (
+                    <div className="mt-1 space-y-1.5 rounded-md border border-cool-grey/40 bg-mist/50 p-2.5">
+                      <div className="flex items-center justify-between text-2xs">
+                        <span className="text-text-muted">Password strength:</span>
+                        <span
+                          className={`font-semibold ${
+                            strength.score >= 3
+                              ? "text-gain"
+                              : strength.score === 2
+                              ? "text-amber"
+                              : "text-loss"
+                          }`}
+                        >
+                          {strength.label}
+                        </span>
+                      </div>
+                      <div className="flex h-1.5 gap-1 overflow-hidden rounded-full bg-mist">
+                        {[1, 2, 3, 4].map((step) => (
+                          <div
+                            key={step}
+                            className={`h-full flex-1 rounded-full transition-all duration-300 ${
+                              step <= strength.score
+                                ? strength.color
+                                : "bg-cool-grey/30"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      <p className="m-0 text-2xs text-text-muted">
+                        Tip: Use 8+ characters with uppercase, numbers, and symbols.
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {infoNotice && (
+                  <div className="flex items-start gap-2.5 rounded-md border border-gain/40 bg-gain-tint px-3 py-2.5 text-xs text-gain">
+                    <FiInfo size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
+                    <span>{infoNotice}</span>
+                  </div>
+                )}
 
                 {error && (
                   <div className="rounded-md border border-cool-grey bg-red-tint px-3 py-2 text-xs text-loss">

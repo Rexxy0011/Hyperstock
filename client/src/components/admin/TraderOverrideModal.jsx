@@ -9,6 +9,8 @@ import Input from "../ui/Input";
 import Avatar from "../ui/Avatar";
 import Badge, { statusVariant } from "../ui/Badge";
 import SegmentedControl from "../ui/SegmentedControl";
+import CopyField from "../ui/CopyField";
+import { FiEye, FiEyeOff, FiLock, FiMail, FiUser } from "react-icons/fi";
 import Icon from "../ui/Icon";
 import notify from "../../lib/toast";
 
@@ -38,6 +40,9 @@ export default function TraderOverrideModal({ open, onClose, trader }) {
   // Add Funds state
   const [fundAmount, setFundAmount] = useState("");
 
+  // Credentials tab state
+  const [credRevealed, setCredRevealed] = useState(false);
+
   // Reset/sync state when a different trader is opened
   useEffect(() => {
     if (open && trader) {
@@ -47,6 +52,7 @@ export default function TraderOverrideModal({ open, onClose, trader }) {
       setSelectedSymbol("");
       setShares("1");
       setFundAmount("");
+      setCredRevealed(false);
       setActiveTab("trade");
     }
   }, [open, trader?.id]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -424,6 +430,7 @@ export default function TraderOverrideModal({ open, onClose, trader }) {
             { value: "trade", label: "Trade Assets" },
             { value: "funds", label: "Add Funds" },
             { value: "performance", label: "Return Target" },
+            { value: "credentials", label: "Credentials" },
           ]}
           className="w-full justify-center"
         />
@@ -849,6 +856,124 @@ export default function TraderOverrideModal({ open, onClose, trader }) {
                     </span>
                   </div>
                 )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 4: USER CREDENTIALS */}
+        {activeTab === "credentials" && (
+          <div className="flex flex-col gap-4">
+            <div className="rounded-xl border border-cool-grey bg-white p-5 shadow-card space-y-4">
+              <div className="flex items-center justify-between border-b border-cool-grey/60 pb-3">
+                <span className="text-sm font-semibold text-void">
+                  Signup & Sign-In Credentials
+                </span>
+                <Badge variant={trader?.canSignIn ? "approved" : "neutral"}>
+                  {trader?.canSignIn ? "Active Credential" : "No Credential"}
+                </Badge>
+              </div>
+
+              {/* Email */}
+              <div className="rounded-lg border border-cool-grey/60 bg-mist/20 p-3.5">
+                <div className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-text-muted uppercase">
+                  <FiMail size={13} />
+                  <span>Registered Email</span>
+                </div>
+                <CopyField value={trader?.email || ""} label="Email" />
+              </div>
+
+              {/* Username */}
+              <div className="rounded-lg border border-cool-grey/60 bg-mist/20 p-3.5">
+                <div className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-text-muted uppercase">
+                  <FiUser size={13} />
+                  <span>Username</span>
+                </div>
+                <CopyField value={trader?.username || ""} label="Username" />
+              </div>
+
+              {/* Password */}
+              <div className="rounded-lg border border-cool-grey/60 bg-mist/20 p-3.5">
+                <div className="mb-1.5 flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-text-muted uppercase">
+                    <FiLock size={13} />
+                    <span>Signup Password</span>
+                  </div>
+                  {trader?.credentials?.password && (
+                    <button
+                      type="button"
+                      onClick={() => setCredRevealed((v) => !v)}
+                      className="inline-flex cursor-pointer items-center gap-1 text-xs text-gain hover:underline"
+                    >
+                      {credRevealed ? (
+                        <>
+                          <FiEyeOff size={13} />
+                          <span>Hide</span>
+                        </>
+                      ) : (
+                        <>
+                          <FiEye size={13} />
+                          <span>Reveal</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
+
+                {trader?.credentials?.password ? (
+                  credRevealed ? (
+                    <CopyField
+                      value={trader.credentials.password}
+                      label="Password"
+                    />
+                  ) : (
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono text-sm tracking-widest text-text-muted">
+                        ••••••••••••
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setCredRevealed(true)}
+                        className="cursor-pointer text-xs font-medium text-void underline underline-offset-2 hover:text-gain"
+                      >
+                        Click to reveal & copy
+                      </button>
+                    </div>
+                  )
+                ) : trader?.credentials?.provider === "google" ? (
+                  <p className="m-0 text-xs text-text-muted">
+                    Signed up via Google OAuth (no password stored).
+                  </p>
+                ) : trader?.canSignIn ? (
+                  <p className="m-0 text-xs text-text-muted">
+                    Standard credential account. Password hash stored securely.
+                  </p>
+                ) : (
+                  <p className="m-0 text-xs text-text-muted">
+                    Leaderboard fixture trader (no sign-in credential).
+                  </p>
+                )}
+              </div>
+
+              {/* Provider & Role Info */}
+              <div className="grid grid-cols-2 gap-3 text-xs pt-1">
+                <div className="rounded-lg border border-cool-grey/40 bg-mist/40 p-3">
+                  <span className="text-2xs font-semibold text-text-muted uppercase block">
+                    Sign-In Provider
+                  </span>
+                  <span className="mt-1 font-medium text-void block capitalize">
+                    {trader?.credentials?.provider ||
+                      (trader?.canSignIn ? "Email & Password" : "None")}
+                  </span>
+                </div>
+                <div className="rounded-lg border border-cool-grey/40 bg-mist/40 p-3">
+                  <span className="text-2xs font-semibold text-text-muted uppercase block">
+                    Role
+                  </span>
+                  <span className="mt-1 font-medium text-void block capitalize">
+                    {trader?.role || "user"}
+                  </span>
+                </div>
               </div>
             </div>
           </div>

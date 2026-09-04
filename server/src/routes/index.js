@@ -15,6 +15,7 @@ import supportRoutes from './support.routes.js';
 import mediaRoutes from './media.routes.js';
 import { optionalAuth } from '../middleware/requireAuth.js';
 import { googleEnabled } from '../auth/betterAuth.js';
+import { User } from '../models/User.js';
 
 const router = Router();
 
@@ -32,6 +33,39 @@ router.get('/health', (req, res) => {
    page. It is public and unauthenticated because the sign-in screen is. */
 router.get('/auth-providers', (req, res) => {
   res.json({ google: googleEnabled });
+});
+
+/**
+ * Fast lookup to check if an email or username is already registered.
+ * Used by the auth page to seamlessly redirect existing users to sign in.
+ */
+router.get('/auth-lookup', async (req, res) => {
+  try {
+    const email = typeof req.query.email === 'string' ? req.query.email.trim().toLowerCase() : '';
+    const username = typeof req.query.username === 'string' ? req.query.username.trim().toLowerCase() : '';
+
+    if (!email && !username) {
+      return res.json({ exists: false });
+    }
+
+    const conditions = [];
+    if (email) conditions.push({ email });
+    if (username) conditions.push({ username });
+
+    const existing = await User.findOne({ $or: conditions }).lean();
+    if (existing) {
+      const matchedField = existing.email === email ? 'email' : 'username';
+      return res.json({
+        exists: true,
+        matchedField,
+        identifier: matchedField === 'email' ? existing.email : existing.username,
+      });
+    }
+
+    res.json({ exists: false });
+  } catch {
+    res.json({ exists: false });
+  }
 });
 router.use('/market', marketRoutes);
 router.use('/portfolio', portfolioRoutes);

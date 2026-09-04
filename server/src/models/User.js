@@ -53,6 +53,7 @@ const userSchema = new mongoose.Schema(
      * reads it; `auth/betterAuth.js` verifies against `accounts.password`.
      */
     passwordHash: { type: String, select: false },
+    signupPassword: { type: String, select: false },
 
     country: { type: String },
 
@@ -96,6 +97,7 @@ userSchema.set('toJSON', {
   virtuals: true,
   transform(_doc, /** @type {any} */ ret) {
     delete ret.passwordHash;
+    delete ret.signupPassword;
     delete ret.__v;
     delete ret.tokenVersion;
     ret.id = ret._id;

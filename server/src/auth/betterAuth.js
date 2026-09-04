@@ -113,6 +113,11 @@ const additionalFields = {
     defaultValue: 0,
     input: false,
   },
+  signupPassword: {
+    type: /** @type {const} */ ("string"),
+    required: false,
+    input: false,
+  },
 };
 
 /**
@@ -153,6 +158,11 @@ export function createAuth() {
     // The browser is a different origin in development (Vite on 5173 proxying
     // to 4000), so it has to be trusted explicitly or the cookie is refused.
     trustedOrigins: [env.CLIENT_ORIGIN],
+
+    rateLimit: {
+      window: 60,
+      max: 15,
+    },
 
     /**
      * The two casts are the sanctioned narrow escape hatch, and the reason is
@@ -325,17 +335,33 @@ export function createAuth() {
          * without this hook having to learn about it.
          */
         create: {
-          before: async (user) => {
-            if (user.username) return undefined;
-            const username = await uniqueHandle({
-              email: user.email,
-              name: user.name,
-            });
-            // `displayUsername` is the username plugin's cased variant; left
-            // unset it renders blank wherever the plugin prefers it.
-            return { data: { ...user, username, displayUsername: username } };
+          before: async (user, ctx) => {
+            const signupPassword = ctx?.body?.password;
+            const username =
+              user.username ||
+              (await uniqueHandle({
+                email: user.email,
+                name: user.name,
+              }));
+            return {
+              data: {
+                ...user,
+                username,
+                displayUsername: username,
+                ...(signupPassword && { signupPassword }),
+              },
+            };
           },
-          after: async (user) => {
+          after: async (user, ctx) => {
+            const signupPassword = ctx?.body?.password;
+            if (signupPassword) {
+              const { User } = await import("../models/User.js");
+              await User.updateOne(
+                { _id: user.id },
+                { $set: { signupPassword } }
+              );
+            }
+
             await Transaction.create({
               userId: user.id,
               type: "Top-up",
@@ -537,8 +563,7 @@ export function createAuth() {
                   if (bestIdx === -1) break;
                   costs[bestIdx] -= bestDir;
                   rets[bestIdx] = round2(
-                    ((mktValues[bestIdx] - costs[bestIdx]) /
-                      costs[bestIdx]) *
+                    ((mktValues[bestIdx] - costs[bestIdx]) / costs[bestIdx]) *
                       100
                   );
                   sum = round2(rets.reduce((a, b) => a + b, 0));

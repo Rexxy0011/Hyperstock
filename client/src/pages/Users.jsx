@@ -8,6 +8,7 @@ import Badge, { statusVariant } from "../components/ui/Badge";
 import Avatar from "../components/ui/Avatar";
 import Money from "../components/market/Money";
 import TraderOverrideModal from "../components/admin/TraderOverrideModal";
+import UserCredentialsModal from "../components/admin/UserCredentialsModal";
 import { money } from "../lib/format";
 import notify from "../lib/toast";
 
@@ -73,6 +74,8 @@ export default function Users() {
    */
   const [editing, setEditing] = useState(/** @type {any} */ (null));
   const [editOpen, setEditOpen] = useState(false);
+  const [credentialsUser, setCredentialsUser] = useState(/** @type {any} */ (null));
+  const [credentialsOpen, setCredentialsOpen] = useState(false);
 
   const rows = data?.items ?? [];
   const counts = data?.counts;
@@ -210,16 +213,23 @@ export default function Users() {
                   </td>
 
                   <td className={td}>
-                    {/* The whole point of the screen. `neutral` rather than a
-                        loss red for a fixture: having no credential is the
-                        correct state for 207 of these rows, not a fault. */}
-                    <Badge variant={r.canSignIn ? "approved" : "neutral"}>
-                      {t(
-                        r.canSignIn
-                          ? "admin.users.hasCredential"
-                          : "admin.users.noCredential"
-                      )}
-                    </Badge>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCredentialsUser(r);
+                        setCredentialsOpen(true);
+                      }}
+                      className="inline-flex cursor-pointer items-center transition-transform hover:scale-105"
+                      title="View credentials"
+                    >
+                      <Badge variant={r.canSignIn ? "approved" : "neutral"}>
+                        {t(
+                          r.canSignIn
+                            ? "admin.users.hasCredential"
+                            : "admin.users.noCredential"
+                        )}
+                      </Badge>
+                    </button>
                   </td>
 
                   <td className={td}>
@@ -297,6 +307,17 @@ export default function Users() {
                   </td>
 
                   <td className={`${td} text-right whitespace-nowrap`}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCredentialsUser(r);
+                        setCredentialsOpen(true);
+                      }}
+                      className="mr-4 cursor-pointer text-sm font-medium text-gain underline underline-offset-2 hover:text-void"
+                    >
+                      Credentials
+                    </button>
+
                     {/* ONLY FOR TRADERS. Administrators are excluded from the
                         board's `role: 'user'` aggregation, so an override on
                         one would write a row for an account the leaderboard
@@ -375,6 +396,12 @@ export default function Users() {
         trader={editingRow}
         open={editOpen}
         onClose={() => setEditOpen(false)}
+      />
+
+      <UserCredentialsModal
+        user={credentialsUser}
+        open={credentialsOpen}
+        onClose={() => setCredentialsOpen(false)}
       />
     </div>
   );

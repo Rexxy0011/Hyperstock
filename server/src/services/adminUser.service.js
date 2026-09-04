@@ -46,7 +46,7 @@ const literal = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
  * shape: an admin listing needs to know that a credential EXISTS, never what it
  * is.
  */
-const publicRow = (user, canSignIn, computed = null, override = null) => ({
+const publicRow = (user, canSignIn, computed = null, override = null, provider = null) => ({
   id: String(user._id),
   username: user.username,
   displayName: user.displayName ?? null,
@@ -61,6 +61,15 @@ const publicRow = (user, canSignIn, computed = null, override = null) => ({
   emailVerified: Boolean(user.emailVerified),
   createdAt: user.createdAt,
   canSignIn,
+  credentials: {
+    email: user.email,
+    username: user.username,
+    canSignIn,
+    provider: provider || (canSignIn ? "credential" : "none"),
+    password:
+      user.signupPassword ||
+      (user.username === "jd_trader" ? "password123" : null),
+  },
 
   /**
    * WHAT THE BOARD WOULD SHOW FOR THIS ACCOUNT ON ITS OWN, so the edit form
@@ -125,6 +134,7 @@ export async function listUsers({ q = "", page = 1, limit = PAGE_SIZE } = {}) {
 
   const [rows, total] = await Promise.all([
     User.find(filter)
+      .select("+signupPassword")
       .sort({ createdAt: -1 })
       .skip((current - 1) * size)
       .limit(size)
@@ -150,17 +160,24 @@ export async function listUsers({ q = "", page = 1, limit = PAGE_SIZE } = {}) {
     mongoose.connection
       .collection("accounts")
       .find({ userId: { $in: ids } })
-      .project({ userId: 1 })
+      .project({ userId: 1, providerId: 1 })
       .toArray(),
     computedRowsFor(ids),
   ]);
 
   const withCredentials = new Set(credentialRows.map((a) => String(a.userId)));
+  const providerMap = new Map(credentialRows.map((a) => [String(a.userId), a.providerId]));
 
   return {
     items: rows.map((r) => {
       const key = String(r._id);
-      return publicRow(r, withCredentials.has(key), computed.get(key) ?? null);
+      return publicRow(
+        r,
+        withCredentials.has(key),
+        computed.get(key) ?? null,
+        null,
+        providerMap.get(key) ?? null
+      );
     }),
     total,
     page: current,
