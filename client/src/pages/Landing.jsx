@@ -50,8 +50,8 @@ export default function Landing() {
   // Polled on the quote interval so the board ticks the way the Forbes list
   // does. The service memoises 60s, so this costs a cache read, not a pipeline.
   const { data: board, isPending: boardPending } = useQuery({
-    queryKey: keys.leaderboard("monthly"),
-    queryFn: () => get("/leaderboard?period=monthly&limit=5"),
+    queryKey: keys.leaderboard("alltime"),
+    queryFn: () => get("/leaderboard?period=alltime&limit=5"),
     refetchInterval: QUOTE_POLL_MS,
   });
 
