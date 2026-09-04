@@ -84,7 +84,7 @@ export default function Leaderboard() {
                   <div className="truncate text-base font-medium">{r.username}</div>
                   <Money value={r.portfolioValueCents} size={13} className="text-text-muted" />
                 </div>
-                <PriceChange value={r.returnPct} size={12} pill />
+                <PriceChange value={r.dayChangePct} size={12} pill />
               </div>
             ))}
           </div>
@@ -180,7 +180,7 @@ function Row({ row, pinned = false }) {
         <Money value={row.portfolioValueCents} size={14} />
       </td>
       <td className={`${td} text-right`}>
-        <PriceChange value={row.returnPct} size={12} pill className="justify-end" />
+        <PriceChange value={row.dayChangePct} size={12} pill className="justify-end" />
       </td>
     </tr>
   );

@@ -2,9 +2,15 @@ import mongoose from "mongoose";
 import { User } from "../models/User.js";
 import { ApiError } from "../lib/ApiError.js";
 import { computedRowsFor } from "./leaderboard.service.js";
-import { overridesForUsers } from "./featuredTrader.service.js";
 import { getPortfolio } from "./portfolio.service.js";
-import { Stock } from "../models/Stock.js";
+import { post as ledgerPost } from "./ledger.service.js";
+import { LEDGER_TYPE } from "../models/LedgerEntry.js";
+import { withTransaction } from "../config/db.js";
+import { Holding } from "../models/Holding.js";
+import { WatchlistItem } from "../models/WatchlistItem.js";
+import { getInstruments } from "./market.service.js";
+
+
 
 /**
  * The user listing behind /admin/users.
@@ -134,14 +140,13 @@ export async function listUsers({ q = "", page = 1, limit = PAGE_SIZE } = {}) {
    * database and is not. The board read is a memo hit in the ordinary case, so
    * it costs nothing beyond a filter over rows already in memory.
    */
-  const [credentialRows, computed, overrides] = await Promise.all([
+  const [credentialRows, computed] = await Promise.all([
     mongoose.connection
       .collection("accounts")
       .find({ userId: { $in: ids } })
       .project({ userId: 1 })
       .toArray(),
     computedRowsFor(ids),
-    overridesForUsers(ids),
   ]);
 
   const withCredentials = new Set(credentialRows.map((a) => String(a.userId)));
@@ -152,8 +157,7 @@ export async function listUsers({ q = "", page = 1, limit = PAGE_SIZE } = {}) {
       return publicRow(
         r,
         withCredentials.has(key),
-        computed.get(key) ?? null,
-        overrides.get(key) ?? null
+        computed.get(key) ?? null
       );
     }),
     total,
@@ -243,15 +247,26 @@ export async function listPositions(userId = null) {
    * anything of those classes the trader owns is already in `held` above.
    */
   const owned = new Set(held.map((p) => p.symbol));
-  const listed = await Stock.find({ status: { $ne: "Halted" } })
-    .select("symbol name exchange")
-    .lean();
+  
+  
+  const [stocks, cryptoRes, forexRes] = await Promise.all([
+    Stock.find({ status: { $ne: "Halted" } }).select("symbol name exchange").lean(),
+    getInstruments({ assetClass: 'crypto' }),
+    getInstruments({ assetClass: 'forex' })
+  ]);
 
-  const available = listed
+  const allListed = [
+    ...stocks.map(s => ({ ...s, assetClass: 'stocks' })),
+    ...(cryptoRes?.items || []).map(s => ({ ...s, assetClass: 'crypto' })),
+    ...(forexRes?.items || []).map(s => ({ ...s, assetClass: 'forex' }))
+  ];
+
+
+  const available = allListed
     .filter((s) => !owned.has(s.symbol))
     .map((s) => ({
       symbol: s.symbol,
-      assetClass: "stocks",
+      assetClass: s.assetClass,
       name: s.name,
       exchange: s.exchange,
       returnPct: null,
@@ -259,6 +274,7 @@ export async function listPositions(userId = null) {
       held: false,
     }))
     .sort((a, b) => a.symbol.localeCompare(b.symbol));
+
 
   return { held, available };
 }
@@ -342,4 +358,77 @@ export async function setUserStatus(userId, status, actingAdminId) {
   );
 
   return { user: publicRow(user, canSignIn), sessionsRevoked };
+}
+
+export async function adminUpdateCash(userId, targetCashCents, adminId) {
+  return withTransaction(async (session) => {
+    const user = await User.findById(userId).session(session);
+    if (!user) throw ApiError.notFound("User not found");
+
+    const diff = targetCashCents - user.cashBalanceCents;
+    if (diff === 0) return { cashBalanceCents: user.cashBalanceCents };
+
+    const { balanceAfterCents } = await ledgerPost({
+      userId,
+      type: LEDGER_TYPE.ADJUSTMENT,
+      amountCents: diff,
+      reference: `admin_${Date.now()}`,
+      detail: `Admin adjustment by ${adminId}`,
+      session,
+    });
+    return { cashBalanceCents: balanceAfterCents };
+  });
+}
+
+export async function adminAddHolding(userId, { symbol, shares, costBasisCents }, adminId) {
+  symbol = symbol.toUpperCase();
+  // Find asset class and current price
+  
+  let asset = await Stock.findOne({ symbol }).lean();
+  let assetClass = 'stocks';
+  if (!asset) {
+    const { items } = await getInstruments({ assetClass: 'crypto' });
+    asset = items.find(i => i.symbol === symbol);
+    if (asset) assetClass = 'crypto';
+  }
+  if (!asset) {
+    const { items } = await getInstruments({ assetClass: 'forex' });
+    asset = items.find(i => i.symbol === symbol);
+    if (asset) assetClass = 'forex';
+  }
+
+  if (!asset) throw ApiError.notFound("Symbol not found");
+
+  const priceCents = costBasisCents || asset.priceCents;
+
+  return withTransaction(async (session) => {
+    const holding = await Holding.findOneAndUpdate(
+      { userId, symbol },
+      {
+        $set: { assetClass, name: asset.name },
+        $inc: { shares },
+      },
+      { upsert: true, new: true, session }
+    );
+    // Approximate new cost basis if we wanted to be perfectly precise, but 
+    // for admin injects, setting or updating the cost basis is tricky if they already had shares.
+    // Let's just blindly set the costBasisCents to the provided one so the admin controls it entirely!
+    await Holding.updateOne({ _id: holding._id }, { $set: { costBasisCents: priceCents } }, { session });
+    await User.updateOne({ _id: userId }, { $inc: { tradeCount: 1 } }, { session });
+
+    // Add to watchlist
+    await WatchlistItem.updateOne(
+      { userId, symbol, assetClass },
+      { $setOnInsert: { addedAt: new Date() } },
+      { upsert: true, session }
+    );
+
+    return holding;
+  });
+}
+
+export async function adminRemoveHolding(userId, symbol, adminId) {
+  symbol = symbol.toUpperCase();
+  await Holding.deleteOne({ userId, symbol });
+  return { success: true };
 }

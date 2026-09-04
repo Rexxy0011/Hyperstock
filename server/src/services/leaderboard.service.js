@@ -1,6 +1,5 @@
 import { User } from "../models/User.js";
 import { SEED_CASH_CENTS } from "../config/env.js";
-import { listActiveFeatured, mergeFeatured } from "./featuredTrader.service.js";
 
 const PERIOD_DAYS = { weekly: 7, monthly: 30 };
 
@@ -343,7 +342,7 @@ async function computeBoard(period) {
 
     {
       $setWindowFields: {
-        sortBy: { portfolioValueCents: -1 },
+        sortBy: { dayChangePct: -1 },
         output: { rank: { $rank: {} } },
       },
     },
