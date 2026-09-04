@@ -61,7 +61,10 @@ export default function Landing() {
     <>
       <Hero />
       <TickerTape items={tape} />
-      <TopInvestors rows={(board?.top ?? []).slice(0, 5)} loading={boardPending} />
+      <TopInvestors
+        rows={(board?.top ?? []).slice(0, 5)}
+        loading={boardPending}
+      />
       <Security />
       <Markets exchanges={exchanges ?? []} />
       <CtaShowcase />

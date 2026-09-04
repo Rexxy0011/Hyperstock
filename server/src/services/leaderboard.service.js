@@ -187,11 +187,7 @@ async function computeBoard(period) {
               input: "$h",
               as: "p",
               in: {
-                $cond: [
-                  { $lt: ["$$p.returnCents", 0] },
-                  "$$p.returnCents",
-                  0,
-                ],
+                $cond: [{ $lt: ["$$p.returnCents", 0] }, "$$p.returnCents", 0],
               },
             },
           },
