@@ -352,7 +352,11 @@ async function makeUser({
  * exactly. Cash absorbs the rounding remainder, so portfolio value is exact.
  */
 async function giveHoldings(user, targetValueCents, stocks, rng) {
-  const tradable = stocks.filter((s) => s.status !== "Halted");
+  const tradable = stocks.filter(
+    (s) =>
+      s.status !== "Halted" &&
+      (s.exchange === "NYSE" || s.exchange === "NASDAQ")
+  );
   const count = rngInt(rng, 1, 3);
   const picked = [];
   let spentCents = 0;

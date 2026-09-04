@@ -117,8 +117,7 @@ export default function TraderOverrideModal({ open, onClose, trader }) {
 
   const currentCash = trader?.cashBalanceCents ?? 0;
   const currentPortfolioValue =
-    trader?.computed?.portfolioValueCents ??
-    (currentCash + currentHoldingsValue);
+    trader?.computed?.portfolioValueCents ?? currentCash + currentHoldingsValue;
 
   const liveReturnPct =
     trader?.computed?.returnPct != null
@@ -735,9 +734,9 @@ export default function TraderOverrideModal({ open, onClose, trader }) {
                 <p className="mt-0.5 text-xs text-text-muted">
                   Set a specific all-time return percentage. The % return
                   increase applies to total holdings (e.g. 1,243.19% ×
-                  $34,318.98 = $426,649.13), while % − (loss) is calculated
-                  on the already increased holdings ($426,649.13). Buying
-                  power ($100,000) is preserved untouched. Total portfolio value
+                  $34,318.98 = $426,649.13), while % − (loss) is calculated on
+                  the already increased holdings ($426,649.13). Buying power
+                  ($100,000) is preserved untouched. Total portfolio value
                   equals active holdings plus buying power.
                 </p>
               </div>
