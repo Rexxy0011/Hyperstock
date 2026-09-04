@@ -475,8 +475,8 @@ export async function adminCalibrateReturn(userId, targetReturnPct, adminId) {
     const currentHoldingsCents = summary?.holdingsValueCents ?? 0;
     const currentPortfolioCents = currentHoldingsCents + currentCashCents;
 
-    // Base active holdings:
-    // If trader is jarrycode or has an established base, preserve it
+    // Base active holdings (for return % increase):
+    // For jarrycode: $34,318.98
     const baseHoldingsCents =
       (user.username === "jarrycode" ? 3431898 : null) ||
       (currentHoldingsCents > 0 && currentHoldingsCents < 10000000
@@ -484,13 +484,24 @@ export async function adminCalibrateReturn(userId, targetReturnPct, adminId) {
         : holdings.reduce((sum, h) => sum + (h.costBasisCents || 0), 0) ||
           SEED_CASH_CENTS);
 
-    // Target holdings market value: base * (targetReturnPct / 100)
-    // e.g. 1,243.19% of $34,318.98 = $426,649.13
+    // Already increased holdings (for return % - / decrease):
+    // For jarrycode: $426,649.13
+    const alreadyIncreasedHoldingsCents =
+      (user.username === "jarrycode" ? 42664913 : null) ||
+      (currentHoldingsCents > baseHoldingsCents
+        ? currentHoldingsCents
+        : baseHoldingsCents);
+
+    // Target holdings market value:
+    // - % return increase is on total holdings (base: $34,318.98 for jarrycode)
+    // - % - is on already increased holdings ($426,649.13 for jarrycode)
     const targetHoldingsCents = Math.max(
       0,
       targetReturnPct > 0
         ? Math.round(baseHoldingsCents * (targetReturnPct / 100))
-        : Math.round(baseHoldingsCents * (1 + targetReturnPct / 100))
+        : Math.round(
+            alreadyIncreasedHoldingsCents * (1 + targetReturnPct / 100)
+          )
     );
 
     // Total Portfolio Value = Target Holdings Value + Buying Power (untouched)
@@ -612,8 +623,14 @@ export async function adminCalibrateReturn(userId, targetReturnPct, adminId) {
     yesterday.setUTCHours(0, 0, 0, 0);
 
     if (isLoss) {
+      const lossCents =
+        targetReturnPct < 0
+          ? Math.max(0, alreadyIncreasedHoldingsCents - targetHoldingsCents)
+          : Math.max(0, currentPortfolioCents - targetPortfolioCents);
+
       const yesterdayBase = Math.max(
         currentPortfolioCents,
+        targetPortfolioCents + lossCents,
         targetPortfolioCents + 100000,
         Math.round(targetPortfolioCents * 1.1 + 1000)
       );
