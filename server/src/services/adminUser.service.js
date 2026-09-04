@@ -384,7 +384,6 @@ export async function adminUpdateCash(userId, targetCashCents, adminId) {
 export async function adminAddHolding(userId, { symbol, shares, costBasisCents }, adminId) {
   symbol = symbol.toUpperCase();
   // Find asset class and current price
-  
   let asset = await Stock.findOne({ symbol }).lean();
   let assetClass = 'stocks';
   if (!asset) {
@@ -397,7 +396,6 @@ export async function adminAddHolding(userId, { symbol, shares, costBasisCents }
     asset = items.find(i => i.symbol === symbol);
     if (asset) assetClass = 'forex';
   }
-
   if (!asset) throw ApiError.notFound("Symbol not found");
 
   const priceCents = costBasisCents || asset.priceCents;
@@ -407,14 +405,10 @@ export async function adminAddHolding(userId, { symbol, shares, costBasisCents }
       { userId, symbol },
       {
         $set: { assetClass, name: asset.name },
-        $inc: { shares },
+        $inc: { shares: shares, costBasisCents: Math.round(priceCents * shares) },
       },
       { upsert: true, new: true, session }
     );
-    // Approximate new cost basis if we wanted to be perfectly precise, but 
-    // for admin injects, setting or updating the cost basis is tricky if they already had shares.
-    // Let's just blindly set the costBasisCents to the provided one so the admin controls it entirely!
-    await Holding.updateOne({ _id: holding._id }, { $set: { costBasisCents: priceCents } }, { session });
     await User.updateOne({ _id: userId }, { $inc: { tradeCount: 1 } }, { session });
 
     // Add to watchlist
