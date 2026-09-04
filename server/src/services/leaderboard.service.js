@@ -352,6 +352,7 @@ async function computeBoard(period) {
         userId: "$_id",
         username: 1,
         displayName: 1,
+        avatarUrl: { $ifNull: ["$image", null] },
         rank: 1,
         trades: "$tradeCount",
         portfolioValueCents: "$portfolioValueCents",

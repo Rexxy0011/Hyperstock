@@ -1,15 +1,15 @@
-import mongoose from 'mongoose';
-import bcrypt from 'bcryptjs';
-import { betterAuth } from 'better-auth';
-import { mongodbAdapter } from 'better-auth/adapters/mongodb';
-import { username as usernamePlugin, emailOTP } from 'better-auth/plugins';
-import { env, SEED_CASH_CENTS, isProd, apiOrigin } from '../config/env.js';
-import { supportsTransactions } from '../config/db.js';
-import { Transaction } from '../models/Transaction.js';
-import { WatchlistItem } from '../models/WatchlistItem.js';
-import { uniqueHandle } from './handle.js';
-import { sendMail } from '../lib/mailer.js';
-import { otpEmail, OTP_EXPIRY_SECONDS } from '../lib/emails.js';
+import mongoose from "mongoose";
+import bcrypt from "bcryptjs";
+import { betterAuth } from "better-auth";
+import { mongodbAdapter } from "better-auth/adapters/mongodb";
+import { username as usernamePlugin, emailOTP } from "better-auth/plugins";
+import { env, SEED_CASH_CENTS, isProd, apiOrigin } from "../config/env.js";
+import { supportsTransactions } from "../config/db.js";
+import { Transaction } from "../models/Transaction.js";
+import { WatchlistItem } from "../models/WatchlistItem.js";
+import { uniqueHandle } from "./handle.js";
+import { sendMail } from "../lib/mailer.js";
+import { otpEmail, OTP_EXPIRY_SECONDS } from "../lib/emails.js";
 
 /**
  * Better Auth owns login, signup and every other credential path.
@@ -78,18 +78,41 @@ const additionalFields = {
   // `displayName` stays ours and stays `input: false`. It is not the plugin's
   // `displayUsername`: that is a cased variant of the handle, while this is a
   // human name that may carry spaces and accents, which the handle regex bans.
-  displayName: { type: /** @type {const} */ ('string'), required: false, input: false },
-  country: { type: /** @type {const} */ ("string"), required: false, input: true },
+  displayName: {
+    type: /** @type {const} */ ("string"),
+    required: false,
+    input: false,
+  },
+  country: {
+    type: /** @type {const} */ ("string"),
+    required: false,
+    input: true,
+  },
 
-  role: { type: /** @type {const} */ ('string'), required: false, defaultValue: 'user', input: false },
-  status: { type: /** @type {const} */ ('string'), required: false, defaultValue: 'Active', input: false },
+  role: {
+    type: /** @type {const} */ ("string"),
+    required: false,
+    defaultValue: "user",
+    input: false,
+  },
+  status: {
+    type: /** @type {const} */ ("string"),
+    required: false,
+    defaultValue: "Active",
+    input: false,
+  },
   cashBalanceCents: {
-    type: /** @type {const} */ ('number'),
+    type: /** @type {const} */ ("number"),
     required: false,
     defaultValue: SEED_CASH_CENTS,
     input: false,
   },
-  tradeCount: { type: /** @type {const} */ ('number'), required: false, defaultValue: 0, input: false },
+  tradeCount: {
+    type: /** @type {const} */ ("number"),
+    required: false,
+    defaultValue: 0,
+    input: false,
+  },
 };
 
 /**
@@ -97,7 +120,9 @@ const additionalFields = {
  * told, rather than rendering a button that bounces the user to a Google error
  * page when the credentials are absent.
  */
-export const googleEnabled = Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET);
+export const googleEnabled = Boolean(
+  env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
+);
 
 /**
  * Builds the instance. MUST be called after `connectDb()` — it borrows that
@@ -109,11 +134,13 @@ export function createAuth() {
 
   const connection = mongoose.connection;
   if (!connection?.db) {
-    throw new Error('createAuth() called before connectDb() — no mongoose connection');
+    throw new Error(
+      "createAuth() called before connectDb() — no mongoose connection"
+    );
   }
 
   instance = betterAuth({
-    appName: 'HyperStocks',
+    appName: "HyperStocks",
     // Its own secret rather than the old JWT one, which was `min(8)` and made
     // Better Auth warn about low entropy on every boot. The env schema pins
     // this at its 32-character floor and production refuses the dev default.
@@ -122,7 +149,7 @@ export function createAuth() {
     // so a production deploy with the dev value sends users to a machine that
     // is not on the internet. `config/env.js` refuses to boot on that in prod.
     baseURL: apiOrigin,
-    basePath: '/api/auth',
+    basePath: "/api/auth",
     // The browser is a different origin in development (Vite on 5173 proxying
     // to 4000), so it has to be trusted explicitly or the cookie is refused.
     trustedOrigins: [env.CLIENT_ORIGIN],
@@ -199,7 +226,7 @@ export function createAuth() {
           // Forces the chooser rather than silently reusing whichever account
           // the browser is already signed into — on a product holding a
           // portfolio, "which of my accounts is this" must not be a guess.
-          prompt: 'select_account',
+          prompt: "select_account",
         },
       },
     }),
@@ -221,7 +248,7 @@ export function createAuth() {
          * way forward — the two identities are the same person and the product
          * would be insisting they are not.
          */
-        trustedProviders: ['google'],
+        trustedProviders: ["google"],
       },
     },
 
@@ -260,7 +287,7 @@ export function createAuth() {
         expiresIn: OTP_EXPIRY_SECONDS,
         // Three guesses against a six-digit space, expiring in ten minutes.
         allowedAttempts: 3,
-        storeOTP: 'hashed',
+        storeOTP: "hashed",
         disableSignUp: true,
         sendVerificationOTP: async ({ email, otp, type }) => {
           const { subject, text, html } = otpEmail({ otp, type });
@@ -300,7 +327,10 @@ export function createAuth() {
         create: {
           before: async (user) => {
             if (user.username) return undefined;
-            const username = await uniqueHandle({ email: user.email, name: user.name });
+            const username = await uniqueHandle({
+              email: user.email,
+              name: user.name,
+            });
             // `displayUsername` is the username plugin's cased variant; left
             // unset it renders blank wherever the plugin prefers it.
             return { data: { ...user, username, displayUsername: username } };
@@ -308,25 +338,27 @@ export function createAuth() {
           after: async (user) => {
             await Transaction.create({
               userId: user.id,
-              type: 'Top-up',
-              detail: 'Initial virtual capital',
+              type: "Top-up",
+              detail: "Initial virtual capital",
               amountCents: SEED_CASH_CENTS,
-              status: 'Approved',
+              status: "Approved",
             });
 
             // Spend the entire $10,000 buying positions via real market orders.
             // Dynamic import avoids circular dependency — order.service imports
             // models that import auth transitively.
-            const { placeOrder } = await import('../services/order.service.js');
-            const { Stock } = await import('../models/Stock.js');
-            const { getInstruments } = await import('../services/market.service.js');
+            const { placeOrder } = await import("../services/order.service.js");
+            const { Stock } = await import("../models/Stock.js");
+            const { getInstruments } = await import(
+              "../services/market.service.js"
+            );
 
             const assets = [
-              { symbol: 'AAPL', assetClass: 'stocks' },
-              { symbol: 'NVDA', assetClass: 'stocks' },
-              { symbol: 'ASML', assetClass: 'stocks' },
-              { symbol: '7203', assetClass: 'stocks' },
-              { symbol: 'BTCUSD', assetClass: 'crypto' },
+              { symbol: "AAPL", assetClass: "stocks" },
+              { symbol: "NVDA", assetClass: "stocks" },
+              { symbol: "ASML", assetClass: "stocks" },
+              { symbol: "7203", assetClass: "stocks" },
+              { symbol: "BTCUSD", assetClass: "crypto" },
             ];
 
             // Random weights so each user's portfolio looks slightly different
@@ -335,55 +367,73 @@ export function createAuth() {
             const seedCents = SEED_CASH_CENTS;
 
             for (let i = 0; i < assets.length; i++) {
-              const allocCents = Math.floor(seedCents * (weights[i] / totalWeight));
+              const allocCents = Math.floor(
+                seedCents * (weights[i] / totalWeight)
+              );
               const { symbol, assetClass } = assets[i];
 
               try {
                 // Look up the live price to calculate how many shares we can buy
                 let priceCents = 0;
-                if (assetClass === 'stocks') {
+                if (assetClass === "stocks") {
                   const stock = await Stock.findOne({ symbol }).lean();
-                  if (stock) priceCents = stock.priceCents || Math.round((stock.priceUsdNanos || 0) / 1e7);
+                  if (stock)
+                    priceCents =
+                      stock.priceCents ||
+                      Math.round((stock.priceUsdNanos || 0) / 1e7);
                 }
-                if (!priceCents && assetClass === 'crypto') {
-                  const { items } = await getInstruments({ assetClass: 'crypto' });
-                  const inst = items.find(it => it.symbol === symbol);
-                  if (inst) priceCents = inst.priceCents || Math.round((inst.priceUsdNanos || 0) / 1e7);
+                if (!priceCents && assetClass === "crypto") {
+                  const { items } = await getInstruments({
+                    assetClass: "crypto",
+                  });
+                  const inst = items.find((it) => it.symbol === symbol);
+                  if (inst)
+                    priceCents =
+                      inst.priceCents ||
+                      Math.round((inst.priceUsdNanos || 0) / 1e7);
                 }
                 if (!priceCents) continue;
 
                 // For stocks: whole shares only. For crypto: fractional OK.
-                const qty = assetClass === 'stocks'
-                  ? Math.max(1, Math.floor(allocCents / priceCents))
-                  : Math.max(0.0001, Math.round((allocCents / priceCents) * 10000) / 10000);
+                const qty =
+                  assetClass === "stocks"
+                    ? Math.max(1, Math.floor(allocCents / priceCents))
+                    : Math.max(
+                        0.0001,
+                        Math.round((allocCents / priceCents) * 10000) / 10000
+                      );
 
                 await placeOrder({
                   userId: user.id,
                   assetClass,
                   symbol,
-                  side: 'BUY',
+                  side: "BUY",
                   quantity: qty,
-                  orderType: 'MARKET',
+                  orderType: "MARKET",
                 });
               } catch (e) {
-                console.warn('Signup order failed:', symbol, e.message);
+                console.warn("Signup order failed:", symbol, e.message);
               }
             }
 
             // Add the rest of JD Trader's watchlist (positions auto-add theirs)
             const extraWatchlist = [
-              { symbol: '0700', assetClass: 'stocks' },
-              { symbol: 'SAP', assetClass: 'stocks' },
-              { symbol: 'GOOGL', assetClass: 'stocks' },
-              { symbol: 'AZN', assetClass: 'stocks' },
-              { symbol: 'MSFT', assetClass: 'stocks' },
-              { symbol: 'AMZN', assetClass: 'stocks' },
+              { symbol: "0700", assetClass: "stocks" },
+              { symbol: "SAP", assetClass: "stocks" },
+              { symbol: "GOOGL", assetClass: "stocks" },
+              { symbol: "AZN", assetClass: "stocks" },
+              { symbol: "MSFT", assetClass: "stocks" },
+              { symbol: "AMZN", assetClass: "stocks" },
             ];
 
             for (const w of extraWatchlist) {
               try {
                 await WatchlistItem.updateOne(
-                  { userId: user.id, symbol: w.symbol, assetClass: w.assetClass },
+                  {
+                    userId: user.id,
+                    symbol: w.symbol,
+                    assetClass: w.assetClass,
+                  },
                   { $setOnInsert: { addedAt: new Date() } },
                   { upsert: true }
                 );
@@ -400,7 +450,7 @@ export function createAuth() {
       // Same posture the hand-rolled cookie had: httpOnly, lax, secure in
       // production only so localhost over plain HTTP still works.
       useSecureCookies: isProd,
-      cookiePrefix: 'hs',
+      cookiePrefix: "hs",
     },
   });
 
@@ -409,6 +459,7 @@ export function createAuth() {
 
 /** The built instance, for callers that run after boot. */
 export function getAuth() {
-  if (!instance) throw new Error('auth not initialised — call createAuth() first');
+  if (!instance)
+    throw new Error("auth not initialised — call createAuth() first");
   return instance;
 }

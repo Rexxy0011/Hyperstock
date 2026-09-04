@@ -5,6 +5,7 @@ import { get, patch } from '../lib/api';
 import { useAuth } from '../auth/AuthProvider';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import Badge, { statusVariant } from '../components/ui/Badge';
+import Avatar from '../components/ui/Avatar';
 import Money from '../components/market/Money';
 import TraderOverrideModal from '../components/admin/TraderOverrideModal';
 import { money } from '../lib/format';
@@ -160,15 +161,20 @@ export default function Users() {
               return (
                 <tr key={r.id}>
                   <td className={td}>
-                    <span className="block font-medium">
-                      {r.displayName || r.username}
-                      {isMe && (
-                        <span className="ml-2 text-2xs text-text-muted">
-                          {t('admin.users.you')}
+                    <div className="flex items-center gap-3">
+                      <Avatar name={r.username} src={r.avatarUrl || r.image} size={32} />
+                      <div className="min-w-0">
+                        <span className="block font-medium truncate">
+                          {r.displayName || r.username}
+                          {isMe && (
+                            <span className="ml-2 text-2xs text-text-muted">
+                              {t('admin.users.you')}
+                            </span>
+                          )}
                         </span>
-                      )}
-                    </span>
-                    <span className="block font-mono text-xs text-text-muted">{r.email}</span>
+                        <span className="block font-mono text-xs text-text-muted truncate">{r.email}</span>
+                      </div>
+                    </div>
                   </td>
 
                   <td className={td}>

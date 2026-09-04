@@ -49,6 +49,8 @@ const publicRow = (user, canSignIn, computed = null, override = null) => ({
   displayName: user.displayName ?? null,
   name: user.name ?? null,
   email: user.email,
+  image: user.image ?? null,
+  avatarUrl: user.image ?? null,
   role: user.role,
   status: user.status,
   cashBalanceCents: user.cashBalanceCents,
@@ -224,34 +226,19 @@ export async function listPositions(userId = null) {
       symbol: p.symbol,
       assetClass: p.assetClass,
       name: p.name,
+      shares: p.shares,
+      priceCents: p.priceCents ?? p.priceUsdCents ?? 0,
+      priceUsdCents: p.priceUsdCents ?? p.priceCents ?? 0,
       returnPct: p.totalReturnPct,
       valueCents: p.marketValueCents,
       held: true,
     }))
     .sort((a, b) => b.returnPct - a.returnPct);
 
-  /**
-   * EVERYTHING ELSE THE PLATFORM LISTS, so the picker is not limited to what
-   * this trader happens to own.
-   *
-   * A curated row's figures are invented by definition — restricting its best
-   * position to the account's real holdings imposed a consistency the rest of
-   * the row does not have, and left an operator unable to name a symbol they
-   * had a reason to feature. The two groups stay DISTINGUISHABLE rather than
-   * merged: a held row carries a real return that can be checked against the
-   * trader's own portfolio screen, and an unheld one carries none, so
-   * flattening them would present an invented figure and a measured one in the
-   * same shape.
-   *
-   * Equities only for the unheld half. They are the universe this database
-   * actually models — crypto and forex exist solely in the vendor cache — and
-   * anything of those classes the trader owns is already in `held` above.
-   */
   const owned = new Set(held.map((p) => p.symbol));
   
-  
   const [stocks, cryptoRes, forexRes] = await Promise.all([
-    Stock.find({ status: { $ne: "Halted" } }).select("symbol name exchange").lean(),
+    Stock.find({ status: { $ne: "Halted" } }).select("symbol name exchange priceCents priceUsdCents").lean(),
     getInstruments({ assetClass: 'crypto' }),
     getInstruments({ assetClass: 'forex' })
   ]);
@@ -262,7 +249,6 @@ export async function listPositions(userId = null) {
     ...(forexRes?.items || []).map(s => ({ ...s, assetClass: 'forex' }))
   ];
 
-
   const available = allListed
     .filter((s) => !owned.has(s.symbol))
     .map((s) => ({
@@ -270,6 +256,8 @@ export async function listPositions(userId = null) {
       assetClass: s.assetClass,
       name: s.name,
       exchange: s.exchange,
+      priceCents: s.priceCents || s.priceUsdCents || 0,
+      priceUsdCents: s.priceUsdCents || s.priceCents || 0,
       returnPct: null,
       valueCents: 0,
       held: false,
@@ -429,5 +417,37 @@ export async function adminAddHolding(userId, { symbol, shares, costBasisCents }
 export async function adminRemoveHolding(userId, symbol, adminId) {
   symbol = symbol.toUpperCase();
   await Holding.deleteOne({ userId, symbol });
+  invalidateLeaderboard();
   return { success: true };
+}
+
+export async function adminUpdateAvatar(userId, image, adminId) {
+  const user = await User.findByIdAndUpdate(
+    userId,
+    { $set: { image: image || null } },
+    { new: true }
+  ).lean();
+  if (!user) throw ApiError.notFound("User not found");
+
+  invalidateLeaderboard();
+  return { success: true, image: user.image ?? null };
+}
+
+export async function adminAddFunds(userId, amountCents, adminId) {
+  return withTransaction(async (session) => {
+    const user = await User.findById(userId).session(session);
+    if (!user) throw ApiError.notFound("User not found");
+
+    const { balanceAfterCents } = await ledgerPost({
+      userId,
+      type: LEDGER_TYPE.TOPUP,
+      amountCents,
+      reference: `admin_topup_${Date.now()}`,
+      detail: `Virtual capital added by administrator`,
+      session,
+    });
+
+    invalidateLeaderboard();
+    return { cashBalanceCents: balanceAfterCents };
+  });
 }

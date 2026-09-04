@@ -15,7 +15,7 @@ import Icon from './Icon';
  * attribute — the attribute produces a NON-modal dialog, which looks correct
  * and silently skips the focus trap and the backdrop.
  */
-export default function Modal({ open, onClose, title, children, footer = undefined }) {
+export default function Modal({ open, onClose, title, children, footer = undefined, className = '' }) {
   const { t } = useTranslation();
   const ref = useRef(/** @type {HTMLDialogElement | null} */ (null));
 
@@ -47,7 +47,10 @@ export default function Modal({ open, onClose, title, children, footer = undefin
       ref={ref}
       // The backdrop is styled through the pseudo-element; `p-0` and `m-auto`
       // undo the UA's default centring box so the panel controls its own size.
-      className="m-auto w-[min(30rem,calc(100vw-2rem))] rounded-xl border border-cool-grey bg-white p-0 text-text-body shadow-panel backdrop:bg-ink/40"
+      className={[
+        'm-auto rounded-xl border border-cool-grey bg-white p-0 text-text-body shadow-panel backdrop:bg-ink/40',
+        className || 'w-[min(30rem,calc(100vw-2rem))]',
+      ].join(' ')}
       onClick={(e) => {
         // Click-outside. The dialog element's own box IS the panel, so a click
         // whose target is the dialog itself landed on the backdrop.
