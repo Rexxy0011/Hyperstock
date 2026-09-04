@@ -503,9 +503,7 @@ export async function getLeaderboard({
    * position: merging afterwards would rank a signed-in trader against a board
    * that is not the one they are looking at.
    */
-  const featured = await listActiveFeatured();
-  const rows = mergeFeatured(computed.map(decorate), featured);
-
+  const rows = computed.map(decorate);
   const top = rows.slice(0, limit);
 
   // The design pins the signed-in user's own row beneath the top N (rank 128).
