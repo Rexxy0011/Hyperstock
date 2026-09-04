@@ -146,6 +146,13 @@ async function computeBoard(period) {
               // without a second pass over holdings.
               exchange: { $ifNull: ["$_s.exchange", "$_m.exchange"] },
               valueCents: "$_valueCents",
+              costBasisCents: { $ifNull: ["$costBasisCents", 0] },
+              returnCents: {
+                $subtract: [
+                  "$_valueCents",
+                  { $ifNull: ["$costBasisCents", 0] },
+                ],
+              },
               // Position return against its stored cost basis, not against a
               // derived per-share average — the basis is the figure actually paid.
               returnPct: {
@@ -174,6 +181,21 @@ async function computeBoard(period) {
     {
       $addFields: {
         holdingsValueCents: { $sum: "$h.valueCents" },
+        losingHoldingsReturnCents: {
+          $sum: {
+            $map: {
+              input: "$h",
+              as: "p",
+              in: {
+                $cond: [
+                  { $lt: ["$$p.returnCents", 0] },
+                  "$$p.returnCents",
+                  0,
+                ],
+              },
+            },
+          },
+        },
         best: {
           $first: { $sortArray: { input: "$h", sortBy: { returnPct: -1 } } },
         },
@@ -252,7 +274,7 @@ async function computeBoard(period) {
     },
     {
       $addFields: {
-        dayChangeCents: {
+        rawDayChangeCents: {
           $subtract: ["$portfolioValueCents", "$dayBaseValueCents"],
         },
         dayChangePct: {
@@ -272,6 +294,28 @@ async function computeBoard(period) {
               ],
             },
             0,
+          ],
+        },
+      },
+    },
+    {
+      $addFields: {
+        dayChangeCents: {
+          $cond: [
+            {
+              $or: [
+                { $lt: ["$dayChangePct", 0] },
+                { $lt: ["$rawDayChangeCents", 0] },
+              ],
+            },
+            {
+              $cond: [
+                { $lt: ["$losingHoldingsReturnCents", 0] },
+                "$losingHoldingsReturnCents",
+                "$rawDayChangeCents",
+              ],
+            },
+            "$rawDayChangeCents",
           ],
         },
       },
@@ -358,6 +402,7 @@ async function computeBoard(period) {
         portfolioValueCents: "$portfolioValueCents",
         returnPct: { $round: ["$returnPct", 2] },
         dayChangeCents: "$dayChangeCents",
+        losingHoldingsReturnCents: "$losingHoldingsReturnCents",
         dayChangePct: { $round: ["$dayChangePct", 2] },
         exchanges: { $size: { $setUnion: ["$h.exchange", []] } },
         wins: "$wins",

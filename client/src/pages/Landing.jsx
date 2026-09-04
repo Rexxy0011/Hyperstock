@@ -289,7 +289,12 @@ function TopInvestors({ rows, loading = false }) {
                     />
                     <span className="mt-0.5 flex items-center justify-end gap-1 sm:gap-1.5">
                       <Money
-                        value={r.dayChangeCents}
+                        value={
+                          (r.dayChangePct < 0 || r.dayChangeCents < 0) &&
+                          r.losingHoldingsReturnCents < 0
+                            ? r.losingHoldingsReturnCents
+                            : r.dayChangeCents
+                        }
                         size={11}
                         signed
                         className="hidden sm:inline text-text-muted"
