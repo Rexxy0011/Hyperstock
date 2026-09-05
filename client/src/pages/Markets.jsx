@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import Link from '../components/ui/Link';
@@ -15,6 +15,8 @@ import Tabs from '../components/ui/Tabs';
 import Badge, { statusVariant } from '../components/ui/Badge';
 import PriceChange from '../components/market/PriceChange';
 import WatchButton from '../components/market/WatchButton';
+
+const MARKETS_STATE_KEY = 'hyperstocks_markets_filter';
 
 const ASSET_TABS = [
   { value: 'stocks', label: 'Stocks' },
@@ -38,9 +40,32 @@ const showsExchange = (assetClass) => assetClass === 'stocks';
 
 export default function Markets() {
   const { t } = useTranslation();
-  const [assetClass, setAssetClass] = useState('stocks');
-  const [q, setQ] = useState('');
-  const [onlyWatched, setOnlyWatched] = useState(false);
+
+  const savedFilter = (() => {
+    try {
+      const raw = sessionStorage.getItem(MARKETS_STATE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  })();
+
+  const [assetClass, setAssetClass] = useState(
+    () => savedFilter?.assetClass || 'stocks',
+  );
+  const [q, setQ] = useState(() => savedFilter?.q || '');
+  const [onlyWatched, setOnlyWatched] = useState(
+    () => Boolean(savedFilter?.onlyWatched),
+  );
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(
+        MARKETS_STATE_KEY,
+        JSON.stringify({ assetClass, q, onlyWatched }),
+      );
+    } catch {}
+  }, [assetClass, q, onlyWatched]);
   /**
    * `null` means the server's own order, and that is the default rather than a
    * column, because the server's order is not reproducible here: equities are

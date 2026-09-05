@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutation } from '@tanstack/react-query';
 import Link from '../components/ui/Link';
@@ -251,10 +251,30 @@ const EMPTY = { name: '', email: '', phone: '', topic: '', message: '' };
  * submit costs no round trip and lands the caret in the offending field, which
  * a server 400 rendered as a toast cannot do.
  */
+const CONTACT_DRAFT_KEY = 'hyperstocks_contact_draft';
+
 function ContactForm() {
   const { t } = useTranslation();
-  const [form, setForm] = useState(EMPTY);
+  const savedForm = (() => {
+    try {
+      const raw = sessionStorage.getItem(CONTACT_DRAFT_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  })();
+
+  const [form, setForm] = useState(() => ({
+    ...EMPTY,
+    ...(savedForm || {}),
+  }));
   const [sentId, setSentId] = useState(/** @type {string | null} */ (null));
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(CONTACT_DRAFT_KEY, JSON.stringify(form));
+    } catch {}
+  }, [form]);
 
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
 
@@ -270,6 +290,9 @@ function ContactForm() {
     onSuccess: (data) => {
       setSentId(data?.id ?? '');
       setForm(EMPTY);
+      try {
+        sessionStorage.removeItem(CONTACT_DRAFT_KEY);
+      } catch {}
     },
     // Inline is not an option here — the form has been replaced by the time a
     // failure could render beneath it — so this one speaks through the toast.

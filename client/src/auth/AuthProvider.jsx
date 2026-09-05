@@ -137,24 +137,21 @@ export function AuthProvider({ children }) {
    * when they asked to reset a password has just learned that a stranger is in
    * their account.
    */
-  const requestCode = useCallback(
-    async ({ email, purpose }) => {
-      if (purpose === "reset") {
-        return post("/auth/email-otp/request-password-reset", { email });
-      }
-      if (purpose === "verify-email") {
-        return post("/auth/email-otp/send-verification-otp", {
-          email,
-          type: "email-verification",
-        });
-      }
+  const requestCode = useCallback(async ({ email, purpose }) => {
+    if (purpose === "reset") {
+      return post("/auth/email-otp/request-password-reset", { email });
+    }
+    if (purpose === "verify-email") {
       return post("/auth/email-otp/send-verification-otp", {
         email,
-        type: "sign-in",
+        type: "email-verification",
       });
-    },
-    []
-  );
+    }
+    return post("/auth/email-otp/send-verification-otp", {
+      email,
+      type: "sign-in",
+    });
+  }, []);
 
   const signInWithCode = useCallback(
     async ({ email, otp }) =>

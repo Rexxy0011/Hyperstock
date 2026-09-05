@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { FcGoogle } from "react-icons/fc";
@@ -1068,6 +1068,7 @@ const COUNTRIES = [
 
 const SIGNIN = "signin";
 const SIGNUP = "signup";
+const AUTH_STATE_KEY = "hyperstocks_auth_draft";
 
 export default function Auth() {
   const { t } = useTranslation();
@@ -1075,18 +1076,31 @@ export default function Auth() {
   const { user, authReady, login, register, signInWithGoogle, requestCode } =
     useAuth();
 
-  const [mode, setMode] = useState(
-    params.get("mode") === "signup" ? SIGNUP : SIGNIN
-  );
+  const savedState = (() => {
+    try {
+      const raw = sessionStorage.getItem(AUTH_STATE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  })();
+
+  const [mode, setMode] = useState(() => {
+    const urlMode = params.get("mode");
+    if (urlMode === "signup") return SIGNUP;
+    if (urlMode === "signin") return SIGNIN;
+    return savedState?.mode === SIGNUP ? SIGNUP : SIGNIN;
+  });
+
   // `email` is carried over from Landing's CTA, which collects it before
   // sending the visitor here — without this the field arrives empty and they
   // type it twice.
-  const [form, setForm] = useState({
-    username: "",
-    email: params.get("email") ?? "",
-    password: "",
-    country: "",
-  });
+  const [form, setForm] = useState(() => ({
+    username: savedState?.form?.username || "",
+    email: params.get("email") ?? (savedState?.form?.email || ""),
+    password: savedState?.form?.password || "",
+    country: savedState?.form?.country || "",
+  }));
   const [error, setError] = useState(null);
   const [infoNotice, setInfoNotice] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -1137,8 +1151,29 @@ export default function Auth() {
    */
   /** null, 'sign-in', 'reset', or 'verify-email' — which code flow has replaced the form. */
   const [codeFlow, setCodeFlow] = useState(
-    /** @type {null|'sign-in'|'reset'|'verify-email'} */ (null)
+    /** @type {null|'sign-in'|'reset'|'verify-email'} */ (
+      savedState?.codeFlow || null
+    )
   );
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(
+        AUTH_STATE_KEY,
+        JSON.stringify({
+          mode,
+          form,
+          codeFlow,
+        })
+      );
+    } catch {}
+  }, [mode, form, codeFlow]);
+
+  const clearDraft = () => {
+    try {
+      sessionStorage.removeItem(AUTH_STATE_KEY);
+    } catch {}
+  };
 
   const { data: providers } = useQuery({
     queryKey: ["auth", "providers"],
@@ -1160,6 +1195,7 @@ export default function Auth() {
    * a sign-in and must not announce one.
    */
   if (authReady && user) {
+    clearDraft();
     /**
      * AN OPERATOR LANDS IN THE ADMIN SECTION, everybody else on the landing
      * page. The role is only knowable HERE — `next` is computed before anyone
@@ -1360,6 +1396,7 @@ export default function Auth() {
               initialEmail={form.email}
               onCancel={() => setCodeFlow(null)}
               onSuccess={() => {
+                clearDraft();
                 setWelcomeKind(
                   codeFlow === "verify-email" ? WELCOME.signUp : WELCOME.signIn
                 );
@@ -1625,12 +1662,16 @@ export default function Auth() {
                 terms: (
                   <Link
                     to="/terms"
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="text-text-body underline underline-offset-2 hover:text-gain"
                   />
                 ),
                 privacy: (
                   <Link
                     to="/privacy"
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="text-text-body underline underline-offset-2 hover:text-gain"
                   />
                 ),

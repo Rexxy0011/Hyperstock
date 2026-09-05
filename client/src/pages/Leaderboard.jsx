@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { get } from '../lib/api';
@@ -8,6 +8,8 @@ import Badge from '../components/ui/Badge';
 import Money from '../components/market/Money';
 import PriceChange from '../components/market/PriceChange';
 import Avatar from '../components/ui/Avatar';
+
+const LEADERBOARD_STATE_KEY = 'hyperstocks_leaderboard_period';
 
 const PERIODS = [
   { value: 'weekly', labelKey: 'leaderboard.tabWeekly' },
@@ -24,7 +26,21 @@ const PERIOD_COPY = {
 
 export default function Leaderboard() {
   const { t } = useTranslation();
-  const [period, setPeriod] = useState('monthly');
+  const [period, setPeriod] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem(LEADERBOARD_STATE_KEY);
+      if (saved && ['weekly', 'monthly', 'alltime'].includes(saved)) {
+        return saved;
+      }
+    } catch {}
+    return 'monthly';
+  });
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(LEADERBOARD_STATE_KEY, period);
+    } catch {}
+  }, [period]);
 
   const { data, isLoading } = useQuery({
     queryKey: keys.leaderboard(period),

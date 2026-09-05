@@ -1,4 +1,6 @@
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { FiArrowLeft } from "react-icons/fi";
 import Link from "../../components/ui/Link";
 import Reveal from "../../components/ui/Reveal";
 import { DOCUMENTS, LAST_UPDATED } from "./legalContent";
@@ -22,6 +24,7 @@ import { DOCUMENTS, LAST_UPDATED } from "./legalContent";
  */
 export default function LegalDocument({ id }) {
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
   const doc = DOCUMENTS[id];
 
   if (!doc) return null;
@@ -29,6 +32,16 @@ export default function LegalDocument({ id }) {
   return (
     <div className="mx-auto w-full max-w-300 px-6 py-16 lg:px-10">
       <Reveal>
+        <button
+          type="button"
+          onClick={() =>
+            window.history.length > 1 ? navigate(-1) : navigate("/auth?mode=signup")
+          }
+          className="mb-6 inline-flex cursor-pointer items-center gap-2 text-xs font-semibold uppercase tracking-wider text-text-muted transition-colors hover:text-void"
+        >
+          <FiArrowLeft size={15} aria-hidden="true" />
+          <span>{t("common.back", "Back")}</span>
+        </button>
         <header className="mb-10 border-b border-cool-grey pb-8">
           <h1 className="m-0 text-[clamp(28px,4vw,40px)] font-bold text-void">
             {doc.title}
