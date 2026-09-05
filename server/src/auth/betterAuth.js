@@ -3,7 +3,14 @@ import bcrypt from "bcryptjs";
 import { betterAuth } from "better-auth";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
 import { username as usernamePlugin, emailOTP } from "better-auth/plugins";
-import { env, SEED_CASH_CENTS, isProd, apiOrigin } from "../config/env.js";
+import {
+  env,
+  SEED_CASH_CENTS,
+  isProd,
+  apiOrigin,
+  trustedOriginsList,
+  isTrustedOrigin,
+} from "../config/env.js";
 import { supportsTransactions } from "../config/db.js";
 import { Transaction } from "../models/Transaction.js";
 import { WatchlistItem } from "../models/WatchlistItem.js";
@@ -155,9 +162,25 @@ export function createAuth() {
     // is not on the internet. `config/env.js` refuses to boot on that in prod.
     baseURL: apiOrigin,
     basePath: "/api/auth",
-    // The browser is a different origin in development (Vite on 5173 proxying
-    // to 4000), so it has to be trusted explicitly or the cookie is refused.
-    trustedOrigins: [env.CLIENT_ORIGIN],
+    // Trusted origins for browser CORS and CSRF verification.
+    // Handles hyperstocks.finance (root & subdomains), localhost, render previews,
+    // and custom origins specified in CLIENT_ORIGIN.
+    trustedOrigins: async (request) => {
+      const origin = request?.headers?.get?.("origin");
+      const referer = request?.headers?.get?.("referer");
+      let refererOrigin = null;
+      if (referer) {
+        try {
+          refererOrigin = new URL(referer).origin;
+        } catch {}
+      }
+
+      const dynamicOrigins = [];
+      if (origin && isTrustedOrigin(origin)) dynamicOrigins.push(origin);
+      if (refererOrigin && isTrustedOrigin(refererOrigin)) dynamicOrigins.push(refererOrigin);
+
+      return Array.from(new Set([...trustedOriginsList, ...dynamicOrigins]));
+    },
 
     rateLimit: {
       window: 60,

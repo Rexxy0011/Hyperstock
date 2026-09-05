@@ -8,7 +8,7 @@ import mongoSanitize from "express-mongo-sanitize";
 import cookieParser from "cookie-parser";
 import morgan from "morgan";
 import { toNodeHandler } from "better-auth/node";
-import { env } from "./config/env.js";
+import { env, isTrustedOrigin } from "./config/env.js";
 import { createAuth } from "./auth/betterAuth.js";
 import routes from "./routes/index.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
@@ -36,7 +36,18 @@ export function createApp() {
   // of it succeeds on the server and silently drops the cookie in the browser.
   // In dev the Vite proxy makes requests same-origin, so this is a no-op there.
   // It matters when the client is deployed to a different host.
-  app.use(cors({ origin: env.CLIENT_ORIGIN, credentials: true }));
+  app.use(
+    cors({
+      origin: (origin, callback) => {
+        if (isTrustedOrigin(origin)) {
+          callback(null, true);
+        } else {
+          callback(new Error("CORS policy violation: origin not allowed"));
+        }
+      },
+      credentials: true,
+    })
+  );
 
   /**
    * BETTER AUTH MOUNTS BEFORE `express.json()`, AND THE ORDER IS NOT A STYLE

@@ -376,6 +376,86 @@ export const isProd = env.NODE_ENV === "production";
  */
 export const apiOrigin = env.API_ORIGIN || `http://localhost:${env.PORT}`;
 
+export const getTrustedOrigins = () => {
+  const configured = (env.CLIENT_ORIGIN || "")
+    .split(",")
+    .map((s) => s.trim().replace(/\/+$/, ""))
+    .filter(Boolean);
+
+  const defaults = [
+    "https://hyperstocks.finance",
+    "https://www.hyperstocks.finance",
+    "http://hyperstocks.finance",
+    "http://www.hyperstocks.finance",
+    "https://*.hyperstocks.finance",
+    "http://*.hyperstocks.finance",
+    "http://localhost:5173",
+    "http://localhost:4000",
+    "http://localhost:3000",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:4000",
+    "http://localhost:*",
+    "http://127.0.0.1:*",
+    "https://*.onrender.com",
+  ];
+
+  if (apiOrigin) {
+    try {
+      defaults.push(new URL(apiOrigin).origin);
+    } catch {}
+  }
+
+  return Array.from(new Set([...configured, ...defaults]));
+};
+
+export const trustedOriginsList = getTrustedOrigins();
+
+export const isTrustedOrigin = (origin) => {
+  if (!origin) return true;
+  const normalized = origin.trim().replace(/\/+$/, "");
+  if (trustedOriginsList.includes(normalized)) return true;
+
+  try {
+    const url = new URL(normalized);
+    const hostname = url.hostname.toLowerCase();
+
+    // Any hyperstocks.finance subdomain or root domain
+    if (
+      hostname === "hyperstocks.finance" ||
+      hostname.endsWith(".hyperstocks.finance")
+    ) {
+      return true;
+    }
+
+    // Localhost or loopback on any port
+    if (hostname === "localhost" || hostname === "127.0.0.1") {
+      return true;
+    }
+
+    // Render preview / staging
+    if (hostname.endsWith(".onrender.com")) {
+      return true;
+    }
+
+    // Any configured wildcard patterns
+    for (const pattern of trustedOriginsList) {
+      if (pattern.includes("*")) {
+        const regex = new RegExp(
+          "^" +
+            pattern
+              .replace(/[.+?^${}()|[\]\\]/g, "\\$&")
+              .replace(/\*/g, ".*") +
+            "$",
+          "i"
+        );
+        if (regex.test(normalized)) return true;
+      }
+    }
+  } catch {}
+
+  return false;
+};
+
 if (isProd) {
   for (const key of ["BETTER_AUTH_SECRET"]) {
     if (env[key].startsWith("dev-")) {
