@@ -17,6 +17,8 @@ import { env } from '../config/env.js';
  */
 
 const BRAND = 'HyperStocks';
+const SITE_URL = 'https://hyperstocks.finance';
+const SITE_LABEL = 'hyperstocks.finance';
 
 /**
  * Ten minutes. Declared here rather than in the plugin config because the copy
@@ -77,7 +79,7 @@ export function otpEmail({ otp, type }) {
     `${reason.lead}\n\n${otp}\n\n` +
       `The code expires in ${Math.round(OTP_EXPIRY_SECONDS / 60)} minutes and can only be used once.\n\n` +
       `If you did not request it, you can ignore this email - the code is useless on its own and nobody can act on it without it.`,
-    { footer: 'No real securities are bought or sold.' },
+    { footer: SITE_URL },
   );
 
   const html = `
@@ -94,7 +96,7 @@ export function otpEmail({ otp, type }) {
       </p>
       <hr style="border:0;border-top:1px solid #e4e7eb;margin:28px 0 16px">
       <p style="margin:0;font-size:12px;color:#8a929e">
-        ${BRAND}. No real securities are bought or sold.
+        <a href="${SITE_URL}" style="color:#8a929e">${SITE_LABEL}</a>
       </p>
     </div>`;
 
@@ -120,10 +122,17 @@ export function otpEmail({ otp, type }) {
  * signal as much as a courtesy.
  */
 export function newsletterEmail({ subject, body, unsubscribeToken }) {
-  const url = `${env.CLIENT_ORIGIN}/unsubscribe?token=${encodeURIComponent(unsubscribeToken)}`;
+  const primaryOrigin =
+    (env.CLIENT_ORIGIN || '')
+      .split(',')
+      .map((s) => s.trim())
+      .find((s) => s.includes('hyperstocks.finance')) ||
+    (env.CLIENT_ORIGIN || '').split(',')[0].trim() ||
+    SITE_URL;
+  const url = `${primaryOrigin}/unsubscribe?token=${encodeURIComponent(unsubscribeToken)}`;
 
   const text = shell(`${body}\n\nUnsubscribe: ${url}`, {
-    footer: 'No real securities are bought or sold.',
+    footer: SITE_URL,
   });
 
   const html = `
@@ -131,7 +140,7 @@ export function newsletterEmail({ subject, body, unsubscribeToken }) {
       <div style="font-size:15px;line-height:1.6">${body.replace(/\n/g, '<br>')}</div>
       <hr style="border:0;border-top:1px solid #e4e7eb;margin:28px 0 16px">
       <p style="margin:0 0 8px;font-size:12px;color:#8a929e">
-        ${BRAND}. No real securities are bought or sold.
+        <a href="${SITE_URL}" style="color:#8a929e">${SITE_LABEL}</a>
       </p>
       <p style="margin:0;font-size:12px;color:#8a929e">
         <a href="${url}" style="color:#8a929e">Unsubscribe</a>
