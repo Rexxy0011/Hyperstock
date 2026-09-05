@@ -1,4 +1,4 @@
-import { env } from '../config/env.js';
+import { env } from "../config/env.js";
 
 /**
  * What every message this product sends actually says.
@@ -16,9 +16,9 @@ import { env } from '../config/env.js';
  * a related reason.
  */
 
-const BRAND = 'HyperStocks';
-const SITE_URL = 'https://hyperstocks.finance';
-const SITE_LABEL = 'hyperstocks.finance';
+const BRAND = "HyperStocks";
+const SITE_URL = "https://hyperstocks.finance";
+const SITE_LABEL = "hyperstocks.finance";
 
 /**
  * Ten minutes. Declared here rather than in the plugin config because the copy
@@ -47,56 +47,63 @@ const shell = (bodyText, { footer }) =>
  */
 export function otpEmail({ otp, type }) {
   const reason = {
-    'sign-in': {
+    "sign-in": {
       subject: `${otp} is your ${BRAND} sign-in code`,
-      lead: `Use this code to sign in to ${BRAND}.`,
+      title: "Sign in to your account",
+      lead: `Use the verification code below to complete your sign-in to ${BRAND}.`,
+      security: `If you did not request this code or attempt to sign in, please disregard this email and check your account security.`,
     },
-    'email-verification': {
+    "email-verification": {
       subject: `${otp} is your ${BRAND} verification code`,
-      lead: `Use this code to confirm your email address.`,
+      title: "Verify your email address",
+      lead: `Welcome to ${BRAND}. Enter the verification code below to confirm your email address and activate your trading account.`,
+      security: `If you did not request this code or create an account, you can safely disregard this message.`,
     },
-    'forget-password': {
+    "forget-password": {
       subject: `${otp} is your ${BRAND} password reset code`,
-      lead: `Use this code to choose a new password.`,
+      title: "Reset your password",
+      lead: `We received a request to reset the password for your ${BRAND} account. Enter the verification code below to proceed with setting a new password.`,
+      security: `If you did not request a password reset, no action is needed — your account remains secure.`,
     },
-    'change-email': {
+    "change-email": {
       subject: `${otp} is your ${BRAND} confirmation code`,
-      lead: `Use this code to confirm your new email address.`,
+      title: "Confirm your new email address",
+      lead: `Use the verification code below to confirm this new email address for your ${BRAND} account.`,
+      security: `If you did not request this change, you can safely disregard this message.`,
     },
   }[type] ?? {
     subject: `${otp} is your ${BRAND} code`,
-    lead: `Use this code to continue.`,
+    title: "Verification code",
+    lead: `Use the verification code below to continue.`,
+    security: `If you did not request this code, you can safely disregard this message.`,
   };
 
-  /**
-   * "If you didn't request this, ignore it" IS THE SECURITY NOTICE, and it has
-   * to be specific about what ignoring achieves. A code that expires unused
-   * grants nothing, and saying so is what stops somebody acting on a code they
-   * did not ask for — which is exactly what an attacker who has guessed an
-   * address is hoping they will do.
-   */
   const text = shell(
-    `${reason.lead}\n\n${otp}\n\n` +
+    `${reason.title}\n\n${reason.lead}\n\n${otp}\n\n` +
       `The code expires in ${Math.round(OTP_EXPIRY_SECONDS / 60)} minutes and can only be used once.\n\n` +
-      `If you did not request it, you can ignore this email - the code is useless on its own and nobody can act on it without it.`,
-    { footer: SITE_URL },
+      `${reason.security}`,
+    { footer: SITE_URL }
   );
 
   const html = `
-    <div style="font-family:system-ui,-apple-system,Segoe UI,sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;color:#111">
-      <p style="margin:0 0 24px;font-size:15px;line-height:1.5">${reason.lead}</p>
-      <div style="font-size:32px;font-weight:700;letter-spacing:.18em;font-variant-numeric:tabular-nums;padding:16px 0;text-align:center;background:#f5f6f7;border-radius:10px">
-        ${String(otp).replace(/(\d{3})(?=\d)/g, '$1 ')}
+    <div style="font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:480px;margin:0 auto;padding:36px 24px;color:#111;line-height:1.5">
+      <div style="margin:0 0 24px">
+        <span style="font-size:18px;font-weight:700;letter-spacing:-0.02em;color:#0d1117">${BRAND}</span>
       </div>
-      <p style="margin:24px 0 0;font-size:13px;line-height:1.6;color:#5c6470">
+      <h1 style="margin:0 0 16px;font-size:20px;font-weight:600;color:#111;letter-spacing:-0.01em">${reason.title}</h1>
+      <p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:#374151">${reason.lead}</p>
+      <div style="font-size:32px;font-weight:700;letter-spacing:.2em;font-variant-numeric:tabular-nums;padding:18px 0;text-align:center;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;color:#111827">
+        ${String(otp).replace(/(\d{3})(?=\d)/g, "$1 ")}
+      </div>
+      <p style="margin:24px 0 0;font-size:13px;line-height:1.6;color:#6b7280">
         The code expires in ${Math.round(OTP_EXPIRY_SECONDS / 60)} minutes and can only be used once.
       </p>
-      <p style="margin:12px 0 0;font-size:13px;line-height:1.6;color:#5c6470">
-        If you did not request it, you can ignore this email - the code is useless on its own.
+      <p style="margin:10px 0 0;font-size:13px;line-height:1.6;color:#6b7280">
+        ${reason.security}
       </p>
-      <hr style="border:0;border-top:1px solid #e4e7eb;margin:28px 0 16px">
+      <hr style="border:0;border-top:1px solid #e5e7eb;margin:28px 0 16px">
       <p style="margin:0;font-size:12px;color:#8a929e">
-        <a href="${SITE_URL}" style="color:#8a929e">${SITE_LABEL}</a>
+        <a href="${SITE_URL}" style="color:#8a929e;text-decoration:none">${SITE_LABEL}</a>
       </p>
     </div>`;
 
@@ -123,11 +130,11 @@ export function otpEmail({ otp, type }) {
  */
 export function newsletterEmail({ subject, body, unsubscribeToken }) {
   const primaryOrigin =
-    (env.CLIENT_ORIGIN || '')
-      .split(',')
+    (env.CLIENT_ORIGIN || "")
+      .split(",")
       .map((s) => s.trim())
-      .find((s) => s.includes('hyperstocks.finance')) ||
-    (env.CLIENT_ORIGIN || '').split(',')[0].trim() ||
+      .find((s) => s.includes("hyperstocks.finance")) ||
+    (env.CLIENT_ORIGIN || "").split(",")[0].trim() ||
     SITE_URL;
   const url = `${primaryOrigin}/unsubscribe?token=${encodeURIComponent(unsubscribeToken)}`;
 
@@ -137,7 +144,7 @@ export function newsletterEmail({ subject, body, unsubscribeToken }) {
 
   const html = `
     <div style="font-family:system-ui,-apple-system,Segoe UI,sans-serif;max-width:560px;margin:0 auto;padding:32px 24px;color:#111">
-      <div style="font-size:15px;line-height:1.6">${body.replace(/\n/g, '<br>')}</div>
+      <div style="font-size:15px;line-height:1.6">${body.replace(/\n/g, "<br>")}</div>
       <hr style="border:0;border-top:1px solid #e4e7eb;margin:28px 0 16px">
       <p style="margin:0 0 8px;font-size:12px;color:#8a929e">
         <a href="${SITE_URL}" style="color:#8a929e">${SITE_LABEL}</a>
