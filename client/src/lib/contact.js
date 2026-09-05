@@ -28,7 +28,7 @@
  * step, and it is the one that has to happen before the footer's promise of a
  * place to report a security issue becomes true.
  */
-export const SUPPORT_EMAIL = 'support@hyperstocks.app';
+export const SUPPORT_EMAIL = 'support@hyperstocks.finance';
 
 /** `mailto:` for the support address, optionally with a subject. */
 export const supportMailto = (subject = undefined) =>

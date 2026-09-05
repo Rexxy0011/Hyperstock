@@ -1020,7 +1020,7 @@ export const ACCOUNT_SECURITY = {
     {
       heading: 'Report a Security Issue',
       blocks: [
-        { contact: { name: 'HyperStocks Security', email: 'security@hyperstocks.app' } },
+        { contact: { name: 'HyperStocks Security', email: SUPPORT_EMAIL } },
       ],
     },
   ],

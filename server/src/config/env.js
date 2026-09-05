@@ -194,7 +194,7 @@ const schema = z.object({
   /** An unpaid deposit stops being quotable after this long. */
   DEPOSIT_TTL_MINUTES: z.coerce.number().int().positive().default(30),
   /** Shown on the payment screen for an amount that does not match the quote. */
-  SUPPORT_EMAIL: z.string().trim().default("support@hyperstocks.app"),
+  SUPPORT_EMAIL: z.string().trim().default("support@hyperstocks.finance"),
 
   /**
    * Tawk.to live chat. Empty property id means no chat, and the client asks
