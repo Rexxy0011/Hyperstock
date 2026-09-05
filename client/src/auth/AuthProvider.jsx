@@ -95,18 +95,12 @@ export function AuthProvider({ children }) {
           await post("/auth/sign-in/email", { email: identifier, password })
         );
       }
-      try {
-        return adopt(
-          await post("/auth/sign-in/username", {
-            username: identifier,
-            password,
-          })
-        );
-      } catch {
-        return adopt(
-          await post("/auth/sign-in/email", { email: identifier, password })
-        );
-      }
+      return adopt(
+        await post("/auth/sign-in/username", {
+          username: identifier,
+          password,
+        })
+      );
     },
     [adopt]
   );

@@ -1072,7 +1072,8 @@ const SIGNUP = "signup";
 export default function Auth() {
   const { t } = useTranslation();
   const [params] = useSearchParams();
-  const { user, authReady, login, register, signInWithGoogle, requestCode } = useAuth();
+  const { user, authReady, login, register, signInWithGoogle, requestCode } =
+    useAuth();
 
   const [mode, setMode] = useState(
     params.get("mode") === "signup" ? SIGNUP : SIGNIN
@@ -1266,30 +1267,65 @@ export default function Auth() {
         return;
       }
 
-      const isEmailTaken =
-        errCode === "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL" ||
-        errCode === "USER_ALREADY_EXISTS" ||
-        /already exists/i.test(errMsg);
-      const isUsernameTaken =
-        errCode === "USERNAME_IS_ALREADY_TAKEN" ||
-        /username is already taken/i.test(errMsg);
+      if (isSignup) {
+        const isEmailTaken =
+          errCode === "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL" ||
+          errCode === "USER_ALREADY_EXISTS" ||
+          /already exists/i.test(errMsg);
+        const isUsernameTaken =
+          errCode === "USERNAME_IS_ALREADY_TAKEN" ||
+          /username is already taken/i.test(errMsg);
 
-      if (isSignup && (isEmailTaken || isUsernameTaken)) {
-        setMode(SIGNIN);
-        setForm((f) => ({
-          ...f,
-          email: isEmailTaken ? f.email : f.username || f.email,
-          password: "",
-        }));
-        setInfoNotice(
-          isEmailTaken
-            ? "An account with this email already exists. Please enter your password to sign in."
-            : "An account with this username already exists. Please enter your password to sign in."
-        );
-        return;
+        if (isEmailTaken || isUsernameTaken) {
+          setMode(SIGNIN);
+          setForm((f) => ({
+            ...f,
+            email: isEmailTaken ? f.email : f.username || f.email,
+            password: "",
+          }));
+          setInfoNotice(
+            isEmailTaken
+              ? "An account with this email already exists. Please enter your password to sign in."
+              : "An account with this username already exists. Please enter your password to sign in."
+          );
+          return;
+        }
+
+        setError(err.message ?? "Something went wrong. Try again.");
+      } else {
+        const typed = String(form.email || "").trim();
+        const isEmail = typed.includes("@");
+        const defaultMsg = isEmail
+          ? "Invalid email or password"
+          : "Invalid username or password";
+
+        // Check if the user exists in our database
+        let exists = false;
+        try {
+          const lookup = await get(
+            isEmail
+              ? `/auth-lookup?email=${encodeURIComponent(typed)}`
+              : `/auth-lookup?username=${encodeURIComponent(typed)}`
+          );
+          exists = Boolean(lookup?.exists);
+        } catch {
+          exists = true;
+        }
+
+        if (!exists) {
+          setMode(SIGNUP);
+          setForm((f) => ({
+            ...f,
+            email: isEmail ? typed : "",
+            username: !isEmail ? typed : "",
+            password: "",
+          }));
+          setError(defaultMsg);
+          return;
+        }
+
+        setError(defaultMsg);
       }
-
-      setError(err.message ?? "Something went wrong. Try again.");
     } finally {
       setBusy(false);
     }
