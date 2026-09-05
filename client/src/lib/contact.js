@@ -28,7 +28,7 @@
  * step, and it is the one that has to happen before the footer's promise of a
  * place to report a security issue becomes true.
  */
-export const SUPPORT_EMAIL = 'support@hyperstocks.finance';
+export const SUPPORT_EMAIL = "support@hyperstocks.finance";
 
 /** `mailto:` for the support address, optionally with a subject. */
 export const supportMailto = (subject = undefined) =>
@@ -50,7 +50,10 @@ export const supportMailto = (subject = undefined) =>
  * stripping characters out of a formatted string gets it wrong for half the
  * world's numbering plans.
  */
-export const SUPPORT_PHONE = { display: '(951) 776-7277', dial: '+19517767277' };
+export const SUPPORT_PHONE = {
+  display: "(951) 776-7277",
+  dial: "+19517767277",
+};
 
 /**
  * Where the office is, and where the map puts its pin.
@@ -72,14 +75,19 @@ export const SUPPORT_PHONE = { display: '(951) 776-7277', dial: '+19517767277' }
  * and the leaderboard's illustrative names carry.
  */
 export const OFFICE = {
-  lines: ['Financial District', 'New York, NY', 'United States'],
+  lines: ["Financial District", "New York, NY", "United States"],
   /** Lower Manhattan, near Broad Street. Accurate to the district, not a door. */
   lat: 40.7061,
   lon: -74.0104,
 };
 
 /** Opening hours, as a key into the locale bundles plus the literal times. */
-export const OFFICE_HOURS = { days: 'monFri', from: '9:00 AM', to: '6:00 PM', zone: 'ET' };
+export const OFFICE_HOURS = {
+  days: "monFri",
+  from: "9:00 AM",
+  to: "6:00 PM",
+  zone: "ET",
+};
 
 /**
  * The map embed URL.
@@ -107,7 +115,7 @@ export const OFFICE_HOURS = { days: 'monFri', from: '9:00 AM', to: '6:00 PM', zo
 export function officeMapSrc({ lat, lon } = OFFICE, span = 0.008) {
   const bbox = [lon - span, lat - span / 2, lon + span, lat + span / 2]
     .map((n) => n.toFixed(5))
-    .join('%2C');
+    .join("%2C");
   return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat}%2C${lon}`;
 }
 

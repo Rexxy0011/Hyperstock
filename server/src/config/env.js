@@ -95,7 +95,9 @@ const schema = z.object({
    * depend on.
    */
   RESEND_API_KEY: z.string().default(""),
-  MAIL_FROM: z.string().default("HyperStocks <onboarding@resend.dev>"),
+  MAIL_FROM: z
+    .string()
+    .default("HyperStocks <support@hyperstocks.finance>"),
 
   /**
    * SUPERSEDED BY BETTER AUTH and kept only because a deployed `.env` still
@@ -283,21 +285,27 @@ export const MAX_WITHDRAWAL_CENTS = Math.round(env.MAX_WITHDRAWAL_AMOUNT * 100);
  * does not know is therefore a configuration error, caught here rather than at
  * the moment somebody pastes an address nothing will verify.
  */
-const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
-const serverRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+const projectRoot = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../../.."
+);
+const serverRoot = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../.."
+);
 
 export const WITHDRAWAL_NETWORKS = (() => {
   let raw;
   try {
-    if (env.WITHDRAWAL_NETWORKS && env.WITHDRAWAL_NETWORKS !== '[]') {
+    if (env.WITHDRAWAL_NETWORKS && env.WITHDRAWAL_NETWORKS !== "[]") {
       raw = JSON.parse(env.WITHDRAWAL_NETWORKS);
     } else {
       const filePath = [
-        path.join(serverRoot, 'withdrawal-networks.json'),
-        path.join(projectRoot, 'withdrawal-networks.json'),
+        path.join(serverRoot, "withdrawal-networks.json"),
+        path.join(projectRoot, "withdrawal-networks.json"),
       ].find((p) => fs.existsSync(p));
       if (filePath) {
-        raw = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+        raw = JSON.parse(fs.readFileSync(filePath, "utf8"));
       } else {
         raw = [];
       }
@@ -326,15 +334,15 @@ export const WITHDRAWAL_NETWORKS = (() => {
 export const DEPOSIT_DESTINATIONS = (() => {
   let raw;
   try {
-    if (env.DEPOSIT_DESTINATIONS && env.DEPOSIT_DESTINATIONS !== '[]') {
+    if (env.DEPOSIT_DESTINATIONS && env.DEPOSIT_DESTINATIONS !== "[]") {
       raw = JSON.parse(env.DEPOSIT_DESTINATIONS);
     } else {
       const filePath = [
-        path.join(serverRoot, 'deposit-destinations.json'),
-        path.join(projectRoot, 'deposit-destinations.json'),
+        path.join(serverRoot, "deposit-destinations.json"),
+        path.join(projectRoot, "deposit-destinations.json"),
       ].find((p) => fs.existsSync(p));
       if (filePath) {
-        raw = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+        raw = JSON.parse(fs.readFileSync(filePath, "utf8"));
       } else {
         raw = [];
       }
