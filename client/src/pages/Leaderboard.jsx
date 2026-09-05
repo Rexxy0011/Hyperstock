@@ -1,27 +1,27 @@
-import { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
-import { useQuery } from '@tanstack/react-query';
-import { get } from '../lib/api';
-import { keys } from '../lib/queryClient';
-import Tabs from '../components/ui/Tabs';
-import Badge from '../components/ui/Badge';
-import Money from '../components/market/Money';
-import PriceChange from '../components/market/PriceChange';
-import Avatar from '../components/ui/Avatar';
+import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
+import { useQuery } from "@tanstack/react-query";
+import { get } from "../lib/api";
+import { keys } from "../lib/queryClient";
+import Tabs from "../components/ui/Tabs";
+import Badge from "../components/ui/Badge";
+import Money from "../components/market/Money";
+import PriceChange from "../components/market/PriceChange";
+import Avatar from "../components/ui/Avatar";
 
-const LEADERBOARD_STATE_KEY = 'hyperstocks_leaderboard_period';
+const LEADERBOARD_STATE_KEY = "hyperstocks_leaderboard_period";
 
 const PERIODS = [
-  { value: 'weekly', labelKey: 'leaderboard.tabWeekly' },
-  { value: 'monthly', labelKey: 'leaderboard.tabMonthly' },
-  { value: 'alltime', labelKey: 'leaderboard.tabAlltime' },
+  { value: "weekly", labelKey: "leaderboard.tabWeekly" },
+  { value: "monthly", labelKey: "leaderboard.tabMonthly" },
+  { value: "alltime", labelKey: "leaderboard.tabAlltime" },
 ];
 
 /** Adjectival, to match the design's "Ranked by all-time portfolio value…". */
 const PERIOD_COPY = {
-  weekly: 'leaderboard.periodWeekly',
-  monthly: 'leaderboard.periodMonthly',
-  alltime: 'leaderboard.periodAlltime',
+  weekly: "leaderboard.periodWeekly",
+  monthly: "leaderboard.periodMonthly",
+  alltime: "leaderboard.periodAlltime",
 };
 
 export default function Leaderboard() {
@@ -29,11 +29,11 @@ export default function Leaderboard() {
   const [period, setPeriod] = useState(() => {
     try {
       const saved = sessionStorage.getItem(LEADERBOARD_STATE_KEY);
-      if (saved && ['weekly', 'monthly', 'alltime'].includes(saved)) {
+      if (saved && ["weekly", "monthly", "alltime"].includes(saved)) {
         return saved;
       }
     } catch {}
-    return 'monthly';
+    return "monthly";
   });
 
   useEffect(() => {
@@ -55,9 +55,9 @@ export default function Leaderboard() {
     <div className="w-full px-4 py-10 sm:px-5 lg:px-7 2xl:px-9">
       <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="m-0 text-xl font-bold">{t('leaderboard.title')}</h1>
+          <h1 className="m-0 text-xl font-bold">{t("leaderboard.title")}</h1>
           <p className="mt-2 text-sm text-text-muted">
-            {t('leaderboard.rankedBy', {
+            {t("leaderboard.rankedBy", {
               period: t(PERIOD_COPY[period]),
               count: data?.totalTraders ?? 0,
             })}
@@ -97,8 +97,14 @@ export default function Leaderboard() {
                   </span>
                 )}
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-base font-medium">{r.username}</div>
-                  <Money value={r.portfolioValueCents} size={13} className="text-text-muted" />
+                  <div className="truncate text-base font-medium">
+                    {r.username}
+                  </div>
+                  <Money
+                    value={r.portfolioValueCents}
+                    size={13}
+                    className="text-text-muted"
+                  />
                 </div>
                 <PriceChange value={r.dayChangePct} size={12} pill />
               </div>
@@ -128,12 +134,18 @@ export default function Leaderboard() {
             <table className="w-full min-w-200 table-fixed border-collapse">
               <thead>
                 <tr>
-                  <th className={`${th} w-[7%]`}>{t('leaderboard.rank')}</th>
-                  <th className={`${th} w-[30%]`}>{t('leaderboard.trader')}</th>
-                  <th className={`${th} w-[9%]`}>{t('leaderboard.trades')}</th>
-                  <th className={`${th} w-[19%]`}>{t('leaderboard.bestPosition')}</th>
-                  <th className={`${th} w-[19%] text-right`}>{t('leaderboard.portfolioValue')}</th>
-                  <th className={`${th} w-[16%] text-right`}>{t('leaderboard.return')}</th>
+                  <th className={`${th} w-[7%]`}>{t("leaderboard.rank")}</th>
+                  <th className={`${th} w-[30%]`}>{t("leaderboard.trader")}</th>
+                  <th className={`${th} w-[9%]`}>{t("leaderboard.trades")}</th>
+                  <th className={`${th} w-[19%]`}>
+                    {t("leaderboard.bestPosition")}
+                  </th>
+                  <th className={`${th} w-[19%] text-right`}>
+                    {t("leaderboard.portfolioValue")}
+                  </th>
+                  <th className={`${th} w-[16%] text-right`}>
+                    {t("leaderboard.return")}
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -155,14 +167,16 @@ export default function Leaderboard() {
 }
 
 const th =
-  'border-b border-cool-grey px-4 py-2.5 text-left text-xs font-medium text-text-muted whitespace-nowrap';
-const td = 'border-b border-cool-grey px-4 py-3 text-sm';
+  "border-b border-cool-grey px-4 py-2.5 text-left text-xs font-medium text-text-muted whitespace-nowrap";
+const td = "border-b border-cool-grey px-4 py-3 text-sm";
 
 function Row({ row, pinned = false }) {
   const { t } = useTranslation();
   return (
-    <tr className={row.you ? 'bg-mist' : ''}>
-      <td className={`${td} font-numeric tabular-nums ${row.rank <= 3 ? 'text-void' : 'text-text-muted'}`}>
+    <tr className={row.you ? "bg-mist" : ""}>
+      <td
+        className={`${td} font-numeric tabular-nums ${row.rank <= 3 ? "text-void" : "text-text-muted"}`}
+      >
         {pinned ? <span className="text-text-muted">…</span> : null}
         {row.rank}
       </td>
@@ -176,11 +190,11 @@ function Row({ row, pinned = false }) {
             </span>
           )}
           <span className="font-medium">{row.username}</span>
-          {row.you && <Badge variant="neutral">{t('leaderboard.you')}</Badge>}
+          {row.you && <Badge variant="neutral">{t("leaderboard.you")}</Badge>}
         </div>
       </td>
       <td className={`${td} font-numeric tabular-nums text-text-muted`}>
-        {row.trades.toLocaleString('en-US')}
+        {row.trades.toLocaleString("en-US")}
       </td>
       <td className={`${td} whitespace-nowrap`}>
         {row.best?.symbol ? (
@@ -196,7 +210,12 @@ function Row({ row, pinned = false }) {
         <Money value={row.portfolioValueCents} size={14} />
       </td>
       <td className={`${td} text-right`}>
-        <PriceChange value={row.dayChangePct} size={12} pill className="justify-end" />
+        <PriceChange
+          value={row.dayChangePct}
+          size={12}
+          pill
+          className="justify-end"
+        />
       </td>
     </tr>
   );

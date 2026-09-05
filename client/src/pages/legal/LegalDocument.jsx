@@ -35,7 +35,9 @@ export default function LegalDocument({ id }) {
         <button
           type="button"
           onClick={() =>
-            window.history.length > 1 ? navigate(-1) : navigate("/auth?mode=signup")
+            window.history.length > 1
+              ? navigate(-1)
+              : navigate("/auth?mode=signup")
           }
           className="mb-6 inline-flex cursor-pointer items-center gap-2 text-xs font-semibold uppercase tracking-wider text-text-muted transition-colors hover:text-void"
         >

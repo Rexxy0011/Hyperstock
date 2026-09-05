@@ -1,16 +1,16 @@
-import { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
-import { useMutation } from '@tanstack/react-query';
-import Link from '../components/ui/Link';
-import Button from '../components/ui/Button';
-import Input from '../components/ui/Input';
-import Select from '../components/ui/Select';
-import Icon from '../components/ui/Icon';
-import Eyebrow from '../components/ui/Eyebrow';
-import Reveal from '../components/ui/Reveal';
-import { assets } from '../assets/assets';
-import { post } from '../lib/api';
-import notify from '../lib/toast';
+import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
+import { useMutation } from "@tanstack/react-query";
+import Link from "../components/ui/Link";
+import Button from "../components/ui/Button";
+import Input from "../components/ui/Input";
+import Select from "../components/ui/Select";
+import Icon from "../components/ui/Icon";
+import Eyebrow from "../components/ui/Eyebrow";
+import Reveal from "../components/ui/Reveal";
+import { assets } from "../assets/assets";
+import { post } from "../lib/api";
+import notify from "../lib/toast";
 import {
   SUPPORT_EMAIL,
   SUPPORT_PHONE,
@@ -18,7 +18,7 @@ import {
   OFFICE_HOURS,
   officeMapSrc,
   officeMapLink,
-} from '../lib/contact';
+} from "../lib/contact";
 
 /**
  * `/contact` — built from the supplied reference, which has three bands: a
@@ -73,27 +73,30 @@ function Hero() {
     <section className="border-b border-cool-grey bg-linear-to-b from-mist to-white">
       <div className="mx-auto w-full max-w-300 px-4 py-16 text-center sm:px-6 lg:px-10 lg:py-24">
         <h1 className="m-0 text-[clamp(30px,5vw,52px)] font-bold text-void">
-          {t('contact.title')}
+          {t("contact.title")}
         </h1>
 
         {/* A real `<nav>` with an ordered list, not a row of divs: a breadcrumb
             is a navigation landmark, and `aria-current` is what tells a screen
             reader which crumb is the page it is already on. */}
-        <nav aria-label={t('contact.breadcrumb')} className="mt-5">
+        <nav aria-label={t("contact.breadcrumb")} className="mt-5">
           <ol className="m-0 flex list-none items-center justify-center gap-2 p-0 text-sm">
             <li>
               <Link
                 to="/"
                 className="text-text-muted no-underline transition-colors hover:text-void"
               >
-                {t('contact.breadcrumbHome')}
+                {t("contact.breadcrumbHome")}
               </Link>
             </li>
-            <li aria-hidden="true" className="flex items-center text-text-muted">
+            <li
+              aria-hidden="true"
+              className="flex items-center text-text-muted"
+            >
               <Icon name="chevronRight" size={13} />
             </li>
             <li aria-current="page" className="font-medium text-void">
-              {t('contact.title')}
+              {t("contact.title")}
             </li>
           </ol>
         </nav>
@@ -148,20 +151,20 @@ function ContactInformation() {
   const rows = [
     {
       icon: assets.icons.contactPhone,
-      label: t('contact.phoneLabel'),
+      label: t("contact.phoneLabel"),
       value: SUPPORT_PHONE.display,
       href: `tel:${SUPPORT_PHONE.dial}`,
     },
     {
       icon: assets.icons.contactMail,
-      label: t('contact.emailLabel'),
+      label: t("contact.emailLabel"),
       value: SUPPORT_EMAIL,
       href: `mailto:${SUPPORT_EMAIL}`,
     },
     {
       icon: assets.icons.contactClock,
-      label: t('contact.hoursLabel'),
-      value: t('contact.hoursValue', {
+      label: t("contact.hoursLabel"),
+      value: t("contact.hoursValue", {
         days: t(`contact.days.${OFFICE_HOURS.days}`),
         from: OFFICE_HOURS.from,
         to: OFFICE_HOURS.to,
@@ -170,8 +173,8 @@ function ContactInformation() {
     },
     {
       icon: assets.icons.contactPin,
-      label: t('contact.locationLabel'),
-      value: OFFICE.lines.join(', '),
+      label: t("contact.locationLabel"),
+      value: OFFICE.lines.join(", "),
       href: officeMapLink(),
       external: true,
     },
@@ -179,9 +182,11 @@ function ContactInformation() {
 
   return (
     <div className="rounded-xl border border-cool-grey bg-white p-7 shadow-card sm:p-8">
-      <h2 className="m-0 text-lg font-bold text-void">{t('contact.infoTitle')}</h2>
+      <h2 className="m-0 text-lg font-bold text-void">
+        {t("contact.infoTitle")}
+      </h2>
       <p className="mt-3 mb-0 text-sm leading-relaxed text-text-muted">
-        {t('contact.infoBody')}
+        {t("contact.infoBody")}
       </p>
 
       <ul className="mt-7 m-0 flex list-none flex-col p-0">
@@ -215,7 +220,7 @@ function ContactInformation() {
                 <a
                   href={row.href}
                   {...(row.external
-                    ? { target: '_blank', rel: 'noopener noreferrer' }
+                    ? { target: "_blank", rel: "noopener noreferrer" }
                     : {})}
                   className="mt-1 block text-sm wrap-break-word text-text-muted no-underline transition-colors hover:text-gain"
                 >
@@ -233,9 +238,9 @@ function ContactInformation() {
 }
 
 /** The topics the picker offers. Mirrors the server's enum — see the note there. */
-const TOPICS = ['account', 'funding', 'trading', 'partnership', 'other'];
+const TOPICS = ["account", "funding", "trading", "partnership", "other"];
 
-const EMPTY = { name: '', email: '', phone: '', topic: '', message: '' };
+const EMPTY = { name: "", email: "", phone: "", topic: "", message: "" };
 
 /**
  * The form.
@@ -251,7 +256,7 @@ const EMPTY = { name: '', email: '', phone: '', topic: '', message: '' };
  * submit costs no round trip and lands the caret in the offending field, which
  * a server 400 rendered as a toast cannot do.
  */
-const CONTACT_DRAFT_KEY = 'hyperstocks_contact_draft';
+const CONTACT_DRAFT_KEY = "hyperstocks_contact_draft";
 
 function ContactForm() {
   const { t } = useTranslation();
@@ -280,15 +285,15 @@ function ContactForm() {
 
   const mutation = useMutation({
     mutationFn: () =>
-      post('/contact', {
+      post("/contact", {
         ...form,
         // The picker's placeholder is an empty string, which the server's enum
         // would reject. It is genuinely optional, so it becomes the default
         // rather than blocking the send on a field nobody has to fill.
-        topic: form.topic || 'other',
+        topic: form.topic || "other",
       }),
     onSuccess: (data) => {
-      setSentId(data?.id ?? '');
+      setSentId(data?.id ?? "");
       setForm(EMPTY);
       try {
         sessionStorage.removeItem(CONTACT_DRAFT_KEY);
@@ -296,7 +301,7 @@ function ContactForm() {
     },
     // Inline is not an option here — the form has been replaced by the time a
     // failure could render beneath it — so this one speaks through the toast.
-    onError: (err) => notify.apiError(err, t('contact.sendFailed')),
+    onError: (err) => notify.apiError(err, t("contact.sendFailed")),
   });
 
   if (sentId !== null) {
@@ -308,13 +313,15 @@ function ContactForm() {
         >
           <Icon name="check" size={22} />
         </span>
-        <h2 className="mt-5 mb-0 text-lg font-bold text-void">{t('contact.sentTitle')}</h2>
+        <h2 className="mt-5 mb-0 text-lg font-bold text-void">
+          {t("contact.sentTitle")}
+        </h2>
         <p className="mt-3 mb-0 max-w-125 text-sm leading-relaxed text-text-muted">
-          {t('contact.sentBody')}
+          {t("contact.sentBody")}
         </p>
         {sentId && (
           <p className="mt-4 mb-0 font-mono text-xs text-text-muted">
-            {t('contact.sentRef', { id: sentId })}
+            {t("contact.sentRef", { id: sentId })}
           </p>
         )}
         <Button
@@ -323,7 +330,7 @@ function ContactForm() {
           className="mt-6"
           onClick={() => setSentId(null)}
         >
-          {t('contact.sendAnother')}
+          {t("contact.sendAnother")}
         </Button>
       </div>
     );
@@ -331,11 +338,13 @@ function ContactForm() {
 
   return (
     <div className="rounded-xl border border-cool-grey bg-white p-7 shadow-card sm:p-8">
-      <Eyebrow className="self-start">{t('contact.eyebrow')}</Eyebrow>
+      <Eyebrow className="self-start">{t("contact.eyebrow")}</Eyebrow>
 
-      <h2 className="mt-5 mb-0 text-xl font-bold text-void">{t('contact.formTitle')}</h2>
+      <h2 className="mt-5 mb-0 text-xl font-bold text-void">
+        {t("contact.formTitle")}
+      </h2>
       <p className="mt-3 mb-0 max-w-150 text-sm leading-relaxed text-text-muted">
-        {t('contact.formBody')}
+        {t("contact.formBody")}
       </p>
 
       <form
@@ -347,18 +356,18 @@ function ContactForm() {
       >
         <div className="grid gap-4 sm:grid-cols-2">
           <Input
-            label={t('contact.fieldName')}
+            label={t("contact.fieldName")}
             value={form.name}
-            onChange={set('name')}
+            onChange={set("name")}
             autoComplete="name"
             maxLength={120}
             required
           />
           <Input
-            label={t('contact.fieldEmail')}
+            label={t("contact.fieldEmail")}
             type="email"
             value={form.email}
-            onChange={set('email')}
+            onChange={set("email")}
             autoComplete="email"
             maxLength={254}
             required
@@ -367,13 +376,13 @@ function ContactForm() {
 
         <div className="grid gap-4 sm:grid-cols-2">
           <Input
-            label={t('contact.fieldPhone')}
+            label={t("contact.fieldPhone")}
             type="tel"
             value={form.phone}
-            onChange={set('phone')}
+            onChange={set("phone")}
             autoComplete="tel"
             maxLength={40}
-            hint={t('contact.optional')}
+            hint={t("contact.optional")}
           />
 
           {/* THE LABEL IS A SIBLING WITH `htmlFor`, NEVER A WRAPPER. `Select` is
@@ -383,24 +392,30 @@ function ContactForm() {
               click then reopens it. Measured on the payout form: the value was
               right and the dropdown would not shut. */}
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="contact-topic" className="text-sm font-medium text-text-body">
-              {t('contact.fieldTopic')}
+            <label
+              htmlFor="contact-topic"
+              className="text-sm font-medium text-text-body"
+            >
+              {t("contact.fieldTopic")}
             </label>
             <Select
               id="contact-topic"
               value={form.topic}
               onChange={(v) => setForm((f) => ({ ...f, topic: v }))}
-              placeholder={t('contact.topicPlaceholder')}
-              options={TOPICS.map((value) => ({ value, label: t(`contact.topic.${value}`) }))}
+              placeholder={t("contact.topicPlaceholder")}
+              options={TOPICS.map((value) => ({
+                value,
+                label: t(`contact.topic.${value}`),
+              }))}
             />
           </div>
         </div>
 
         <Input
           as="textarea"
-          label={t('contact.fieldMessage')}
+          label={t("contact.fieldMessage")}
           value={form.message}
-          onChange={set('message')}
+          onChange={set("message")}
           rows={6}
           maxLength={4000}
           required
@@ -414,7 +429,7 @@ function ContactForm() {
           disabled={mutation.isPending}
           className="mt-1 self-start"
         >
-          {mutation.isPending ? t('contact.sending') : t('contact.send')}
+          {mutation.isPending ? t("contact.sending") : t("contact.send")}
         </Button>
       </form>
     </div>
@@ -444,19 +459,19 @@ function LocationBand() {
     <section className="border-t border-cool-grey bg-mist/40">
       <div className="mx-auto w-full max-w-300 px-4 py-16 sm:px-6 lg:px-10 lg:py-20">
         <Reveal className="flex flex-col items-center text-center">
-          <Eyebrow>{t('contact.locationEyebrow')}</Eyebrow>
+          <Eyebrow>{t("contact.locationEyebrow")}</Eyebrow>
           <h2 className="mt-5 mb-0 max-w-175 text-[clamp(22px,3vw,32px)] font-bold text-void">
-            {t('contact.locationTitle')}
+            {t("contact.locationTitle")}
           </h2>
           <p className="mt-4 mb-0 max-w-150 text-sm text-text-muted">
-            {OFFICE.lines.join(', ')}
+            {OFFICE.lines.join(", ")}
           </p>
         </Reveal>
 
         <Reveal delay={90} className="mt-10">
           <div className="overflow-hidden rounded-xl border border-cool-grey bg-white shadow-card">
             <iframe
-              title={t('contact.mapTitle')}
+              title={t("contact.mapTitle")}
               src={officeMapSrc()}
               loading="lazy"
               /**
@@ -486,7 +501,7 @@ function LocationBand() {
               rel="noopener noreferrer"
               className="text-text-muted underline underline-offset-2 transition-colors hover:text-void"
             >
-              {t('contact.viewLarger')}
+              {t("contact.viewLarger")}
             </a>
           </p>
         </Reveal>
