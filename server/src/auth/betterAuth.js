@@ -177,7 +177,8 @@ export function createAuth() {
 
       const dynamicOrigins = [];
       if (origin && isTrustedOrigin(origin)) dynamicOrigins.push(origin);
-      if (refererOrigin && isTrustedOrigin(refererOrigin)) dynamicOrigins.push(refererOrigin);
+      if (refererOrigin && isTrustedOrigin(refererOrigin))
+        dynamicOrigins.push(refererOrigin);
 
       return Array.from(new Set([...trustedOriginsList, ...dynamicOrigins]));
     },

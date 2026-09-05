@@ -442,9 +442,7 @@ export const isTrustedOrigin = (origin) => {
       if (pattern.includes("*")) {
         const regex = new RegExp(
           "^" +
-            pattern
-              .replace(/[.+?^${}()|[\]\\]/g, "\\$&")
-              .replace(/\*/g, ".*") +
+            pattern.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*") +
             "$",
           "i"
         );
