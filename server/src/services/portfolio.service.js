@@ -321,16 +321,18 @@ export async function getPortfolio(userId, cashBalanceCents) {
   const holdingsReturnCents = holdingsValueCents - holdingsCostBasisCents;
 
   const investedCents = await contributedCapitalCents(userId);
-  const allTimeReturnCents =
-    holdingsCostBasisCents > 0
-      ? holdingsReturnCents
-      : portfolioValueCents - investedCents;
   const allTimeReturnPct =
     positions.length > 0
       ? round2(sumActiveHoldingsPct)
       : investedCents > 0
-        ? round2((allTimeReturnCents / investedCents) * 100)
+        ? round2(
+            ((portfolioValueCents - investedCents) / investedCents) * 100
+          )
         : 0;
+  const allTimeReturnCents =
+    positions.length > 0
+      ? Math.round((holdingsValueCents * allTimeReturnPct) / 100)
+      : portfolioValueCents - investedCents;
 
   return {
     summary: {
