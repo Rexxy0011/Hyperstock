@@ -112,50 +112,65 @@ export function AuthProvider({ children }) {
   );
 
   const register = useCallback(
-    async ({ email, password, username, displayName, country }) =>
-      adopt(
-        await post("/auth/sign-up/email", {
-          email,
-          password,
-          username,
-          // Better Auth requires `name`. The signup form does not ask for one —
-          // it asks for a handle — so the handle stands in until the account
-          // sets a display name rather than blocking the form on a field the
-          // design does not have.
-          name: displayName || username,
-          ...(country && { country }),
-        })
-      ),
+    async ({ email, password, username, displayName, country }) => {
+      const res = await post("/auth/sign-up/email", {
+        email,
+        password,
+        username,
+        // Better Auth requires `name`. The signup form does not ask for one —
+        // it asks for a handle — so the handle stands in until the account
+        // sets a display name rather than blocking the form on a field the
+        // design does not have.
+        name: displayName || username,
+        ...(country && { country }),
+      });
+      // If a session token is returned immediately, adopt it.
+      // When requireEmailVerification is on, token is null until OTP is verified.
+      if (res?.token && res?.user) {
+        adopt(res);
+      }
+      return res;
+    },
     [adopt]
   );
 
   /**
    * Asks for a one-time code.
    *
-   * THE TWO PURPOSES USE DIFFERENT ENDPOINTS and must not be collapsed: a
-   * sign-in code and a password-reset code carry different subject lines,
-   * because somebody who receives "your sign-in code" when they asked to reset
-   * a password has just learned that a stranger is in their account.
-   *
-   * Both answer 200 whether or not the address is registered. That is
-   * deliberate on the server's side and must not be "improved" here by
-   * surfacing a not-found — a code request that behaves differently for a known
-   * address is an oracle for which addresses have accounts.
+   * THE THREE PURPOSES USE DIFFERENT ENDPOINTS and must not be collapsed: a
+   * sign-in code, an email verification code, and a password-reset code carry
+   * different subject lines, because somebody who receives "your sign-in code"
+   * when they asked to reset a password has just learned that a stranger is in
+   * their account.
    */
   const requestCode = useCallback(
-    async ({ email, purpose }) =>
-      purpose === "reset"
-        ? post("/auth/email-otp/request-password-reset", { email })
-        : post("/auth/email-otp/send-verification-otp", {
-            email,
-            type: "sign-in",
-          }),
+    async ({ email, purpose }) => {
+      if (purpose === "reset") {
+        return post("/auth/email-otp/request-password-reset", { email });
+      }
+      if (purpose === "verify-email") {
+        return post("/auth/email-otp/send-verification-otp", {
+          email,
+          type: "email-verification",
+        });
+      }
+      return post("/auth/email-otp/send-verification-otp", {
+        email,
+        type: "sign-in",
+      });
+    },
     []
   );
 
   const signInWithCode = useCallback(
     async ({ email, otp }) =>
       adopt(await post("/auth/sign-in/email-otp", { email, otp })),
+    [adopt]
+  );
+
+  const verifyEmailWithCode = useCallback(
+    async ({ email, otp }) =>
+      adopt(await post("/auth/email-otp/verify-email", { email, otp })),
     [adopt]
   );
 
@@ -222,6 +237,7 @@ export function AuthProvider({ children }) {
         signInWithGoogle,
         requestCode,
         signInWithCode,
+        verifyEmailWithCode,
         resetPasswordWithCode,
         logout,
         patchUser,

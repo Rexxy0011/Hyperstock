@@ -1072,7 +1072,7 @@ const SIGNUP = "signup";
 export default function Auth() {
   const { t } = useTranslation();
   const [params] = useSearchParams();
-  const { user, authReady, login, register, signInWithGoogle } = useAuth();
+  const { user, authReady, login, register, signInWithGoogle, requestCode } = useAuth();
 
   const [mode, setMode] = useState(
     params.get("mode") === "signup" ? SIGNUP : SIGNIN
@@ -1134,9 +1134,9 @@ export default function Auth() {
    * not exist when it would fail. `staleTime: Infinity` because this changes
    * when the server restarts, not while somebody is looking at a login form.
    */
-  /** null, 'sign-in' or 'reset' — which code flow has replaced the form. */
+  /** null, 'sign-in', 'reset', or 'verify-email' — which code flow has replaced the form. */
   const [codeFlow, setCodeFlow] = useState(
-    /** @type {null|'sign-in'|'reset'} */ (null)
+    /** @type {null|'sign-in'|'reset'|'verify-email'} */ (null)
   );
 
   const { data: providers } = useQuery({
@@ -1229,13 +1229,20 @@ export default function Auth() {
           // Fall through to standard register
         }
 
-        setWelcomeKind(WELCOME.signUp);
-        await register({
+        const res = await register({
           username: form.username,
           email: form.email,
           password: form.password,
           country: form.country,
         });
+
+        if (!res?.token) {
+          setWelcomeKind(null);
+          setCodeFlow("verify-email");
+          return;
+        }
+
+        setWelcomeKind(WELCOME.signUp);
       } else {
         setWelcomeKind(WELCOME.signIn);
         await login({ email: form.email, password: form.password });
@@ -1244,6 +1251,21 @@ export default function Auth() {
       setWelcomeKind(null);
       const errMsg = err.message || "";
       const errCode = err.code || "";
+
+      const isUnverified =
+        errCode === "EMAIL_NOT_VERIFIED" ||
+        /email.*not.*verified/i.test(errMsg);
+
+      if (isUnverified) {
+        try {
+          await requestCode({ email: form.email, purpose: "verify-email" });
+        } catch {
+          // ignore resend error
+        }
+        setCodeFlow("verify-email");
+        return;
+      }
+
       const isEmailTaken =
         errCode === "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL" ||
         errCode === "USER_ALREADY_EXISTS" ||
@@ -1301,7 +1323,12 @@ export default function Auth() {
                  that makes a recovery flow feel like a punishment. */
               initialEmail={form.email}
               onCancel={() => setCodeFlow(null)}
-              onSuccess={() => setWelcomeKind(WELCOME.signIn)}
+              onSuccess={() => {
+                setWelcomeKind(
+                  codeFlow === "verify-email" ? WELCOME.signUp : WELCOME.signIn
+                );
+                setCodeFlow(null);
+              }}
             />
           ) : (
             <>

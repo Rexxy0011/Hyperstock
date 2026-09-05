@@ -22,21 +22,35 @@ import Input from '../ui/Input';
  * resend timer, the attempt handling and the back button in step.
  *
  * @param {object} props
- * @param {'sign-in'|'reset'} props.purpose
+ * @param {'sign-in'|'reset'|'verify-email'} props.purpose
  * @param {string=} props.initialEmail carried over from the form behind this
  * @param {() => void} props.onCancel
  * @param {() => void} props.onSuccess
  */
 export default function CodeForm({ purpose, initialEmail = '', onCancel, onSuccess }) {
   const { t } = useTranslation();
-  const { requestCode, signInWithCode, resetPasswordWithCode } = useAuth();
+  const { requestCode, signInWithCode, resetPasswordWithCode, verifyEmailWithCode } = useAuth();
 
-  const [step, setStep] = useState(/** @type {'email'|'code'} */ ('email'));
+  const isReset = purpose === 'reset';
+  const isVerify = purpose === 'verify-email';
+
+  const [step, setStep] = useState(/** @type {'email'|'code'} */ (isVerify ? 'code' : 'email'));
   const [email, setEmail] = useState(initialEmail);
   const [otp, setOtp] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(/** @type {string|null} */ (null));
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (initialEmail) setEmail(initialEmail);
+  }, [initialEmail]);
+
+  useEffect(() => {
+    if (purpose === 'verify-email') {
+      setStep('code');
+      setCooldown(60);
+    }
+  }, [purpose]);
 
   /**
    * Seconds until another code can be asked for.
@@ -47,7 +61,7 @@ export default function CodeForm({ purpose, initialEmail = '', onCancel, onSucce
    * seconds is long enough to matter and short enough that somebody whose code
    * genuinely did not arrive is not stuck.
    */
-  const [cooldown, setCooldown] = useState(0);
+  const [cooldown, setCooldown] = useState(isVerify ? 60 : 0);
   useEffect(() => {
     if (cooldown <= 0) return undefined;
     const id = setTimeout(() => setCooldown((c) => c - 1), 1000);
@@ -62,8 +76,6 @@ export default function CodeForm({ purpose, initialEmail = '', onCancel, onSucce
     if (step === 'code') codeRef.current?.focus();
   }, [step]);
 
-  const isReset = purpose === 'reset';
-
   const send = async (e) => {
     e?.preventDefault();
     setError(null);
@@ -74,10 +86,10 @@ export default function CodeForm({ purpose, initialEmail = '', onCancel, onSucce
       setCooldown(60);
     } catch (err) {
       // Through `errorMessage`, so the CODE is the translation key — Better
-              // Auth's own strings are developer English ("Invalid OTP") and do
-              // not translate. It falls back to the server sentence, never to a
-              // bare code.
-              setError(errorMessage(err, t('auth.code.sendFailed')));
+      // Auth's own strings are developer English ("Invalid OTP") and do
+      // not translate. It falls back to the server sentence, never to a
+      // bare code.
+      setError(errorMessage(err, t('auth.code.sendFailed')));
     } finally {
       setBusy(false);
     }
@@ -90,6 +102,8 @@ export default function CodeForm({ purpose, initialEmail = '', onCancel, onSucce
     try {
       if (isReset) {
         await resetPasswordWithCode({ email: email.trim(), otp: otp.trim(), password });
+      } else if (isVerify) {
+        await verifyEmailWithCode({ email: email.trim(), otp: otp.trim() });
       } else {
         await signInWithCode({ email: email.trim(), otp: otp.trim() });
       }
@@ -107,12 +121,12 @@ export default function CodeForm({ purpose, initialEmail = '', onCancel, onSucce
   return (
     <div>
       <h1 className="m-0 text-2xl font-medium">
-        {t(isReset ? 'auth.code.resetTitle' : 'auth.code.signInTitle')}
+        {t(isReset ? 'auth.code.resetTitle' : isVerify ? 'auth.code.verifyTitle' : 'auth.code.signInTitle')}
       </h1>
 
       <p className="mt-2 mb-6 text-sm text-text-muted">
         {step === 'email'
-          ? t(isReset ? 'auth.code.resetLead' : 'auth.code.signInLead')
+          ? t(isReset ? 'auth.code.resetLead' : isVerify ? 'auth.code.verifyLead' : 'auth.code.signInLead')
           : /* The address is repeated back because it is the thing most likely
                to be wrong, and because somebody staring at an empty inbox needs
                to be able to check it without leaving the step. */
@@ -180,7 +194,7 @@ export default function CodeForm({ purpose, initialEmail = '', onCancel, onSucce
           {error && <ErrorNote>{error}</ErrorNote>}
 
           <Button type="submit" className="w-full" loading={busy}>
-            {t(isReset ? 'auth.code.resetSubmit' : 'auth.code.signInSubmit')}
+            {t(isReset ? 'auth.code.resetSubmit' : isVerify ? 'auth.code.verifySubmit' : 'auth.code.signInSubmit')}
           </Button>
 
           <button
@@ -196,10 +210,10 @@ export default function CodeForm({ purpose, initialEmail = '', onCancel, onSucce
 
       <button
         type="button"
-        onClick={step === 'code' ? () => setStep('email') : onCancel}
+        onClick={isVerify ? onCancel : (step === 'code' ? () => setStep('email') : onCancel)}
         className="mt-4 w-full cursor-pointer text-center text-xs text-text-muted hover:text-void"
       >
-        {step === 'code' ? t('auth.code.changeEmail') : t('auth.code.back')}
+        {isVerify ? t('auth.code.backSignup') : (step === 'code' ? t('auth.code.changeEmail') : t('auth.code.back'))}
       </button>
     </div>
   );

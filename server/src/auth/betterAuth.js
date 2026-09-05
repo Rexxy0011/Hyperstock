@@ -186,28 +186,15 @@ export function createAuth() {
       transaction: supportsTransactions,
     }),
 
+    emailVerification: {
+      autoSignInAfterVerification: true,
+    },
+
     emailAndPassword: {
       enabled: true,
-      /**
-       * STILL FALSE, BUT NO LONGER FOR WANT OF A MAILER — there is one now, and
-       * `/email-otp/send-verification-otp` will deliver a code to anyone who
-       * asks. It stays off because turning it on locks every account created
-       * before this out of its own portfolio until it verifies, and gates a
-       * simulated-trading demo behind an inbox round trip to prevent fraud that
-       * cannot happen: there is no real money and no payout without an operator.
-       *
-       * Verification is AVAILABLE and opt-in. Flip this to true the moment
-       * anything of value hangs off an address being real.
-       */
-      requireEmailVerification: false,
+      requireEmailVerification: true,
       minPasswordLength: 8,
       password,
-      /**
-       * Password reset goes through the OTP plugin's own
-       * `/email-otp/request-password-reset`, so no link-based `sendResetPassword`
-       * is configured here. Two reset paths would be two things to keep in step
-       * and two ways for the copy to disagree about what arrives.
-       */
     },
 
     user: { additionalFields },
@@ -298,6 +285,7 @@ export function createAuth() {
         // Three guesses against a six-digit space, expiring in ten minutes.
         allowedAttempts: 3,
         storeOTP: "hashed",
+        sendVerificationOnSignUp: true,
         disableSignUp: true,
         sendVerificationOTP: async ({ email, otp, type }) => {
           const { subject, text, html } = otpEmail({ otp, type });
