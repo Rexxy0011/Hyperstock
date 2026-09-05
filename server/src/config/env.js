@@ -95,9 +95,7 @@ const schema = z.object({
    * depend on.
    */
   RESEND_API_KEY: z.string().default(""),
-  MAIL_FROM: z
-    .string()
-    .default("HyperStocks <support@hyperstocks.finance>"),
+  MAIL_FROM: z.string().default("HyperStocks <support@hyperstocks.finance>"),
 
   /**
    * SUPERSEDED BY BETTER AUTH and kept only because a deployed `.env` still

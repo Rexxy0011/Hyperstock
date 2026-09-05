@@ -1541,29 +1541,6 @@ export default function Auth() {
                 </Button>
               </form>
 
-              {/* A TINTED STRIP, NOT A BORDERED BUTTON. With a border it carried the
-              same weight as Continue with Google and sat directly beneath the
-              primary action, so the card ended in three controls that all looked
-              equally like the thing to press. It is a convenience for looking
-              around the product, so it recedes. */}
-              {!isSignup && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setForm({
-                      username: "",
-                      email: "jd@hyperstocks.app",
-                      password: "password123",
-                      country: "",
-                    });
-                    setError(null);
-                  }}
-                  className="mt-3 w-full cursor-pointer rounded-lg bg-mist py-2.5 text-xs text-text-muted transition-colors hover:bg-hover hover:text-void"
-                >
-                  {t("auth.fillDemo")}
-                </button>
-              )}
-
               {isSignup ? null : (
                 /* BOTH OF THESE USED TO BE DEAD. "Forgot password" was a styled
                <span> that did nothing, because there was no mailer behind it;
