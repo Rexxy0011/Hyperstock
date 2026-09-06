@@ -1,11 +1,11 @@
-import { env } from '../config/env.js';
-import { Stock } from '../models/Stock.js';
-import { invalidateLeaderboard } from '../services/leaderboard.service.js';
-import * as finnhubQuote from './providers/finnhubQuote.provider.js';
-import * as twelvedata from './providers/twelvedata.provider.js';
-import { liveFeed } from './liveFeed.js';
-import { getInstruments } from '../services/market.service.js';
-import { PAIRS } from './providers/frankfurter.provider.js';
+import { env } from "../config/env.js";
+import { Stock } from "../models/Stock.js";
+import { invalidateLeaderboard } from "../services/leaderboard.service.js";
+import * as finnhubQuote from "./providers/finnhubQuote.provider.js";
+import * as twelvedata from "./providers/twelvedata.provider.js";
+import { liveFeed } from "./liveFeed.js";
+import { getInstruments } from "../services/market.service.js";
+import { PAIRS } from "./providers/frankfurter.provider.js";
 
 /**
  * The only thing in this process that writes a price.
@@ -58,7 +58,7 @@ export async function refreshQuotesOnce() {
     // Every listing, not just the US ones: Twelve Data covers the other six
     // exchanges when a key is present, and returns nothing when it is not.
     const listings = await Stock.find()
-      .select('symbol exchange currency priceCents priceUsdCents')
+      .select("symbol exchange currency priceCents priceUsdCents")
       .lean();
 
     stats.symbols = listings.length;
@@ -68,23 +68,28 @@ export async function refreshQuotesOnce() {
     // being down must thin the update rather than cancel it.
     const [us, intl] = await Promise.allSettled([
       finnhubQuote.fetchQuotes(listings),
-      twelvedata.isConfigured() ? twelvedata.fetchQuotes(listings) : Promise.resolve(new Map()),
+      twelvedata.isConfigured()
+        ? twelvedata.fetchQuotes(listings)
+        : Promise.resolve(new Map()),
     ]);
 
-    if (intl.status === 'rejected') {
+    if (intl.status === "rejected") {
       console.warn(`market: twelvedata failed (${intl.reason?.message})`);
     }
 
-    const quotes = new Map(us.status === 'fulfilled' ? us.value : []);
+    const quotes = new Map(us.status === "fulfilled" ? us.value : []);
 
     // Twelve Data returns a NATIVE price and no FX rate, so the USD figure is
     // derived from this listing's own seeded ratio — the same technique the
     // market service uses for market cap, and for the same reason: inventing a
     // per-symbol rate would drift the two prices apart.
-    if (intl.status === 'fulfilled') {
+    if (intl.status === "fulfilled") {
       for (const [symbol, q] of intl.value) {
         const seed = listings.find((l) => l.symbol === symbol);
-        const fx = seed && seed.priceCents > 0 ? seed.priceUsdCents / seed.priceCents : 1;
+        const fx =
+          seed && seed.priceCents > 0
+            ? seed.priceUsdCents / seed.priceCents
+            : 1;
         quotes.set(symbol, {
           ...q,
           priceUsdCents: Math.round(q.priceCents * fx),
@@ -96,37 +101,46 @@ export async function refreshQuotesOnce() {
     }
     if (!quotes.size) {
       stats.consecutiveFailures += 1;
-      stats.lastError = finnhubQuote.lastQuoteFailure() ?? 'no quotes returned';
+      stats.lastError = finnhubQuote.lastQuoteFailure() ?? "no quotes returned";
       return stats;
     }
 
     const quotedAt = new Date();
-    const ops = [...quotes].map(([symbol, q]) => ({
-      updateOne: {
-        filter: { symbol },
-        update: {
-          $set: {
-            // US listings are USD, so the native and USD prices are the same
-            // number. Writing both keeps the invariant that every Stock has a
-            // native price for display and a USD one for arithmetic.
-            // US listings are USD so the two are the same number; non-US ones
-            // carry a real native price alongside the derived USD figure.
-            priceCents: q.priceCents ?? q.priceUsdCents,
-            priceUsdCents: q.priceUsdCents,
-            changePct: q.changePct,
-            // Only the US vendor supplies it, and only a real one is written:
-            // the seeded figure is a year out (AAPL's read $227.97 against a
-            // live prior close of $309.35), so deriving anything from it would
-            // be worse than the staleness it was meant to fix.
-            ...(q.previousCloseCents > 0 && { previousCloseCents: q.previousCloseCents }),
-            ...(q.openCents > 0 && { dayOpenCents: q.openCents }),
-            ...(q.highCents > 0 && { dayHighCents: q.highCents }),
-            ...(q.lowCents > 0 && { dayLowCents: q.lowCents }),
-            quoteAsOf: quotedAt,
+    const mult = env.MARKET_VOLATILITY_MULTIPLIER ?? 1;
+    const ops = [...quotes].map(([symbol, q]) => {
+      const prevClose = q.previousCloseCents > 0 ? q.previousCloseCents : 0;
+      const rawPrice = q.priceCents ?? q.priceUsdCents;
+      let priceCents = rawPrice;
+      let priceUsdCents = q.priceUsdCents;
+      let changePct = q.changePct;
+
+      if (prevClose > 0 && mult !== 1) {
+        const delta = rawPrice - prevClose;
+        priceCents = Math.max(1, Math.round(prevClose + delta * mult));
+        priceUsdCents = priceCents;
+        changePct = Number(
+          (((priceCents - prevClose) / prevClose) * 100).toFixed(2)
+        );
+      }
+
+      return {
+        updateOne: {
+          filter: { symbol },
+          update: {
+            $set: {
+              priceCents,
+              priceUsdCents,
+              changePct,
+              ...(prevClose > 0 && { previousCloseCents: prevClose }),
+              ...(q.openCents > 0 && { dayOpenCents: q.openCents }),
+              ...(q.highCents > 0 && { dayHighCents: q.highCents }),
+              ...(q.lowCents > 0 && { dayLowCents: q.lowCents }),
+              quoteAsOf: quotedAt,
+            },
           },
         },
-      },
-    }));
+      };
+    });
 
     await Stock.bulkWrite(ops, { ordered: false });
 
@@ -161,7 +175,7 @@ export async function refreshQuotesOnce() {
 export function startQuoteRefresh() {
   if (timer) return false;
   if (!finnhubQuote.isConfigured()) return false;
-  if (env.MARKET_DATA_PROVIDER === 'mock') return false;
+  if (env.MARKET_DATA_PROVIDER === "mock") return false;
 
   stats.startedAt = new Date();
 
@@ -216,23 +230,26 @@ export async function syncLiveSubscriptions() {
   // in the query is safe here and not for the Markets service, because this
   // only ever looks at NYSE and NASDAQ — all USD, so the stored figure is
   // already comparable.
-  const us = await Stock.find({ exchange: { $in: ['NYSE', 'NASDAQ'] } })
-    .select('symbol')
+  const us = await Stock.find({ exchange: { $in: ["NYSE", "NASDAQ"] } })
+    .select("symbol")
     .sort({ marketCap: -1 })
     .limit(STREAMED_STOCKS)
     .lean();
 
   const forex = PAIRS.map((p) => ({
     symbol: `${p.base}${p.quote}`,
-    assetClass: 'forex',
+    assetClass: "forex",
   }));
 
   let crypto = [];
   const remaining = Math.max(0, MAX_STREAMED - us.length - forex.length);
   try {
     if (remaining > 0) {
-      const { items } = await getInstruments({ assetClass: 'crypto', limit: remaining });
-      crypto = items.map((i) => ({ symbol: i.symbol, assetClass: 'crypto' }));
+      const { items } = await getInstruments({
+        assetClass: "crypto",
+        limit: remaining,
+      });
+      crypto = items.map((i) => ({ symbol: i.symbol, assetClass: "crypto" }));
     }
   } catch {
     // The socket is worth having for equities and FX alone; a CoinGecko outage
@@ -240,7 +257,7 @@ export async function syncLiveSubscriptions() {
   }
 
   liveFeed.setSubscriptions([
-    ...us.map((s) => ({ symbol: s.symbol, assetClass: 'stocks' })),
+    ...us.map((s) => ({ symbol: s.symbol, assetClass: "stocks" })),
     ...forex,
     ...crypto,
   ]);
@@ -282,13 +299,14 @@ export function tickFlushOps(now) {
   const ops = [];
 
   for (const [, sub] of liveFeed.subscriptions) {
-    if (sub.assetClass !== 'stocks') continue;
+    if (sub.assetClass !== "stocks") continue;
     const tick = liveFeed.priceFor(sub.symbol, sub.assetClass);
     if (!tick) continue;
 
     // `at` is the vendor's TRADE timestamp, not the moment we received it —
     // which is the one that says whether the market has moved since.
-    if (!Number.isFinite(tick.at) || now.getTime() - tick.at > maxTickAgeMs()) continue;
+    if (!Number.isFinite(tick.at) || now.getTime() - tick.at > maxTickAgeMs())
+      continue;
 
     ops.push({
       updateOne: {
@@ -300,24 +318,90 @@ export function tickFlushOps(now) {
         update: [
           {
             $set: {
-              priceCents: tick.priceCents,
-              priceUsdCents: tick.priceCents,
-              // THE PRICE AND ITS PERCENTAGE MUST DESCRIBE EACH OTHER. The
-              // socket moves the price every few seconds and REST restruck the
-              // percentage once a minute, so a pill read $310.00 beside +0.32%
-              // when $310.00 is +0.21% on the same previous close. Outside
-              // regular hours it is worse than a lag: REST holds yesterday's
-              // close all morning while the socket streams pre-market prints,
-              // so the two never converge on their own.
+              priceCents: {
+                $cond: [
+                  { $gt: ["$previousCloseCents", 0] },
+                  {
+                    $max: [
+                      1,
+                      {
+                        $round: [
+                          {
+                            $add: [
+                              "$previousCloseCents",
+                              {
+                                $multiply: [
+                                  {
+                                    $subtract: [
+                                      tick.priceCents,
+                                      "$previousCloseCents",
+                                    ],
+                                  },
+                                  env.MARKET_VOLATILITY_MULTIPLIER ?? 1,
+                                ],
+                              },
+                            ],
+                          },
+                          0,
+                        ],
+                      },
+                    ],
+                  },
+                  tick.priceCents,
+                ],
+              },
+              priceUsdCents: {
+                $cond: [
+                  { $gt: ["$previousCloseCents", 0] },
+                  {
+                    $max: [
+                      1,
+                      {
+                        $round: [
+                          {
+                            $add: [
+                              "$previousCloseCents",
+                              {
+                                $multiply: [
+                                  {
+                                    $subtract: [
+                                      tick.priceCents,
+                                      "$previousCloseCents",
+                                    ],
+                                  },
+                                  env.MARKET_VOLATILITY_MULTIPLIER ?? 1,
+                                ],
+                              },
+                            ],
+                          },
+                          0,
+                        ],
+                      },
+                    ],
+                  },
+                  tick.priceCents,
+                ],
+              },
+              // THE PRICE AND ITS PERCENTAGE MUST DESCRIBE EACH OTHER.
               changePct: {
                 $cond: [
-                  { $gt: ['$previousCloseCents', 0] },
+                  { $gt: ["$previousCloseCents", 0] },
                   {
                     $multiply: [
                       {
                         $divide: [
-                          { $subtract: [tick.priceCents, '$previousCloseCents'] },
-                          '$previousCloseCents',
+                          {
+                            $multiply: [
+                              {
+                                $subtract: [
+                                  tick.priceCents,
+                                  "$previousCloseCents",
+                                ],
+                              },
+                              env.MARKET_VOLATILITY_MULTIPLIER ?? 1,
+                            ],
+                          },
+                          "$previousCloseCents",
                         ],
                       },
                       100,
@@ -325,7 +409,7 @@ export function tickFlushOps(now) {
                   },
                   // No usable close — keep what REST struck rather than
                   // inventing a percentage against a seeded figure.
-                  '$changePct',
+                  "$changePct",
                 ],
               },
               quoteAsOf: now,

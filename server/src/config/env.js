@@ -146,6 +146,8 @@ const schema = z.object({
   QUOTE_FULL_REFRESH_MS: z.coerce.number().int().positive().default(60_000),
   QUOTE_MAX_AGE_MS: z.coerce.number().int().positive().default(120_000),
   MAX_SLIPPAGE_PCT: z.coerce.number().positive().default(0.5),
+  /** Multiplier for live price moves from previous close (e.g. 4x price velocity) */
+  MARKET_VOLATILITY_MULTIPLIER: z.coerce.number().positive().default(4),
 
   // Configured in whole dollars for readability; converted to cents at the
   // boundary below so nothing downstream ever sees a float amount.

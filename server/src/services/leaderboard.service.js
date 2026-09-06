@@ -1,7 +1,7 @@
 import { User } from "../models/User.js";
 import { SEED_CASH_CENTS } from "../config/env.js";
 
-const PERIOD_DAYS = { weekly: 7, monthly: 30 };
+const PERIOD_DAYS = { today: 1, daily: 1, weekly: 7, monthly: 30 };
 
 /** Memoised per period — the pipeline is cheap but not free, and the board
  *  does not need to be fresher than the 15s quote refresh anyway. */
@@ -9,6 +9,9 @@ const cache = new Map();
 const TTL_MS = 60_000;
 
 function baselineDate(period) {
+  if (period === "today" || period === "daily" || period === "alltime") {
+    return null;
+  }
   const days = PERIOD_DAYS[period];
   if (!days) return null;
   const d = new Date();
@@ -384,51 +387,65 @@ async function computeBoard(period) {
             },
           },
         ]
-      : [
-          {
-            $addFields: {
-              baseValueCents: {
-                $cond: [
-                  { $gt: ["$holdingsCostBasisCents", 0] },
-                  "$holdingsCostBasisCents",
-                  SEED_CASH_CENTS,
-                ],
-              },
-              returnPct: {
-                $cond: [
-                  { $gt: [{ $size: "$h" }, 0] },
-                  { $round: ["$sumActiveHoldingsPct", 2] },
-                  {
-                    $cond: [
-                      { $gt: ["$portfolioValueCents", SEED_CASH_CENTS] },
-                      {
-                        $multiply: [
-                          {
-                            $divide: [
-                              {
-                                $subtract: [
-                                  "$portfolioValueCents",
-                                  SEED_CASH_CENTS,
-                                ],
-                              },
-                              SEED_CASH_CENTS,
-                            ],
-                          },
-                          100,
-                        ],
-                      },
-                      0,
-                    ],
-                  },
-                ],
+      : period === "today" || period === "daily"
+        ? [
+            {
+              $addFields: {
+                baseValueCents: "$dayBaseValueCents",
+                returnPct: "$dayChangePct",
               },
             },
-          },
-        ]),
+          ]
+        : [
+            {
+              $addFields: {
+                baseValueCents: {
+                  $cond: [
+                    { $gt: ["$holdingsCostBasisCents", 0] },
+                    "$holdingsCostBasisCents",
+                    SEED_CASH_CENTS,
+                  ],
+                },
+                returnPct: {
+                  $cond: [
+                    { $gt: [{ $size: "$h" }, 0] },
+                    { $round: ["$sumActiveHoldingsPct", 2] },
+                    {
+                      $cond: [
+                        { $gt: ["$portfolioValueCents", SEED_CASH_CENTS] },
+                        {
+                          $multiply: [
+                            {
+                              $divide: [
+                                {
+                                  $subtract: [
+                                    "$portfolioValueCents",
+                                    SEED_CASH_CENTS,
+                                  ],
+                                },
+                                SEED_CASH_CENTS,
+                              ],
+                            },
+                            100,
+                          ],
+                        },
+                        0,
+                      ],
+                    },
+                  ],
+                },
+              },
+            },
+          ]),
 
     {
       $setWindowFields: {
-        sortBy: { portfolioValueCents: -1 },
+        sortBy:
+          period === "alltime"
+            ? { portfolioValueCents: -1 }
+            : period === "today" || period === "daily"
+              ? { dayChangePct: -1 }
+              : { returnPct: -1 },
         output: { rank: { $rank: {} } },
       },
     },
@@ -531,17 +548,9 @@ export async function rankForValue(
   valueCents,
   { excludeUserId = null, period = "alltime" } = {}
 ) {
-  const [computed, featured] = await Promise.all([
-    getBoard(period),
-    listActiveFeatured(),
-  ]);
+  const rows = await getBoard(period);
+  const skip = new Set([String(excludeUserId)]);
 
-  const ownCurated = featured.find(
-    (f) => String(f.userId) === String(excludeUserId)
-  );
-  const skip = new Set([String(excludeUserId), String(ownCurated?._id ?? "")]);
-
-  const rows = mergeFeatured(computed, featured);
   const above = rows.filter(
     (r) => !skip.has(String(r.userId)) && r.portfolioValueCents > valueCents
   ).length;

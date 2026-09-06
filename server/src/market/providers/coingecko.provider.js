@@ -68,25 +68,44 @@ export async function fetchRows() {
       return fallbackRows();
     }
 
+    const mult = env.MARKET_VOLATILITY_MULTIPLIER ?? 1;
+
     return rows
       .filter((c) => Number.isFinite(c?.current_price))
-      .map((c) => ({
-        assetClass: /** @type {const} */ ("crypto"),
-        symbol: String(c.symbol ?? "").toUpperCase(),
-        name: String(c.name ?? ""),
-        vendorId: String(c.id ?? ""),
-        exchange: "Crypto",
-        currency: "USD",
-        logoUrl: String(c.image ?? ""),
-        priceCents: toCents(c.current_price),
-        priceUsdCents: toCents(c.current_price),
-        priceUsdNanos: toNanos(c.current_price),
-        changePct: Number(c.price_change_percentage_24h ?? 0),
-        marketCap: Number(c.market_cap ?? 0),
-        volume: Number(c.total_volume ?? 0),
-        status: /** @type {const} */ ("Listed"),
-        live: true,
-      }))
+      .map((c) => {
+        const rawChange = Number(c.price_change_percentage_24h ?? 0);
+        let displayPrice = c.current_price;
+        let changePct = rawChange;
+
+        if (mult !== 1 && Number.isFinite(rawChange)) {
+          changePct = Number((rawChange * mult).toFixed(2));
+          const basePrice = c.current_price / (1 + rawChange / 100);
+          if (basePrice > 0) {
+            displayPrice = Math.max(
+              0.00000001,
+              basePrice * (1 + changePct / 100)
+            );
+          }
+        }
+
+        return {
+          assetClass: /** @type {const} */ ("crypto"),
+          symbol: String(c.symbol ?? "").toUpperCase(),
+          name: String(c.name ?? ""),
+          vendorId: String(c.id ?? ""),
+          exchange: "Crypto",
+          currency: "USD",
+          logoUrl: String(c.image ?? ""),
+          priceCents: toCents(displayPrice),
+          priceUsdCents: toCents(displayPrice),
+          priceUsdNanos: toNanos(displayPrice),
+          changePct,
+          marketCap: Number(c.market_cap ?? 0),
+          volume: Number(c.total_volume ?? 0),
+          status: /** @type {const} */ ("Listed"),
+          live: true,
+        };
+      })
       .filter((r) => r.priceUsdCents > 0);
   } catch (err) {
     console.warn(

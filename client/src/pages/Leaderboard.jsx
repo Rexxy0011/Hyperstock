@@ -12,6 +12,7 @@ import Avatar from "../components/ui/Avatar";
 const LEADERBOARD_STATE_KEY = "hyperstocks_leaderboard_period";
 
 const PERIODS = [
+  { value: "today", labelKey: "leaderboard.tabToday" },
   { value: "weekly", labelKey: "leaderboard.tabWeekly" },
   { value: "monthly", labelKey: "leaderboard.tabMonthly" },
   { value: "alltime", labelKey: "leaderboard.tabAlltime" },
@@ -19,6 +20,7 @@ const PERIODS = [
 
 /** Adjectival, to match the design's "Ranked by all-time portfolio value…". */
 const PERIOD_COPY = {
+  today: "leaderboard.periodToday",
   weekly: "leaderboard.periodWeekly",
   monthly: "leaderboard.periodMonthly",
   alltime: "leaderboard.periodAlltime",
@@ -29,11 +31,11 @@ export default function Leaderboard() {
   const [period, setPeriod] = useState(() => {
     try {
       const saved = sessionStorage.getItem(LEADERBOARD_STATE_KEY);
-      if (saved && ["weekly", "monthly", "alltime"].includes(saved)) {
+      if (saved && ["today", "weekly", "monthly", "alltime"].includes(saved)) {
         return saved;
       }
     } catch {}
-    return "monthly";
+    return "today";
   });
 
   useEffect(() => {
@@ -106,7 +108,11 @@ export default function Leaderboard() {
                     className="text-text-muted"
                   />
                 </div>
-                <PriceChange value={r.dayChangePct} size={12} pill />
+                <PriceChange
+                  value={period === "today" ? r.dayChangePct : r.returnPct}
+                  size={12}
+                  pill
+                />
               </div>
             ))}
           </div>
@@ -150,12 +156,12 @@ export default function Leaderboard() {
               </thead>
               <tbody>
                 {rows.map((r) => (
-                  <Row key={r.userId} row={r} />
+                  <Row key={r.userId} row={r} period={period} />
                 ))}
                 {/* The design pins the signed-in trader beneath the top N when
                     they don't place in it — rank 128 in the mockup. */}
                 {you && !rows.some((r) => r.userId === you.userId) && (
-                  <Row row={you} pinned />
+                  <Row row={you} pinned period={period} />
                 )}
               </tbody>
             </table>
@@ -170,7 +176,7 @@ const th =
   "border-b border-cool-grey px-4 py-2.5 text-left text-xs font-medium text-text-muted whitespace-nowrap";
 const td = "border-b border-cool-grey px-4 py-3 text-sm";
 
-function Row({ row, pinned = false }) {
+function Row({ row, pinned = false, period = "today" }) {
   const { t } = useTranslation();
   return (
     <tr className={row.you ? "bg-mist" : ""}>
@@ -211,7 +217,7 @@ function Row({ row, pinned = false }) {
       </td>
       <td className={`${td} text-right`}>
         <PriceChange
-          value={row.dayChangePct}
+          value={period === "today" ? row.dayChangePct : row.returnPct}
           size={12}
           pill
           className="justify-end"

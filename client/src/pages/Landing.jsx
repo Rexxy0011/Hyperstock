@@ -44,14 +44,11 @@ export default function Landing() {
     staleTime: Infinity,
   });
 
-  // "Top investors today" — monthly, measured against each trader's
-  // portfolio snapshot from 30 days ago. All-time would measure against the
-  // $10,000 signup grant and read +382%, which is true but not the claim here.
-  // Polled on the quote interval so the board ticks the way the Forbes list
-  // does. The service memoises 60s, so this costs a cache read, not a pipeline.
+  // "Top investors today" — daily performance, ranked by today's return %.
+  // Polled on the quote interval so the board ticks live as market prices move.
   const { data: board, isPending: boardPending } = useQuery({
-    queryKey: keys.leaderboard("alltime"),
-    queryFn: () => get("/leaderboard?period=alltime&limit=5"),
+    queryKey: keys.leaderboard("today"),
+    queryFn: () => get("/leaderboard?period=today&limit=5"),
     refetchInterval: QUOTE_POLL_MS,
   });
 
