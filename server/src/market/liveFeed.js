@@ -1,5 +1,5 @@
-import { EventEmitter } from 'node:events';
-import { env } from '../config/env.js';
+import { EventEmitter } from "node:events";
+import { env } from "../config/env.js";
 
 /**
  * The real-time price feed: one Finnhub WebSocket, fanned out to every client.
@@ -24,13 +24,14 @@ import { env } from '../config/env.js';
  * and are flushed to Mongo on a timer — see `flushIntervalMs` — because a trade
  * print every few milliseconds is not a write every few milliseconds.
  */
-const WS_URL = 'wss://ws.finnhub.io';
+const WS_URL = "wss://ws.finnhub.io";
 
 /** Finnhub's free tier caps a connection at 50 symbols. */
 const MAX_SYMBOLS = 50;
 
 /** Crypto is quoted against Tether on Binance, which is what Finnhub relays. */
-export const cryptoStreamSymbol = (symbol) => `BINANCE:${symbol.toUpperCase()}USDT`;
+export const cryptoStreamSymbol = (symbol) =>
+  `BINANCE:${symbol.toUpperCase()}USDT`;
 
 /**
  * Forex streams as OANDA pairs — `EURUSD` on our side is `OANDA:EUR_USD`.
@@ -45,8 +46,8 @@ export const forexStreamSymbol = (symbol) =>
   `OANDA:${symbol.slice(0, 3).toUpperCase()}_${symbol.slice(3).toUpperCase()}`;
 
 const streamSymbolFor = (symbol, assetClass) => {
-  if (assetClass === 'crypto') return cryptoStreamSymbol(symbol);
-  if (assetClass === 'forex') return forexStreamSymbol(symbol);
+  if (assetClass === "crypto") return cryptoStreamSymbol(symbol);
+  if (assetClass === "forex") return forexStreamSymbol(symbol);
   return symbol.toUpperCase();
 };
 
@@ -91,10 +92,10 @@ class LiveFeed extends EventEmitter {
     // Diff rather than resubscribe wholesale: an unsubscribe/subscribe cycle
     // on an unchanged symbol drops ticks in the gap for no reason.
     for (const stream of this.subscriptions.keys()) {
-      if (!next.has(stream)) this.#send('unsubscribe', stream);
+      if (!next.has(stream)) this.#send("unsubscribe", stream);
     }
     for (const stream of next.keys()) {
-      if (!this.subscriptions.has(stream)) this.#send('subscribe', stream);
+      if (!this.subscriptions.has(stream)) this.#send("subscribe", stream);
     }
 
     this.subscriptions = next;
@@ -109,7 +110,8 @@ class LiveFeed extends EventEmitter {
   }
 
   #send(type, symbol) {
-    if (this.ws?.readyState === 1) this.ws.send(JSON.stringify({ type, symbol }));
+    if (this.ws?.readyState === 1)
+      this.ws.send(JSON.stringify({ type, symbol }));
   }
 
   start() {
@@ -156,8 +158,9 @@ class LiveFeed extends EventEmitter {
       // one's subscriptions, so a reconnect that skipped this would connect
       // successfully and then sit silent forever — the worst failure shape,
       // because every health check would read green.
-      for (const stream of this.subscriptions.keys()) this.#send('subscribe', stream);
-      this.emit('status', { connected: true });
+      for (const stream of this.subscriptions.keys())
+        this.#send("subscribe", stream);
+      this.emit("status", { connected: true });
     };
 
     ws.onmessage = (event) => {
@@ -167,7 +170,7 @@ class LiveFeed extends EventEmitter {
       } catch {
         return;
       }
-      if (msg.type !== 'trade' || !Array.isArray(msg.data)) return;
+      if (msg.type !== "trade" || !Array.isArray(msg.data)) return;
 
       const batch = [];
       const mult = env.MARKET_VOLATILITY_MULTIPLIER ?? 1;
@@ -197,7 +200,11 @@ class LiveFeed extends EventEmitter {
         // Trades print at the same price constantly; only a CHANGE is worth
         // waking every connected browser for. FX is compared on the raw value
         // for the same reason — at cent resolution most FX ticks look equal.
-        if (sub.assetClass === 'forex' ? prev?.price === amplifiedPrice : prev?.priceCents === priceCents) {
+        if (
+          sub.assetClass === "forex"
+            ? prev?.price === amplifiedPrice
+            : prev?.priceCents === priceCents
+        ) {
           continue;
         }
 
@@ -208,7 +215,7 @@ class LiveFeed extends EventEmitter {
       if (batch.length) {
         this.ticks += batch.length;
         this.lastTickAt = new Date();
-        this.emit('ticks', batch);
+        this.emit("ticks", batch);
       }
     };
 
@@ -216,7 +223,7 @@ class LiveFeed extends EventEmitter {
       clearTimeout(handshake);
       this.connected = false;
       this.ws = null;
-      this.emit('status', { connected: false });
+      this.emit("status", { connected: false });
       if (!this.stopped) this.#scheduleReconnect();
     };
 

@@ -1,27 +1,27 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { useParams, useSearchParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { FiArrowLeft } from 'react-icons/fi';
-import Link from '../components/ui/Link';
-import { get } from '../lib/api';
-import { keys, QUOTE_POLL_MS } from '../lib/queryClient';
-import { decodeTrade } from '../lib/tradeIntent';
-import { money, pct, untilLabel } from '../lib/format';
-import AssetMark from '../components/market/AssetMark';
-import { livePrice, useLivePrices } from '../hooks/useLivePrices';
-import { useLiveCandles } from '../hooks/useLiveCandles';
-import Badge, { statusVariant } from '../components/ui/Badge';
-import Button from '../components/ui/Button';
-import Tabs from '../components/ui/Tabs';
-import PriceChange from '../components/market/PriceChange';
-import TvChart from '../components/charts/TvChart';
-import WatchButton from '../components/market/WatchButton';
-import TradeModal from '../components/market/TradeModal';
-import InstrumentSidebar from '../components/market/InstrumentSidebar';
-import { useAuth } from '../auth/AuthProvider';
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { useParams, useSearchParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { FiArrowLeft } from "react-icons/fi";
+import Link from "../components/ui/Link";
+import { get } from "../lib/api";
+import { keys, QUOTE_POLL_MS } from "../lib/queryClient";
+import { decodeTrade } from "../lib/tradeIntent";
+import { money, pct, untilLabel } from "../lib/format";
+import AssetMark from "../components/market/AssetMark";
+import { livePrice, useLivePrices } from "../hooks/useLivePrices";
+import { useLiveCandles } from "../hooks/useLiveCandles";
+import Badge, { statusVariant } from "../components/ui/Badge";
+import Button from "../components/ui/Button";
+import Tabs from "../components/ui/Tabs";
+import PriceChange from "../components/market/PriceChange";
+import TvChart from "../components/charts/TvChart";
+import WatchButton from "../components/market/WatchButton";
+import TradeModal from "../components/market/TradeModal";
+import InstrumentSidebar from "../components/market/InstrumentSidebar";
+import { useAuth } from "../auth/AuthProvider";
 
-const RANGES = ['1D', '1W', '1M', '3M', '1Y', 'ALL'];
+const RANGES = ["1D", "1W", "1M", "3M", "1Y", "ALL"];
 
 /**
  * Forex has no 1D. The ECB publishes one reference rate per business day, so an
@@ -29,11 +29,11 @@ const RANGES = ['1D', '1W', '1M', '3M', '1Y', 'ALL'];
  * offered and then answered with a single bar.
  */
 const rangesFor = (assetClass) =>
-  assetClass === 'forex' ? RANGES.filter((r) => r !== '1D') : RANGES;
+  assetClass === "forex" ? RANGES.filter((r) => r !== "1D") : RANGES;
 
 const CHART_TYPES = [
-  { value: 'candles', label: 'Candles' },
-  { value: 'area', label: 'Line' },
+  { value: "candles", label: "Candles" },
+  { value: "area", label: "Line" },
 ];
 
 /**
@@ -70,12 +70,16 @@ const CHART_TYPES = [
 export default function Instrument({ assetClass }) {
   const { t } = useTranslation();
   const { symbol } = useParams();
-  const [range, setRange] = useState('1M');
+  const [range, setRange] = useState("1M");
   // Annotated because TvChart's `chartType` is a union and `useState('candles')`
   // would widen it to `string`.
-  const [chartType, setChartType] = useState(/** @type {'candles' | 'area'} */ ('candles'));
+  const [chartType, setChartType] = useState(
+    /** @type {'candles' | 'area'} */ ("candles")
+  );
   const [tradeOpen, setTradeOpen] = useState(false);
-  const [tradeSide, setTradeSide] = useState(/** @type {'BUY'|'SELL'} */ ('BUY'));
+  const [tradeSide, setTradeSide] = useState(
+    /** @type {'BUY'|'SELL'} */ ("BUY")
+  );
   /** Non-null only on the return leg of a funding trip. */
   const [resumeQty, setResumeQty] = useState(/** @type {string|null} */ (null));
 
@@ -92,14 +96,14 @@ export default function Instrument({ assetClass }) {
   const resumed = useRef(false);
   useEffect(() => {
     if (resumed.current) return;
-    const intent = decodeTrade(params.get('trade'));
+    const intent = decodeTrade(params.get("trade"));
     if (!intent) return;
     resumed.current = true;
 
     setTradeSide(intent.side);
     setResumeQty(intent.quantity);
     setTradeOpen(true);
-    params.delete('trade');
+    params.delete("trade");
     setParams(params, { replace: true });
   }, [params, setParams]);
 
@@ -111,17 +115,18 @@ export default function Instrument({ assetClass }) {
   // sell side. All three classes can be held now, so this is no longer gated.
   const { data: portfolio } = useQuery({
     queryKey: keys.portfolio,
-    queryFn: () => get('/portfolio'),
+    queryFn: () => get("/portfolio"),
     enabled: signedIn,
     staleTime: 30_000,
   });
 
   const { data, isPending, error } = useQuery({
     queryKey: keys.instrument(assetClass, symbol, range),
-    queryFn: () => get(`/market/instruments/${assetClass}/${symbol}?range=${range}`),
+    queryFn: () =>
+      get(`/market/instruments/${assetClass}/${symbol}?range=${range}`),
     // Forex publishes once a business day; polling it on the quote interval
     // would be hundreds of identical requests between publications.
-    refetchInterval: assetClass === 'forex' ? false : QUOTE_POLL_MS,
+    refetchInterval: assetClass === "forex" ? false : QUOTE_POLL_MS,
     placeholderData: (prev) => prev,
   });
 
@@ -136,12 +141,13 @@ export default function Instrument({ assetClass }) {
       <Shell>
         <Panel>
           <div className="p-8">
-            <h1 className="m-0 text-xl font-bold">{t('common.notFound')}</h1>
+            <h1 className="m-0 text-xl font-bold">{t("common.notFound")}</h1>
             <p className="mt-2 text-sm text-text-on-deep-muted">
-              No {assetClass} listing for <span className="font-mono">{symbol}</span>.
+              No {assetClass} listing for{" "}
+              <span className="font-mono">{symbol}</span>.
             </p>
             <Button to="/markets" variant="secondary" onDark className="mt-6">
-              {t('instrument.backToMarkets')}
+              {t("instrument.backToMarkets")}
             </Button>
           </div>
         </Panel>
@@ -151,7 +157,7 @@ export default function Instrument({ assetClass }) {
 
   if (isPending || !data) return <Loading />;
 
-  const isForex = assetClass === 'forex';
+  const isForex = assetClass === "forex";
   // Patched in place from the socket. `data` is still the source for everything
   // else on the page — only the headline price is newer than the last poll.
   const priceCents = tick?.priceCents ?? data.priceCents;
@@ -160,7 +166,8 @@ export default function Instrument({ assetClass }) {
   // itself is keyed by. `ETH` is a coin here and a plausible ticker elsewhere.
   const rawHolding =
     portfolio?.holdings?.find(
-      (h) => h.symbol === data.symbol && (h.assetClass ?? 'stocks') === assetClass,
+      (h) =>
+        h.symbol === data.symbol && (h.assetClass ?? "stocks") === assetClass
     ) ?? null;
 
   const holding = useMemo(() => {
@@ -169,7 +176,7 @@ export default function Instrument({ assetClass }) {
     const priceUsdCents = tick.priceCents ?? rawHolding.priceUsdCents;
     const priceUsdNanos = priceUsdCents * 10_000_000;
     const marketValueCents = Math.round(
-      (rawHolding.shares * priceUsdNanos) / 10_000_000,
+      (rawHolding.shares * priceUsdNanos) / 10_000_000
     );
     const totalReturnCents = marketValueCents - rawHolding.costBasisCents;
     const totalReturnPct =
@@ -177,7 +184,7 @@ export default function Instrument({ assetClass }) {
         ? Math.round(
             ((marketValueCents - rawHolding.costBasisCents) /
               rawHolding.costBasisCents) *
-              10000,
+              10000
           ) / 100
         : 0;
     return {
@@ -190,7 +197,7 @@ export default function Instrument({ assetClass }) {
       totalReturnPct,
     };
   }, [rawHolding, tick]);
-  const tradable = data.status === 'Listed';
+  const tradable = data.status === "Listed";
 
   return (
     <Shell>
@@ -202,8 +209,8 @@ export default function Instrument({ assetClass }) {
               a breadcrumb. */}
           <Link
             to="/markets"
-            aria-label={t('instrument.backToMarkets')}
-            title={t('instrument.backToMarkets')}
+            aria-label={t("instrument.backToMarkets")}
+            title={t("instrument.backToMarkets")}
             className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-text-on-deep-muted no-underline transition-colors hover:bg-white/8 hover:text-text-on-deep"
           >
             <FiArrowLeft size={16} aria-hidden="true" />
@@ -227,7 +234,10 @@ export default function Instrument({ assetClass }) {
             </div>
           </div>
 
-          <span className="hidden h-6 w-px shrink-0 bg-white/10 lg:block" aria-hidden="true" />
+          <span
+            className="hidden h-6 w-px shrink-0 bg-white/10 lg:block"
+            aria-hidden="true"
+          />
 
           {/* Ordered last below `lg` so a phone reads [← AAPL … Trade ＋] on
               one line and drops the range/type controls to a full-width row
@@ -235,9 +245,23 @@ export default function Instrument({ assetClass }) {
               own. At lg the bar is one row and the source order is the visual
               order again. */}
           <div className="order-last flex w-full flex-wrap items-center gap-2 lg:order-0 lg:w-auto">
-            <Tabs tabs={rangesFor(assetClass)} value={range} onChange={setRange} numeric onDark />
-            <span className="hidden h-4 w-px bg-white/15 sm:block" aria-hidden="true" />
-            <Tabs tabs={CHART_TYPES} value={chartType} onChange={setChartType} onDark />
+            <Tabs
+              tabs={rangesFor(assetClass)}
+              value={range}
+              onChange={setRange}
+              numeric
+              onDark
+            />
+            <span
+              className="hidden h-4 w-px bg-white/15 sm:block"
+              aria-hidden="true"
+            />
+            <Tabs
+              tabs={CHART_TYPES}
+              value={chartType}
+              onChange={setChartType}
+              onDark
+            />
           </div>
 
           <div className="ml-auto flex shrink-0 items-center gap-2">
@@ -272,7 +296,9 @@ export default function Instrument({ assetClass }) {
                   nothing else above 16px.
                 */}
                 <span className="font-numeric text-xl font-medium tabular-nums">
-                  {isForex ? rate?.toFixed(rate >= 50 ? 2 : 4) : money(priceCents, data.currency)}
+                  {isForex
+                    ? rate?.toFixed(rate >= 50 ? 2 : 4)
+                    : money(priceCents, data.currency)}
                 </span>
                 <span className="flex items-baseline gap-2">
                   <AbsoluteChange
@@ -283,14 +309,16 @@ export default function Instrument({ assetClass }) {
                     currency={data.currency}
                   />
                   <span className="text-2xs text-text-on-deep-muted">
-                    {assetClass === 'stocks' ? 'today' : '24h'}
+                    {assetClass === "stocks" ? "today" : "24h"}
                   </span>
                 </span>
                 <Freshness row={data} assetClass={assetClass} />
               </div>
 
               <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-2xs text-text-on-deep-muted">
-                <span className="font-numeric tabular-nums">{candles.spanLabel}</span>
+                <span className="font-numeric tabular-nums">
+                  {candles.spanLabel}
+                </span>
                 {candles.periodPct != null && (
                   <span className="flex items-baseline gap-1.5">
                     <PriceChange value={candles.periodPct} size={12} onDark />
@@ -375,7 +403,9 @@ export default function Instrument({ assetClass }) {
 function Shell({ children }) {
   // py-4, not the py-10 the other pages use: the panel IS the page here, and
   // every pixel spent above it comes off the chart.
-  return <div className="w-full px-4 py-4 sm:px-5 lg:px-7 2xl:px-9">{children}</div>;
+  return (
+    <div className="w-full px-4 py-4 sm:px-5 lg:px-7 2xl:px-9">{children}</div>
+  );
 }
 
 /**
@@ -410,7 +440,7 @@ function Panel({ children }) {
  */
 function Loading() {
   const { t } = useTranslation();
-  const bar = 'animate-pulse rounded-md bg-white/8';
+  const bar = "animate-pulse rounded-md bg-white/8";
 
   return (
     <Shell>
@@ -425,29 +455,41 @@ function Loading() {
           <div className={`ml-auto h-8 w-28 ${bar}`} />
         </div>
 
-        <div className="flex min-h-0 flex-1 flex-col xl:flex-row" aria-hidden="true">
+        <div
+          className="flex min-h-0 flex-1 flex-col xl:flex-row"
+          aria-hidden="true"
+        >
           <div className="flex min-h-0 min-w-0 flex-1 flex-col">
             <div className="shrink-0 px-4 py-3 sm:px-5">
               <div className={`h-8 w-56 ${bar}`} />
             </div>
             <div className="min-h-0 flex-1 px-1 pb-1">
-              <div className={`h-90 rounded-md bg-white/5 lg:h-120 xl:h-full ${bar}`} />
+              <div
+                className={`h-90 rounded-md bg-white/5 lg:h-120 xl:h-full ${bar}`}
+              />
             </div>
           </div>
 
           <div className="hidden shrink-0 space-y-4 border-l border-white/10 p-4 xl:block xl:w-80 2xl:w-88">
             {[0, 1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className={`h-4 ${bar}`} style={{ width: `${90 - i * 6}%` }} />
+              <div
+                key={i}
+                className={`h-4 ${bar}`}
+                style={{ width: `${90 - i * 6}%` }}
+              />
             ))}
           </div>
         </div>
 
-        <div className="h-9 shrink-0 border-t border-white/10" aria-hidden="true" />
+        <div
+          className="h-9 shrink-0 border-t border-white/10"
+          aria-hidden="true"
+        />
       </Panel>
       {/* The only text in the state, and it is for a screen reader rather than
           the eye — the pulse says the same thing visually. */}
       <span className="sr-only" role="status">
-        {t('instrument.loadingMarketData')}
+        {t("instrument.loadingMarketData")}
       </span>
     </Shell>
   );
@@ -478,7 +520,7 @@ function TradeAction({ signedIn, onOpen, tradable }) {
 
   if (!tradable) {
     return (
-      <span title={t('instrument.haltedHint')}>
+      <span title={t("instrument.haltedHint")}>
         <Button variant="secondary" size="sm" disabled onDark>
           Trade
         </Button>
@@ -499,16 +541,16 @@ function TradeAction({ signedIn, onOpen, tradable }) {
  */
 function Freshness({ row, assetClass }) {
   const { t } = useTranslation();
-  if (assetClass === 'forex') {
+  if (assetClass === "forex") {
     return (
-      <span title={t('instrument.liveFxHint')}>
-        <Badge variant="approved">{t('instrument.liveFx')}</Badge>
+      <span title={t("instrument.liveFxHint")}>
+        <Badge variant="approved">{t("instrument.liveFx")}</Badge>
       </span>
     );
   }
-  if (assetClass === 'stocks' && !row.live) {
+  if (assetClass === "stocks" && !row.live) {
     return (
-      <span title={t('markets.delayedHint')}>
+      <span title={t("markets.delayedHint")}>
         <Badge variant="neutral">Delayed</Badge>
       </span>
     );
@@ -541,13 +583,13 @@ function AbsoluteChange({ isForex, rate, priceCents, changePct, currency }) {
   return (
     <span
       className={`inline-flex items-baseline gap-1.5 font-numeric text-sm font-medium tabular-nums ${
-        up ? 'text-gain' : 'text-loss-deep'
+        up ? "text-gain" : "text-loss-deep"
       }`}
     >
       {/* U+2212, not a hyphen — the same convention PriceChange owns for the
           percentage, and the two sit side by side. */}
       <span>
-        {up ? '+' : '−'}
+        {up ? "+" : "−"}
         {abs}
       </span>
       <span>({pct(pctValue)})</span>
@@ -575,17 +617,17 @@ function StatusBar({ data, candles, assetClass }) {
   const session = data.session;
 
   let venue;
-  if (assetClass === 'crypto') {
-    venue = 'Crypto · trades 24/7';
-  } else if (assetClass === 'forex') {
-    venue = 'ECB reference · one publication per business day';
+  if (assetClass === "crypto") {
+    venue = "Crypto · trades 24/7";
+  } else if (assetClass === "forex") {
+    venue = "ECB reference · one publication per business day";
   } else if (session) {
     venue = session.open
       ? `${session.code} · Open`
       : `${session.code} · Closed${
           Number.isFinite(session.minutesUntilOpen)
             ? ` · opens in ${untilLabel(session.minutesUntilOpen)}`
-            : ''
+            : ""
         }`;
   } else {
     venue = data.exchange;
@@ -599,7 +641,9 @@ function StatusBar({ data, candles, assetClass }) {
       >
         <span
           className={`size-1.5 rounded-full ${
-            assetClass === 'stocks' && session && !session.open ? 'bg-slate' : 'bg-gain'
+            assetClass === "stocks" && session && !session.open
+              ? "bg-slate"
+              : "bg-gain"
           }`}
           aria-hidden="true"
         />

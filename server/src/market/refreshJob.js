@@ -343,10 +343,7 @@ export function tickFlushOps(now) {
                       {
                         $divide: [
                           {
-                            $subtract: [
-                              tick.priceCents,
-                              "$previousCloseCents",
-                            ],
+                            $subtract: [tick.priceCents, "$previousCloseCents"],
                           },
                           "$previousCloseCents",
                         ],

@@ -1,16 +1,21 @@
-import mongoose from 'mongoose';
-import { env } from '../config/env.js';
-import { withTransaction } from '../config/db.js';
-import { ApiError } from '../lib/ApiError.js';
-import { costCents, nanosToCents, quantizeQty, QTY_EPSILON } from '../lib/money.js';
-import { Order } from '../models/Order.js';
-import { Stock } from '../models/Stock.js';
-import { User } from '../models/User.js';
-import { Holding } from '../models/Holding.js';
-import { Transaction } from '../models/Transaction.js';
-import { invalidateLeaderboard } from './leaderboard.service.js';
-import { findInstrument } from './market.service.js';
-import { liveFeed } from '../market/liveFeed.js';
+import mongoose from "mongoose";
+import { env } from "../config/env.js";
+import { withTransaction } from "../config/db.js";
+import { ApiError } from "../lib/ApiError.js";
+import {
+  costCents,
+  nanosToCents,
+  quantizeQty,
+  QTY_EPSILON,
+} from "../lib/money.js";
+import { Order } from "../models/Order.js";
+import { Stock } from "../models/Stock.js";
+import { User } from "../models/User.js";
+import { Holding } from "../models/Holding.js";
+import { Transaction } from "../models/Transaction.js";
+import { invalidateLeaderboard } from "./leaderboard.service.js";
+import { findInstrument } from "./market.service.js";
+import { liveFeed } from "../market/liveFeed.js";
 
 /**
  * Order execution — the ledger.
@@ -35,9 +40,9 @@ import { liveFeed } from '../market/liveFeed.js';
  * worse first experience than not offering one.
  */
 
-const TRADABLE_STATUS = new Set(['Listed']);
+const TRADABLE_STATUS = new Set(["Listed"]);
 
-const ASSET_CLASSES = new Set(['stocks', 'crypto', 'forex']);
+const ASSET_CLASSES = new Set(["stocks", "crypto", "forex"]);
 
 /**
  * Resolving the thing being traded, which is not one lookup any more.
@@ -53,16 +58,16 @@ const ASSET_CLASSES = new Set(['stocks', 'crypto', 'forex']);
  * ledger actually multiplies. See lib/money.js for why it is not cents.
  */
 async function resolveTradable(assetClass, symbol) {
-  if (assetClass === 'stocks') {
+  if (assetClass === "stocks") {
     const stock = await Stock.findOne({ symbol }).lean();
     if (!stock) throw ApiError.notFound(`No stock ${symbol}`);
     if (!TRADABLE_STATUS.has(stock.status)) {
       throw ApiError.unprocessable(
-        'NOT_TRADABLE',
-        `${symbol} is ${stock.status} and cannot be traded`,
+        "NOT_TRADABLE",
+        `${symbol} is ${stock.status} and cannot be traded`
       );
     }
-    const live = liveFeed.priceFor(symbol, 'stocks');
+    const live = liveFeed.priceFor(symbol, "stocks");
     const priceCents = live?.priceCents ?? stock.priceCents;
     const priceUsdCents = live?.priceCents ?? stock.priceUsdCents;
     return {
@@ -79,7 +84,7 @@ async function resolveTradable(assetClass, symbol) {
   const row = await findInstrument(assetClass, symbol);
   if (!row) throw ApiError.notFound(`No ${assetClass} listing ${symbol}`);
   if (!TRADABLE_STATUS.has(row.status)) {
-    throw ApiError.unprocessable('NOT_TRADABLE', `${symbol} cannot be traded`);
+    throw ApiError.unprocessable("NOT_TRADABLE", `${symbol} cannot be traded`);
   }
   const live = liveFeed.priceFor(symbol, assetClass);
   const fillPriceUsdNanos = live
@@ -92,8 +97,8 @@ async function resolveTradable(assetClass, symbol) {
     name: row.name,
     // A crypto row quotes in USD and an FX pair quotes in its own quote
     // currency, but both are PRICED in USD here — the ledger has one currency.
-    currency: 'USD',
-    sector: assetClass === 'crypto' ? 'Crypto' : 'Forex',
+    currency: "USD",
+    sector: assetClass === "crypto" ? "Crypto" : "Forex",
     exchange: row.exchange,
     // Native display price. For forex this is the rate scaled by 10,000, which
     // is why it is never used for arithmetic — see the note on the field.
@@ -112,16 +117,25 @@ async function resolveTradable(assetClass, symbol) {
  * this change exists to remove.
  */
 function validateQuantity(assetClass, raw) {
-  const quantity = assetClass === 'stocks' ? Number(raw) : quantizeQty(raw);
+  const quantity = assetClass === "stocks" ? Number(raw) : quantizeQty(raw);
 
   if (!Number.isFinite(quantity) || quantity <= 0) {
-    throw ApiError.badRequest('BAD_QUANTITY', 'Quantity must be a positive number');
+    throw ApiError.badRequest(
+      "BAD_QUANTITY",
+      "Quantity must be a positive number"
+    );
   }
-  if (assetClass === 'stocks' && !Number.isInteger(quantity)) {
-    throw ApiError.badRequest('BAD_QUANTITY', 'Quantity must be a whole number of shares');
+  if (assetClass === "stocks" && !Number.isInteger(quantity)) {
+    throw ApiError.badRequest(
+      "BAD_QUANTITY",
+      "Quantity must be a whole number of shares"
+    );
   }
-  if (assetClass !== 'stocks' && quantity < QTY_EPSILON) {
-    throw ApiError.badRequest('BAD_QUANTITY', `Quantity must be at least ${QTY_EPSILON}`);
+  if (assetClass !== "stocks" && quantity < QTY_EPSILON) {
+    throw ApiError.badRequest(
+      "BAD_QUANTITY",
+      `Quantity must be at least ${QTY_EPSILON}`
+    );
   }
   return quantity;
 }
@@ -142,15 +156,18 @@ const MAX_SLIPPAGE_PCT = env.MAX_SLIPPAGE_PCT ?? 0.5;
  *   idempotencyKey?: string }} input
  */
 export async function placeOrder(input) {
-  const assetClass = String(input.assetClass ?? 'stocks').toLowerCase();
-  const symbol = String(input.symbol ?? '').toUpperCase();
-  const side = String(input.side ?? '').toUpperCase();
+  const assetClass = String(input.assetClass ?? "stocks").toLowerCase();
+  const symbol = String(input.symbol ?? "").toUpperCase();
+  const side = String(input.side ?? "").toUpperCase();
 
   if (!ASSET_CLASSES.has(assetClass)) {
-    throw ApiError.badRequest('BAD_ASSET_CLASS', `Unknown asset class ${input.assetClass}`);
+    throw ApiError.badRequest(
+      "BAD_ASSET_CLASS",
+      `Unknown asset class ${input.assetClass}`
+    );
   }
-  if (side !== 'BUY' && side !== 'SELL') {
-    throw ApiError.badRequest('BAD_SIDE', 'Side must be BUY or SELL');
+  if (side !== "BUY" && side !== "SELL") {
+    throw ApiError.badRequest("BAD_SIDE", "Side must be BUY or SELL");
   }
 
   const quantity = validateQuantity(assetClass, input.quantity);
@@ -158,7 +175,10 @@ export async function placeOrder(input) {
 
   const fillPriceUsdNanos = instrument.priceUsdNanos;
   if (!Number.isFinite(fillPriceUsdNanos) || fillPriceUsdNanos <= 0) {
-    throw ApiError.unavailable('NO_QUOTE', `No usable price for ${symbol} right now`);
+    throw ApiError.unavailable(
+      "NO_QUOTE",
+      `No usable price for ${symbol} right now`
+    );
   }
   // Rounded, for the receipt and for the slippage comparison below — the
   // client only ever saw a cents figure, so that is what it can be held to.
@@ -174,18 +194,24 @@ export async function placeOrder(input) {
   const quotedNanos =
     Number.isFinite(input.quotedPriceUsdNanos) && input.quotedPriceUsdNanos > 0
       ? Number(input.quotedPriceUsdNanos)
-      : Number.isFinite(input.quotedPriceUsdCents) && input.quotedPriceUsdCents > 0
+      : Number.isFinite(input.quotedPriceUsdCents) &&
+          input.quotedPriceUsdCents > 0
         ? input.quotedPriceUsdCents * 10_000_000
         : null;
 
   if (quotedNanos) {
-    const drift = (Math.abs(fillPriceUsdNanos - quotedNanos) / quotedNanos) * 100;
+    const drift =
+      (Math.abs(fillPriceUsdNanos - quotedNanos) / quotedNanos) * 100;
     if (drift > MAX_SLIPPAGE_PCT) {
-      throw ApiError.conflict('PRICE_MOVED', `${symbol} moved ${drift.toFixed(2)}% - confirm again`, {
-        quotedPriceUsdCents: input.quotedPriceUsdCents,
-        currentPriceUsdCents: fillPriceUsdCents,
-        currentPriceUsdNanos: fillPriceUsdNanos,
-      });
+      throw ApiError.conflict(
+        "PRICE_MOVED",
+        `${symbol} moved ${drift.toFixed(2)}% - confirm again`,
+        {
+          quotedPriceUsdCents: input.quotedPriceUsdCents,
+          currentPriceUsdCents: fillPriceUsdCents,
+          currentPriceUsdNanos: fillPriceUsdNanos,
+        }
+      );
     }
   }
 
@@ -194,7 +220,10 @@ export async function placeOrder(input) {
   // number of cents — every balance it touches downstream is already exact.
   const totalCents = costCents(quantity, fillPriceUsdNanos);
   if (totalCents <= 0) {
-    throw ApiError.badRequest('BAD_QUANTITY', `${quantity} ${symbol} rounds to nothing`);
+    throw ApiError.badRequest(
+      "BAD_QUANTITY",
+      `${quantity} ${symbol} rounds to nothing`
+    );
   }
 
   /**
@@ -209,15 +238,17 @@ export async function placeOrder(input) {
       assetClass,
       symbol,
       side,
-      orderType: 'MARKET',
+      orderType: "MARKET",
       quantity,
-      status: 'PENDING',
+      status: "PENDING",
       currency: instrument.currency,
       ...(input.idempotencyKey && { idempotencyKey: input.idempotencyKey }),
     });
   } catch (err) {
     if (err?.code === 11000 && input.idempotencyKey) {
-      const existing = await Order.findOne({ idempotencyKey: input.idempotencyKey }).lean();
+      const existing = await Order.findOne({
+        idempotencyKey: input.idempotencyKey,
+      }).lean();
       if (existing) return { order: existing, replayed: true };
     }
     throw err;
@@ -225,11 +256,19 @@ export async function placeOrder(input) {
 
   try {
     const args = {
-      input, assetClass, instrument, order, quantity,
-      fillPriceUsdCents, fillPriceUsdNanos, totalCents,
+      input,
+      assetClass,
+      instrument,
+      order,
+      quantity,
+      fillPriceUsdCents,
+      fillPriceUsdNanos,
+      totalCents,
     };
     const result = await withTransaction(async (session) =>
-      side === 'BUY' ? executeBuy({ ...args, session }) : executeSell({ ...args, session }),
+      side === "BUY"
+        ? executeBuy({ ...args, session })
+        : executeSell({ ...args, session })
     );
 
     // The board is memoised 60s and computed from holdings, so without this a
@@ -241,26 +280,35 @@ export async function placeOrder(input) {
     // something and was refused, and the Wallet should be able to show that.
     await Order.updateOne(
       { _id: order._id },
-      { $set: { status: 'REJECTED', rejectReason: err.code ?? err.message } },
+      { $set: { status: "REJECTED", rejectReason: err.code ?? err.message } }
     ).catch(() => {});
     throw err;
   }
 }
 
-async function executeBuy({ input, assetClass, instrument, order, quantity,
-  fillPriceUsdCents, fillPriceUsdNanos, totalCents, session }) {
+async function executeBuy({
+  input,
+  assetClass,
+  instrument,
+  order,
+  quantity,
+  fillPriceUsdCents,
+  fillPriceUsdNanos,
+  totalCents,
+  session,
+}) {
   // The guard is the FILTER. A concurrent buy that would overdraw matches no
   // document and returns null — no read-then-check window exists to lose.
   const user = await User.findOneAndUpdate(
     { _id: input.userId, cashBalanceCents: { $gte: totalCents } },
     { $inc: { cashBalanceCents: -totalCents } },
-    { new: true, session },
+    { new: true, session }
   );
 
   if (!user) {
     throw ApiError.unprocessable(
-      'INSUFFICIENT_FUNDS',
-      `Not enough buying power for ${quantity} ${instrument.symbol}`,
+      "INSUFFICIENT_FUNDS",
+      `Not enough buying power for ${quantity} ${instrument.symbol}`
     );
   }
 
@@ -270,27 +318,54 @@ async function executeBuy({ input, assetClass, instrument, order, quantity,
   const holding = await Holding.findOneAndUpdate(
     { userId: input.userId, assetClass, symbol: instrument.symbol },
     { $inc: { shares: quantity, costBasisCents: totalCents } },
-    { new: true, upsert: true, session, setDefaultsOnInsert: true },
+    { new: true, upsert: true, session, setDefaultsOnInsert: true }
   );
 
-  return settle({ input, assetClass, instrument, order, quantity, fillPriceUsdCents,
-    fillPriceUsdNanos, totalCents, session, user, holding, type: 'Buy', amountCents: -totalCents });
+  return settle({
+    input,
+    assetClass,
+    instrument,
+    order,
+    quantity,
+    fillPriceUsdCents,
+    fillPriceUsdNanos,
+    totalCents,
+    session,
+    user,
+    holding,
+    type: "Buy",
+    amountCents: -totalCents,
+  });
 }
 
-async function executeSell({ input, assetClass, instrument, order, quantity,
-  fillPriceUsdCents, fillPriceUsdNanos, totalCents, session }) {
+async function executeSell({
+  input,
+  assetClass,
+  instrument,
+  order,
+  quantity,
+  fillPriceUsdCents,
+  fillPriceUsdNanos,
+  totalCents,
+  session,
+}) {
   // Same shape as the buy guard, on shares instead of cash: a concurrent sell
   // that would take the position negative matches nothing.
   const before = await Holding.findOneAndUpdate(
-    { userId: input.userId, assetClass, symbol: instrument.symbol, shares: { $gte: quantity } },
+    {
+      userId: input.userId,
+      assetClass,
+      symbol: instrument.symbol,
+      shares: { $gte: quantity },
+    },
     { $inc: { shares: -quantity } },
-    { new: false, session },
+    { new: false, session }
   );
 
   if (!before) {
     throw ApiError.unprocessable(
-      'INSUFFICIENT_SHARES',
-      `You do not hold ${quantity} ${instrument.symbol}`,
+      "INSUFFICIENT_SHARES",
+      `You do not hold ${quantity} ${instrument.symbol}`
     );
   }
 
@@ -324,18 +399,31 @@ async function executeSell({ input, assetClass, instrument, order, quantity,
     holding = await Holding.findOneAndUpdate(
       { _id: before._id },
       { $inc: { costBasisCents: -basisOut } },
-      { new: true, session },
+      { new: true, session }
     );
   }
 
   const user = await User.findOneAndUpdate(
     { _id: input.userId },
     { $inc: { cashBalanceCents: totalCents } },
-    { new: true, session },
+    { new: true, session }
   );
 
-  return settle({ input, assetClass, instrument, order, quantity, fillPriceUsdCents,
-    fillPriceUsdNanos, totalCents, session, user, holding, type: 'Sell', amountCents: totalCents });
+  return settle({
+    input,
+    assetClass,
+    instrument,
+    order,
+    quantity,
+    fillPriceUsdCents,
+    fillPriceUsdNanos,
+    totalCents,
+    session,
+    user,
+    holding,
+    type: "Sell",
+    amountCents: totalCents,
+  });
 }
 
 /**
@@ -344,7 +432,9 @@ async function executeSell({ input, assetClass, instrument, order, quantity,
  * "0.50000000 BTC" is noise and "0.5 BTC" is the number the user typed.
  */
 const formatQty = (quantity, assetClass) =>
-  assetClass === 'stocks' ? String(quantity) : String(Number(quantity.toFixed(8)));
+  assetClass === "stocks"
+    ? String(quantity)
+    : String(Number(quantity.toFixed(8)));
 
 /**
  * Human-readable unit price, from NANOS rather than cents.
@@ -364,8 +454,19 @@ function formatUsd(nanos) {
 
 /** The half both sides share: mark the order filled and write the ledger row. */
 async function settle({
-  input, assetClass, instrument, order, quantity, fillPriceUsdCents, fillPriceUsdNanos,
-  totalCents, session, user, holding, type, amountCents,
+  input,
+  assetClass,
+  instrument,
+  order,
+  quantity,
+  fillPriceUsdCents,
+  fillPriceUsdNanos,
+  totalCents,
+  session,
+  user,
+  holding,
+  type,
+  amountCents,
 }) {
   const filledAt = new Date();
 
@@ -373,7 +474,7 @@ async function settle({
     { _id: order._id },
     {
       $set: {
-        status: 'FILLED',
+        status: "FILLED",
         // Native for the receipt, USD for the ledger — the same two-price rule
         // the rest of the product follows. They differ on a non-US listing.
         fillPriceCents: instrument.priceCents,
@@ -384,7 +485,7 @@ async function settle({
         filledAt,
       },
     },
-    { new: true, session },
+    { new: true, session }
   );
 
   await Transaction.create(
@@ -396,14 +497,18 @@ async function settle({
         // holds for "0.5 BTC @ $78879.32" and "1000 EURUSD @ $1.1663".
         detail: `${formatQty(quantity, assetClass)} ${instrument.symbol} @ $${formatUsd(fillPriceUsdNanos)}`,
         amountCents,
-        status: 'Filled',
+        status: "Filled",
         relatedOrderId: order._id,
       },
     ],
-    { session },
+    { session }
   );
 
-  await User.updateOne({ _id: input.userId }, { $inc: { tradeCount: 1 } }, { session });
+  await User.updateOne(
+    { _id: input.userId },
+    { $inc: { tradeCount: 1 } },
+    { session }
+  );
 
   return {
     order: filled?.toJSON?.() ?? filled,
@@ -416,7 +521,9 @@ async function settle({
           symbol: holding.symbol,
           shares: holding.shares,
           costBasisCents: holding.costBasisCents,
-          avgCostCents: holding.shares ? Math.round(holding.costBasisCents / holding.shares) : 0,
+          avgCostCents: holding.shares
+            ? Math.round(holding.costBasisCents / holding.shares)
+            : 0,
         }
       : null,
     replayed: false,
@@ -432,7 +539,7 @@ export async function listOrders(userId, { limit = 25 } = {}) {
 
   return rows.map((o) => ({
     id: String(o._id),
-    assetClass: o.assetClass ?? 'stocks',
+    assetClass: o.assetClass ?? "stocks",
     symbol: o.symbol,
     side: o.side,
     orderType: o.orderType,
