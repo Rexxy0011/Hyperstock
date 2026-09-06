@@ -10,6 +10,7 @@ import { Holding } from '../models/Holding.js';
 import { Transaction } from '../models/Transaction.js';
 import { invalidateLeaderboard } from './leaderboard.service.js';
 import { findInstrument } from './market.service.js';
+import { liveFeed } from '../market/liveFeed.js';
 
 /**
  * Order execution — the ledger.
@@ -61,14 +62,17 @@ async function resolveTradable(assetClass, symbol) {
         `${symbol} is ${stock.status} and cannot be traded`,
       );
     }
+    const live = liveFeed.priceFor(symbol, 'stocks');
+    const priceCents = live?.priceCents ?? stock.priceCents;
+    const priceUsdCents = live?.priceCents ?? stock.priceUsdCents;
     return {
       symbol: stock.symbol,
       name: stock.name,
       currency: stock.currency,
       sector: stock.sector,
       exchange: stock.exchange,
-      priceCents: stock.priceCents,
-      priceUsdNanos: stock.priceUsdCents * 10_000_000,
+      priceCents,
+      priceUsdNanos: priceUsdCents * 10_000_000,
     };
   }
 
@@ -77,6 +81,12 @@ async function resolveTradable(assetClass, symbol) {
   if (!TRADABLE_STATUS.has(row.status)) {
     throw ApiError.unprocessable('NOT_TRADABLE', `${symbol} cannot be traded`);
   }
+  const live = liveFeed.priceFor(symbol, assetClass);
+  const fillPriceUsdNanos = live
+    ? live.priceCents * 10_000_000
+    : row.priceUsdNanos;
+  const fillPriceCents = live ? live.priceCents : row.priceCents;
+
   return {
     symbol: row.symbol,
     name: row.name,
@@ -87,8 +97,8 @@ async function resolveTradable(assetClass, symbol) {
     exchange: row.exchange,
     // Native display price. For forex this is the rate scaled by 10,000, which
     // is why it is never used for arithmetic — see the note on the field.
-    priceCents: row.priceCents,
-    priceUsdNanos: row.priceUsdNanos,
+    priceCents: fillPriceCents,
+    priceUsdNanos: fillPriceUsdNanos,
   };
 }
 

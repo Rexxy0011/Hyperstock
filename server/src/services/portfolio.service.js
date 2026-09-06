@@ -3,6 +3,7 @@ import { Holding } from "../models/Holding.js";
 import { LedgerEntry, LEDGER_TYPE } from "../models/LedgerEntry.js";
 import { Stock } from "../models/Stock.js";
 import { getInstruments, logoFor } from "./market.service.js";
+import { liveFeed } from "../market/liveFeed.js";
 import { MarketPrice } from "../models/MarketPrice.js";
 import { PortfolioSnapshot } from "../models/PortfolioSnapshot.js";
 import { SEED_CASH_CENTS } from "../config/env.js";
@@ -85,6 +86,9 @@ async function priceHoldings(holdings) {
       .map((h) => h.symbol);
     const stocks = await Stock.find({ symbol: { $in: symbols } }).lean();
     for (const s of stocks) {
+      const live = liveFeed.priceFor(s.symbol, "stocks");
+      const priceCents = live?.priceCents ?? s.priceCents;
+      const priceUsdCents = live?.priceCents ?? s.priceUsdCents;
       out.set(`stocks:${s.symbol}`, {
         name: s.name,
         exchange: s.exchange,
@@ -93,9 +97,9 @@ async function priceHoldings(holdings) {
         // From the same builder `/markets` uses, so a holding cannot show a
         // different mark — or no mark — from the identical row one screen over.
         logoUrl: logoFor(s.symbol),
-        priceCents: s.priceCents,
-        priceUsdCents: s.priceUsdCents,
-        priceUsdNanos: s.priceUsdCents * NANOS_PER_CENT,
+        priceCents,
+        priceUsdCents,
+        priceUsdNanos: priceUsdCents * NANOS_PER_CENT,
         changePct: s.changePct,
       });
     }
@@ -105,6 +109,12 @@ async function priceHoldings(holdings) {
     if (!classes.has(assetClass)) continue;
     const { items } = await getInstruments({ assetClass, limit: 250 });
     for (const r of items) {
+      const live = liveFeed.priceFor(r.symbol, assetClass);
+      const priceCents = live?.priceCents ?? r.priceCents;
+      const priceUsdCents = live?.priceCents ?? r.priceUsdCents;
+      const priceUsdNanos = live
+        ? live.priceCents * NANOS_PER_CENT
+        : r.priceUsdNanos;
       out.set(`${assetClass}:${r.symbol}`, {
         name: r.name,
         exchange: r.exchange,
@@ -114,9 +124,9 @@ async function priceHoldings(holdings) {
         currency: "USD",
         // CoinGecko ships one per coin; forex has none and falls to a monogram.
         logoUrl: r.logoUrl ?? "",
-        priceCents: r.priceCents,
-        priceUsdCents: r.priceUsdCents,
-        priceUsdNanos: r.priceUsdNanos,
+        priceCents,
+        priceUsdCents,
+        priceUsdNanos,
         changePct: r.changePct,
         resolved: true,
       });

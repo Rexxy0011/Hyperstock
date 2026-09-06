@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -158,10 +158,38 @@ export default function Instrument({ assetClass }) {
   const rate = tick?.price ?? data.rate;
   // MATCHED ON THE PAIR, never the symbol alone — the same rule the holding
   // itself is keyed by. `ETH` is a coin here and a plausible ticker elsewhere.
-  const holding =
+  const rawHolding =
     portfolio?.holdings?.find(
       (h) => h.symbol === data.symbol && (h.assetClass ?? 'stocks') === assetClass,
     ) ?? null;
+
+  const holding = useMemo(() => {
+    if (!rawHolding || !tick) return rawHolding;
+    const priceCents = tick.priceCents ?? rawHolding.priceCents;
+    const priceUsdCents = tick.priceCents ?? rawHolding.priceUsdCents;
+    const priceUsdNanos = priceUsdCents * 10_000_000;
+    const marketValueCents = Math.round(
+      (rawHolding.shares * priceUsdNanos) / 10_000_000,
+    );
+    const totalReturnCents = marketValueCents - rawHolding.costBasisCents;
+    const totalReturnPct =
+      rawHolding.costBasisCents > 0
+        ? Math.round(
+            ((marketValueCents - rawHolding.costBasisCents) /
+              rawHolding.costBasisCents) *
+              10000,
+          ) / 100
+        : 0;
+    return {
+      ...rawHolding,
+      priceCents,
+      priceUsdCents,
+      priceUsdNanos,
+      marketValueCents,
+      totalReturnCents,
+      totalReturnPct,
+    };
+  }, [rawHolding, tick]);
   const tradable = data.status === 'Listed';
 
   return (

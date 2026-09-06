@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 import Link from "../components/ui/Link";
@@ -95,11 +95,42 @@ export default function Portfolio() {
     refetchInterval: QUOTE_POLL_MS,
   });
 
+  const { live } = useLivePrices();
+
   // Through the shared hook rather than its own query, so removing something
   // here and removing it from /markets hit the same cache entry.
   const { items: watchlist, remove } = useWatchlist();
 
-  const holdings = portfolio?.holdings ?? [];
+  const rawHoldings = portfolio?.holdings ?? [];
+  const holdings = useMemo(() => {
+    return rawHoldings.map((h) => {
+      const tick = livePrice(live, h.assetClass ?? "stocks", h.symbol);
+      if (!tick) return h;
+      const priceCents = tick.priceCents ?? h.priceCents;
+      const priceUsdCents = tick.priceCents ?? h.priceUsdCents;
+      const priceUsdNanos = priceUsdCents * 10_000_000;
+      const marketValueCents = Math.round(
+        (h.shares * priceUsdNanos) / 10_000_000
+      );
+      const totalReturnCents = marketValueCents - h.costBasisCents;
+      const totalReturnPct =
+        h.costBasisCents > 0
+          ? Math.round(
+              ((marketValueCents - h.costBasisCents) / h.costBasisCents) * 10000
+            ) / 100
+          : 0;
+      return {
+        ...h,
+        priceCents,
+        priceUsdCents,
+        priceUsdNanos,
+        marketValueCents,
+        totalReturnCents,
+        totalReturnPct,
+      };
+    });
+  }, [rawHoldings, live]);
+
   /**
    * Defaults to the largest position until one is picked. Derived rather than
    * synced into state by an effect — `holdings` is a new array every render, so
@@ -111,7 +142,36 @@ export default function Portfolio() {
   const active =
     holdings.find((h) => idOf(h) === selected) ?? holdings[0] ?? null;
 
-  const s = portfolio?.summary;
+  const rawSummary = portfolio?.summary;
+  const s = useMemo(() => {
+    if (!rawSummary) return rawSummary;
+    const holdingsValueCents = holdings.reduce(
+      (sum, p) => sum + p.marketValueCents,
+      0
+    );
+    const portfolioValueCents =
+      (rawSummary.buyingPowerCents ?? 0) + holdingsValueCents;
+    const sumActiveHoldingsPct = holdings.reduce(
+      (sum, p) => sum + (p.totalReturnPct || 0),
+      0
+    );
+    const allTimeReturnPct =
+      holdings.length > 0
+        ? Math.round(sumActiveHoldingsPct * 100) / 100
+        : rawSummary.allTimeReturnPct;
+    const allTimeReturnCents =
+      holdings.length > 0
+        ? Math.round((holdingsValueCents * allTimeReturnPct) / 100)
+        : portfolioValueCents - (rawSummary.investedCents ?? 0);
+
+    return {
+      ...rawSummary,
+      holdingsValueCents,
+      portfolioValueCents,
+      allTimeReturnCents,
+      allTimeReturnPct,
+    };
+  }, [rawSummary, holdings]);
 
   return (
     <div className="flex w-full flex-col gap-5 px-4 pt-1 sm:px-5 lg:px-7 2xl:px-9">

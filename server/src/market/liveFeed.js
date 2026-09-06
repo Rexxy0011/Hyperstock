@@ -73,13 +73,19 @@ class LiveFeed extends EventEmitter {
   }
 
   /**
-   * @param {{symbol: string, assetClass: string}[]} instruments
+   * @param {{symbol: string, assetClass: string, basePrice?: number}[]} instruments
    */
   setSubscriptions(instruments) {
     const next = new Map();
-    for (const { symbol, assetClass } of instruments) {
+    for (const { symbol, assetClass, basePrice } of instruments) {
       if (next.size >= MAX_SYMBOLS) break;
-      next.set(streamSymbolFor(symbol, assetClass), { symbol, assetClass });
+      const stream = streamSymbolFor(symbol, assetClass);
+      const prev = this.subscriptions.get(stream);
+      next.set(stream, {
+        symbol,
+        assetClass,
+        basePrice: basePrice ?? prev?.basePrice,
+      });
     }
 
     // Diff rather than resubscribe wholesale: an unsubscribe/subscribe cycle
@@ -92,6 +98,14 @@ class LiveFeed extends EventEmitter {
     }
 
     this.subscriptions = next;
+  }
+
+  setBasePrice(symbol, assetClass, basePrice) {
+    const stream = streamSymbolFor(symbol, assetClass);
+    const sub = this.subscriptions.get(stream);
+    if (sub && Number.isFinite(basePrice) && basePrice > 0) {
+      sub.basePrice = basePrice;
+    }
   }
 
   #send(type, symbol) {
@@ -156,25 +170,39 @@ class LiveFeed extends EventEmitter {
       if (msg.type !== 'trade' || !Array.isArray(msg.data)) return;
 
       const batch = [];
+      const mult = env.MARKET_VOLATILITY_MULTIPLIER ?? 1;
+
       for (const t of msg.data) {
         const sub = this.subscriptions.get(t.s);
         if (!sub || !Number.isFinite(t.p) || t.p <= 0) continue;
+
+        if (!sub.basePrice || sub.basePrice <= 0) {
+          sub.basePrice = t.p;
+        }
+
+        let amplifiedPrice = t.p;
+        if (mult !== 1 && sub.basePrice > 0) {
+          amplifiedPrice = Math.max(
+            0.00000001,
+            sub.basePrice + (t.p - sub.basePrice) * mult
+          );
+        }
 
         // The raw price is carried alongside the cents figure because forex is
         // not money in the cents sense — USDJPY at 159.1825 rounds to 15918
         // cents and loses the two decimals the pair actually moves in. The
         // client reads `price` for FX and `priceCents` for everything else.
-        const priceCents = Math.round(t.p * 100);
+        const priceCents = Math.round(amplifiedPrice * 100);
         const prev = this.prices.get(t.s);
         // Trades print at the same price constantly; only a CHANGE is worth
         // waking every connected browser for. FX is compared on the raw value
         // for the same reason — at cent resolution most FX ticks look equal.
-        if (sub.assetClass === 'forex' ? prev?.price === t.p : prev?.priceCents === priceCents) {
+        if (sub.assetClass === 'forex' ? prev?.price === amplifiedPrice : prev?.priceCents === priceCents) {
           continue;
         }
 
-        this.prices.set(t.s, { price: t.p, priceCents, at: t.t });
-        batch.push({ ...sub, price: t.p, priceCents, at: t.t });
+        this.prices.set(t.s, { price: amplifiedPrice, priceCents, at: t.t });
+        batch.push({ ...sub, price: amplifiedPrice, priceCents, at: t.t });
       }
 
       if (batch.length) {

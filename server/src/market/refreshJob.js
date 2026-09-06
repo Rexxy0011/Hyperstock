@@ -257,9 +257,23 @@ export async function syncLiveSubscriptions() {
   }
 
   liveFeed.setSubscriptions([
-    ...us.map((s) => ({ symbol: s.symbol, assetClass: "stocks" })),
-    ...forex,
-    ...crypto,
+    ...us.map((s) => ({
+      symbol: s.symbol,
+      assetClass: "stocks",
+      basePrice:
+        (s.previousCloseCents > 0 ? s.previousCloseCents : s.priceUsdCents) /
+        100,
+    })),
+    ...forex.map((f) => ({
+      symbol: f.symbol,
+      assetClass: "forex",
+      basePrice: f.basePrice ?? f.rate,
+    })),
+    ...crypto.map((c) => ({
+      symbol: c.symbol,
+      assetClass: "crypto",
+      basePrice: c.basePrice ?? c.priceUsdCents / 100,
+    })),
   ]);
 }
 
@@ -318,70 +332,8 @@ export function tickFlushOps(now) {
         update: [
           {
             $set: {
-              priceCents: {
-                $cond: [
-                  { $gt: ["$previousCloseCents", 0] },
-                  {
-                    $max: [
-                      1,
-                      {
-                        $round: [
-                          {
-                            $add: [
-                              "$previousCloseCents",
-                              {
-                                $multiply: [
-                                  {
-                                    $subtract: [
-                                      tick.priceCents,
-                                      "$previousCloseCents",
-                                    ],
-                                  },
-                                  env.MARKET_VOLATILITY_MULTIPLIER ?? 1,
-                                ],
-                              },
-                            ],
-                          },
-                          0,
-                        ],
-                      },
-                    ],
-                  },
-                  tick.priceCents,
-                ],
-              },
-              priceUsdCents: {
-                $cond: [
-                  { $gt: ["$previousCloseCents", 0] },
-                  {
-                    $max: [
-                      1,
-                      {
-                        $round: [
-                          {
-                            $add: [
-                              "$previousCloseCents",
-                              {
-                                $multiply: [
-                                  {
-                                    $subtract: [
-                                      tick.priceCents,
-                                      "$previousCloseCents",
-                                    ],
-                                  },
-                                  env.MARKET_VOLATILITY_MULTIPLIER ?? 1,
-                                ],
-                              },
-                            ],
-                          },
-                          0,
-                        ],
-                      },
-                    ],
-                  },
-                  tick.priceCents,
-                ],
-              },
+              priceCents: tick.priceCents,
+              priceUsdCents: tick.priceCents,
               // THE PRICE AND ITS PERCENTAGE MUST DESCRIBE EACH OTHER.
               changePct: {
                 $cond: [
@@ -391,14 +343,9 @@ export function tickFlushOps(now) {
                       {
                         $divide: [
                           {
-                            $multiply: [
-                              {
-                                $subtract: [
-                                  tick.priceCents,
-                                  "$previousCloseCents",
-                                ],
-                              },
-                              env.MARKET_VOLATILITY_MULTIPLIER ?? 1,
+                            $subtract: [
+                              tick.priceCents,
+                              "$previousCloseCents",
                             ],
                           },
                           "$previousCloseCents",

@@ -76,10 +76,13 @@ export async function fetchRows() {
         const rawChange = Number(c.price_change_percentage_24h ?? 0);
         let displayPrice = c.current_price;
         let changePct = rawChange;
+        const basePrice =
+          Number.isFinite(rawChange) && c.current_price > 0
+            ? c.current_price / (1 + rawChange / 100)
+            : c.current_price;
 
         if (mult !== 1 && Number.isFinite(rawChange)) {
           changePct = Number((rawChange * mult).toFixed(2));
-          const basePrice = c.current_price / (1 + rawChange / 100);
           if (basePrice > 0) {
             displayPrice = Math.max(
               0.00000001,
@@ -96,6 +99,7 @@ export async function fetchRows() {
           exchange: "Crypto",
           currency: "USD",
           logoUrl: String(c.image ?? ""),
+          basePrice: basePrice > 0 ? basePrice : displayPrice,
           priceCents: toCents(displayPrice),
           priceUsdCents: toCents(displayPrice),
           priceUsdNanos: toNanos(displayPrice),
