@@ -17,6 +17,7 @@ import { WELCOME, withWelcome } from "../components/auth/WelcomeNotice";
 import PasswordStrengthMeter from "../components/auth/PasswordStrengthMeter";
 import { ADMIN_HOME } from "../components/nav/navItems";
 import notify from "../lib/toast";
+import { errorMessage } from "../lib/apiError";
 import { generateStrongPassword, isStrongPassword } from "../lib/password";
 
 /**
@@ -1097,7 +1098,12 @@ export default function Auth() {
     setForm((f) => ({ ...f, password: pwd }));
     try {
       await navigator.clipboard.writeText(pwd);
-      notify.success(t("auth.passwordCopied", "Strong password generated and copied to clipboard!"));
+      notify.success(
+        t(
+          "auth.passwordCopied",
+          "Strong password generated and copied to clipboard!"
+        )
+      );
     } catch {
       notify.success(t("auth.passwordGenerated", "Strong password generated!"));
     }
@@ -1116,8 +1122,19 @@ export default function Auth() {
   const next = explicitNext || "/";
 
   const field = (name) => ({
+    name,
     value: form[name],
-    onChange: (e) => setForm((f) => ({ ...f, [name]: e.target.value })),
+    onChange: (e) => {
+      const val = e.target.value;
+      setForm((f) => {
+        const nextForm = { ...f, [name]: val };
+        if (!isSignup && name === "username" && !nextForm.email) {
+          nextForm.email = val;
+        }
+        return nextForm;
+      });
+      if (error) setError(null);
+    },
   });
 
   /**
@@ -1244,7 +1261,8 @@ export default function Auth() {
         setWelcomeKind(WELCOME.signUp);
       } else {
         setWelcomeKind(WELCOME.signIn);
-        await login({ email: form.email, password: form.password });
+        const identifier = (form.email || form.username || "").trim();
+        await login({ email: identifier, password: form.password });
       }
     } catch (err) {
       setWelcomeKind(null);
@@ -1257,7 +1275,7 @@ export default function Auth() {
 
       if (isUnverified) {
         try {
-          await requestCode({ email: form.email, purpose: "verify-email" });
+          await requestCode({ email: form.email || form.username, purpose: "verify-email" });
         } catch {
           // ignore resend error
         }
@@ -1291,38 +1309,7 @@ export default function Auth() {
 
         setError(err.message ?? "Something went wrong. Try again.");
       } else {
-        const typed = String(form.email || "").trim();
-        const isEmail = typed.includes("@");
-        const defaultMsg = isEmail
-          ? "Invalid email or password"
-          : "Invalid username or password";
-
-        // Check if the user exists in our database
-        let exists = false;
-        try {
-          const lookup = await get(
-            isEmail
-              ? `/auth-lookup?email=${encodeURIComponent(typed)}`
-              : `/auth-lookup?username=${encodeURIComponent(typed)}`
-          );
-          exists = Boolean(lookup?.exists);
-        } catch {
-          exists = true;
-        }
-
-        if (!exists) {
-          setMode(SIGNUP);
-          setForm((f) => ({
-            ...f,
-            email: isEmail ? typed : "",
-            username: !isEmail ? typed : "",
-            password: "",
-          }));
-          setError(defaultMsg);
-          return;
-        }
-
-        setError(defaultMsg);
+        setError(errorMessage(err, t("errors.INVALID_EMAIL_OR_PASSWORD")));
       }
     } finally {
       setBusy(false);
@@ -1456,7 +1443,7 @@ export default function Auth() {
                     <Input
                       label={t("auth.username")}
                       placeholder={t("auth.usernamePlaceholder")}
-                      autoComplete="username"
+                      autoComplete={isSignup ? "username" : "off"}
                       icon={<FiUser size={16} />}
                       required={isSignup}
                       disabled={!isSignup}
@@ -1506,7 +1493,10 @@ export default function Auth() {
                         className="inline-flex cursor-pointer items-center gap-1.5 text-xs font-medium text-gain hover:underline"
                       >
                         <FiKey size={13} aria-hidden="true" />
-                        {t("auth.suggestStrongPassword", "Suggest strong password")}
+                        {t(
+                          "auth.suggestStrongPassword",
+                          "Suggest strong password"
+                        )}
                       </button>
                     )}
                   </div>
