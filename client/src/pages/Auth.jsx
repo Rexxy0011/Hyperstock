@@ -1275,7 +1275,10 @@ export default function Auth() {
 
       if (isUnverified) {
         try {
-          await requestCode({ email: form.email || form.username, purpose: "verify-email" });
+          await requestCode({
+            email: form.email || form.username,
+            purpose: "verify-email",
+          });
         } catch {
           // ignore resend error
         }

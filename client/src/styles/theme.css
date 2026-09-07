@@ -103,10 +103,11 @@
      heading silently falls through to the system face. Matching is per
      character, so English still renders in Poppins throughout. */
   --font-display:
-    'Poppins', 'Montserrat', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue',
-    Arial, sans-serif;
+    "Poppins", "Montserrat", system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
   --font-body:
-    system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+    sans-serif;
 
   /* ------------------------------------------------------------- figures
      EVERY NUMBER IN THE PRODUCT, and it is NOT the mono face.
@@ -129,10 +130,12 @@
      want per-character distinction and none of them are figures. The rule at a
      call site is simply whether the thing is a number. */
   --font-numeric:
-    system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  --font-numeric--font-feature-settings: 'tnum';
+    system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+    sans-serif;
+  --font-numeric--font-feature-settings: "tnum";
 
-  --font-mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --font-mono:
+    "Geist Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 
   --text-*: initial;
   /* The micro step: badge text, table column heads, avatar monograms.
@@ -168,9 +171,11 @@
   --radius-3xl: 28px;
 
   --shadow-*: initial;
-  --shadow-card: 0 1px 3px rgba(12, 18, 16, 0.06), 0 1px 2px rgba(12, 18, 16, 0.04);
+  --shadow-card:
+    0 1px 3px rgba(12, 18, 16, 0.06), 0 1px 2px rgba(12, 18, 16, 0.04);
   /* The large soft lift that floats the dashboard panel off the canvas. */
-  --shadow-panel: 0 24px 60px -20px rgba(16, 20, 24, 0.16), 0 4px 16px rgba(16, 20, 24, 0.04);
+  --shadow-panel:
+    0 24px 60px -20px rgba(16, 20, 24, 0.16), 0 4px 16px rgba(16, 20, 24, 0.04);
 
   /* ------------------------------------------------------------- motion
      The ticker tape's continuous scroll. It shifts exactly -50%, which is one
@@ -297,6 +302,26 @@
 
   html[data-navigating] {
     scroll-behavior: auto;
+  }
+
+  /**
+   * GLOBAL VIEWPORT OVERFLOW CLAMPING.
+   *
+   * Mobile browsers allow horizontal panning whenever any element (wide table,
+   * hero graphic, or unconstrained ticker) exceeds screen width. Clamping `html`
+   * and `body` to `100vw` with `overflow-x: hidden` prevents wide components from
+   * stretching the document viewport.
+   *
+   * `overflow-x: clip` follows `overflow-x: hidden` as a progressive enhancement:
+   * unlike `hidden`, `clip` does not establish an independent scroll container on
+   * the body, guaranteeing that `position: sticky` on the navigation bar continues
+   * to work cleanly without scroll container traps.
+   */
+  html,
+  body {
+    max-width: 100vw;
+    overflow-x: hidden;
+    overflow-x: clip;
   }
 
   /**
