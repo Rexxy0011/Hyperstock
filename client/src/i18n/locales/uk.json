@@ -319,7 +319,8 @@
     "TOO_MANY_ATTEMPTS": "Забагато невдалих спроб. Запросіть новий код.",
     "INVALID_EMAIL_OR_PASSWORD": "Неправильна пошта або пароль.",
     "USER_NOT_FOUND": "Такого облікового запису немає.",
-    "PROVIDER_NOT_FOUND": "Цей спосіб входу зараз недоступний."
+    "PROVIDER_NOT_FOUND": "Цей спосіб входу зараз недоступний.",
+    "PASSWORD_TOO_WEAK": "Пароль повинен містити щонайменше 8 символів і включати великі літери, цифри та символи."
   },
   "auth": {
     "signIn": "Увійти",
@@ -332,6 +333,15 @@
     "username": "Ім'я користувача",
     "email": "Електронна пошта",
     "password": "Пароль",
+    "suggestStrongPassword": "Запропонувати надійний пароль",
+    "passwordStrength": "Надійність пароля:",
+    "passwordTip": "Порада: використовуйте від 8 символів з великими літерами, цифрами та символами.",
+    "passwordCopied": "Надійний пароль згенеровано та скопійовано в буфер обміну!",
+    "passwordGenerated": "Надійний пароль згенеровано!",
+    "strengthWeak": "Слабкий",
+    "strengthFair": "Середній",
+    "strengthGood": "Добре",
+    "strengthStrong": "Надійний",
     "usernamePlaceholder": "напр. quietcompounder",
     "emailPlaceholder": "you@example.com",
     "forgot": "Забули пароль?",

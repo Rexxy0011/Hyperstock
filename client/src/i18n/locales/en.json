@@ -315,7 +315,8 @@
     "TOO_MANY_ATTEMPTS": "Too many wrong codes. Ask for a new one.",
     "INVALID_EMAIL_OR_PASSWORD": "Email or password is incorrect.",
     "USER_NOT_FOUND": "No account matches that.",
-    "PROVIDER_NOT_FOUND": "That sign-in method is not available right now."
+    "PROVIDER_NOT_FOUND": "That sign-in method is not available right now.",
+    "PASSWORD_TOO_WEAK": "Password must be at least 8 characters and include uppercase, numbers, and symbols."
   },
   "auth": {
     "signIn": "Sign in",
@@ -328,6 +329,15 @@
     "username": "Username",
     "email": "Email",
     "password": "Password",
+    "suggestStrongPassword": "Suggest strong password",
+    "passwordStrength": "Password strength:",
+    "passwordTip": "Tip: Use 8+ characters with uppercase, numbers, and symbols.",
+    "passwordCopied": "Strong password generated and copied to clipboard!",
+    "passwordGenerated": "Strong password generated!",
+    "strengthWeak": "Weak",
+    "strengthFair": "Fair",
+    "strengthGood": "Good",
+    "strengthStrong": "Strong",
     "usernamePlaceholder": "e.g. quietcompounder",
     "emailPlaceholder": "you@example.com",
     "forgot": "Forgot password?",

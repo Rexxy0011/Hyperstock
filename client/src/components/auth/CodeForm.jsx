@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FiLock, FiMail } from 'react-icons/fi';
+import { FiKey, FiLock, FiMail } from 'react-icons/fi';
 import { useAuth } from '../../auth/AuthProvider';
 import { errorMessage } from '../../lib/apiError';
+import notify from '../../lib/toast';
+import { generateStrongPassword, isStrongPassword } from '../../lib/password';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
+import PasswordStrengthMeter from './PasswordStrengthMeter';
 
 /**
  * The one-time-code flow, for signing in and for resetting a password.
@@ -125,9 +128,27 @@ export default function CodeForm({
     }
   };
 
+  const handleSuggestPassword = async () => {
+    const pwd = generateStrongPassword();
+    setPassword(pwd);
+    setError(null);
+    try {
+      await navigator.clipboard.writeText(pwd);
+      notify.success(t('auth.passwordCopied', 'Strong password generated and copied to clipboard!'));
+    } catch {
+      notify.success(t('auth.passwordGenerated', 'Strong password generated!'));
+    }
+  };
+
   const verify = async (e) => {
     e.preventDefault();
     setError(null);
+    if (isReset) {
+      if (!isStrongPassword(password)) {
+        setError(t('errors.PASSWORD_TOO_WEAK'));
+        return;
+      }
+    }
     setBusy(true);
     try {
       if (isReset) {
@@ -231,17 +252,36 @@ export default function CodeForm({
               the user will have to type again later, and a typo here locks them
               out of the account they are in the middle of recovering. */}
           {isReset && (
-            <Input
-              label={t('auth.code.newPassword')}
-              type="password"
-              required
-              minLength={8}
-              icon={<FiLock size={16} />}
-              revealable
-              autoComplete="new-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-text-body">
+                  {t('auth.code.newPassword')}
+                </label>
+                <button
+                  type="button"
+                  onClick={handleSuggestPassword}
+                  className="inline-flex cursor-pointer items-center gap-1.5 text-xs font-medium text-gain hover:underline"
+                >
+                  <FiKey size={13} aria-hidden="true" />
+                  {t('auth.suggestStrongPassword', 'Suggest strong password')}
+                </button>
+              </div>
+              <Input
+                type="password"
+                required
+                minLength={8}
+                icon={<FiLock size={16} />}
+                revealable
+                autoComplete="new-password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (error) setError(null);
+                }}
+              />
+              <PasswordStrengthMeter password={password} />
+            </div>
           )}
 
           {error && <ErrorNote>{error}</ErrorNote>}

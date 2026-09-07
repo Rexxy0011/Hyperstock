@@ -315,7 +315,8 @@
     "TOO_MANY_ATTEMPTS": "Demasiados códigos incorrectos. Pide uno nuevo.",
     "INVALID_EMAIL_OR_PASSWORD": "El correo o la contraseña no son correctos.",
     "USER_NOT_FOUND": "Ninguna cuenta coincide con eso.",
-    "PROVIDER_NOT_FOUND": "Ese método de inicio de sesión no está disponible ahora mismo."
+    "PROVIDER_NOT_FOUND": "Ese método de inicio de sesión no está disponible ahora mismo.",
+    "PASSWORD_TOO_WEAK": "La contraseña debe tener al menos 8 caracteres e incluir mayúsculas, números y símbolos."
   },
   "auth": {
     "signIn": "Iniciar sesión",
@@ -328,6 +329,15 @@
     "username": "Nombre de usuario",
     "email": "Correo electrónico",
     "password": "Contraseña",
+    "suggestStrongPassword": "Sugerir contraseña segura",
+    "passwordStrength": "Seguridad de la contraseña:",
+    "passwordTip": "Consejo: Usa 8+ caracteres con mayúsculas, números y símbolos.",
+    "passwordCopied": "¡Contraseña segura generada y copiada al portapapeles!",
+    "passwordGenerated": "¡Contraseña segura generada!",
+    "strengthWeak": "Débil",
+    "strengthFair": "Aceptable",
+    "strengthGood": "Bueno",
+    "strengthStrong": "Fuerte",
     "usernamePlaceholder": "p. ej. inversortranquilo",
     "emailPlaceholder": "tu@ejemplo.com",
     "forgot": "¿Has olvidado la contraseña?",

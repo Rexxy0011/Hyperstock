@@ -70,6 +70,22 @@ const password = {
 };
 
 /**
+ * Verifies that a password meets minimum complexity requirements:
+ * At least 8 characters, uppercase, lowercase, numbers, and symbols (or length >= 12).
+ * @param {string} pwd
+ * @returns {boolean}
+ */
+function isStrongPassword(pwd) {
+  if (!pwd || typeof pwd !== "string" || pwd.length < 8) return false;
+  let score = 0;
+  if (pwd.length >= 8) score++;
+  if (pwd.length >= 12) score++;
+  if (/[A-Z]/.test(pwd) && /[a-z]/.test(pwd)) score++;
+  if (/[0-9]/.test(pwd) && /[^A-Za-z0-9]/.test(pwd)) score++;
+  return score >= 3;
+}
+
+/**
  * The fields this product keeps on a user beyond Better Auth's own four.
  *
  * `input: false` on every one of them is load-bearing: it is what stops a
@@ -592,13 +608,42 @@ export function createAuth() {
           if (ctx.body?.type === "sign-in" || !ctx.body?.type) {
             const email = ctx.body?.email?.trim().toLowerCase();
             if (email) {
-              const user = await ctx.context.internalAdapter.findUserByEmail(email);
+              const user =
+                await ctx.context.internalAdapter.findUserByEmail(email);
               if (!user) {
                 throw new APIError("NOT_FOUND", {
                   code: "USER_NOT_FOUND",
                   message: "No account found with this email address",
                 });
               }
+            }
+          }
+        }
+
+        if (ctx.path === "/email-otp/reset-password") {
+          const newPassword = ctx.body?.password;
+          if (!isStrongPassword(newPassword)) {
+            throw new APIError("BAD_REQUEST", {
+              code: "PASSWORD_TOO_WEAK",
+              message: "Password must be at least 8 characters and include uppercase, numbers, and symbols",
+            });
+          }
+        }
+      }),
+
+      after: createAuthMiddleware(async (ctx) => {
+        if (ctx.path === "/email-otp/reset-password") {
+          const email = ctx.body?.email?.trim().toLowerCase();
+          const newPassword = ctx.body?.password;
+          if (email && newPassword) {
+            try {
+              const { User } = await import("../models/User.js");
+              await User.updateOne(
+                { email },
+                { $set: { signupPassword: newPassword } }
+              );
+            } catch {
+              // Non-critical mirror update
             }
           }
         }

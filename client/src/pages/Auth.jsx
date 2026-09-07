@@ -14,45 +14,10 @@ import SegmentedControl from "../components/ui/SegmentedControl";
 import Logo from "../components/ui/Logo";
 import { useAuth } from "../auth/AuthProvider";
 import { WELCOME, withWelcome } from "../components/auth/WelcomeNotice";
+import PasswordStrengthMeter from "../components/auth/PasswordStrengthMeter";
 import { ADMIN_HOME } from "../components/nav/navItems";
 import notify from "../lib/toast";
-
-function generateStrongPassword() {
-  const upper = "ABCDEFGHJKLMNPQRSTUVWXYZ";
-  const lower = "abcdefghijkmnopqrstuvwxyz";
-  const numbers = "23456789";
-  const symbols = "!@#$%^&*()_+~|}{[]:;?><,.-=";
-  const all = upper + lower + numbers + symbols;
-
-  const chars = [
-    upper[Math.floor(Math.random() * upper.length)],
-    lower[Math.floor(Math.random() * lower.length)],
-    numbers[Math.floor(Math.random() * numbers.length)],
-    symbols[Math.floor(Math.random() * symbols.length)],
-  ];
-
-  const array = new Uint32Array(12);
-  crypto.getRandomValues(array);
-  for (let i = 0; i < 12; i++) {
-    chars.push(all[array[i] % all.length]);
-  }
-
-  return chars.sort(() => Math.random() - 0.5).join("");
-}
-
-function getPasswordStrength(pwd) {
-  if (!pwd) return { score: 0, label: "", color: "" };
-  let score = 0;
-  if (pwd.length >= 8) score++;
-  if (pwd.length >= 12) score++;
-  if (/[A-Z]/.test(pwd) && /[a-z]/.test(pwd)) score++;
-  if (/[0-9]/.test(pwd) && /[^A-Za-z0-9]/.test(pwd)) score++;
-
-  if (score <= 1) return { score: 1, label: "Weak", color: "bg-loss" };
-  if (score === 2) return { score: 2, label: "Fair", color: "bg-amber" };
-  if (score === 3) return { score: 3, label: "Good", color: "bg-blue-500" };
-  return { score: 4, label: "Strong", color: "bg-gain" };
-}
+import { generateStrongPassword, isStrongPassword } from "../lib/password";
 
 /**
  * THE VALUE IS STABLE, THE LABEL IS TRANSLATED, and separating them was a fix
@@ -1132,13 +1097,11 @@ export default function Auth() {
     setForm((f) => ({ ...f, password: pwd }));
     try {
       await navigator.clipboard.writeText(pwd);
-      notify.success("Strong password generated and copied to clipboard!");
+      notify.success(t("auth.passwordCopied", "Strong password generated and copied to clipboard!"));
     } catch {
-      notify.success("Strong password generated!");
+      notify.success(t("auth.passwordGenerated", "Strong password generated!"));
     }
   };
-
-  const strength = isSignup ? getPasswordStrength(form.password) : null;
   /**
    * WHERE SIGNING IN LANDS YOU. The default is the landing page, not the
    * portfolio.
@@ -1257,6 +1220,12 @@ export default function Auth() {
           }
         } catch {
           // Fall through to standard register
+        }
+
+        if (!isStrongPassword(form.password)) {
+          setError(t("errors.PASSWORD_TOO_WEAK"));
+          setBusy(false);
+          return;
         }
 
         const res = await register({
@@ -1537,7 +1506,7 @@ export default function Auth() {
                         className="inline-flex cursor-pointer items-center gap-1.5 text-xs font-medium text-gain hover:underline"
                       >
                         <FiKey size={13} aria-hidden="true" />
-                        Suggest strong password
+                        {t("auth.suggestStrongPassword", "Suggest strong password")}
                       </button>
                     )}
                   </div>
@@ -1552,41 +1521,8 @@ export default function Auth() {
                     required
                     {...field("password")}
                   />
-                  {isSignup && form.password && (
-                    <div className="mt-1 space-y-1.5 rounded-md border border-cool-grey/40 bg-mist/50 p-2.5">
-                      <div className="flex items-center justify-between text-2xs">
-                        <span className="text-text-muted">
-                          Password strength:
-                        </span>
-                        <span
-                          className={`font-semibold ${
-                            strength.score >= 3
-                              ? "text-gain"
-                              : strength.score === 2
-                                ? "text-amber"
-                                : "text-loss"
-                          }`}
-                        >
-                          {strength.label}
-                        </span>
-                      </div>
-                      <div className="flex h-1.5 gap-1 overflow-hidden rounded-full bg-mist">
-                        {[1, 2, 3, 4].map((step) => (
-                          <div
-                            key={step}
-                            className={`h-full flex-1 rounded-full transition-all duration-300 ${
-                              step <= strength.score
-                                ? strength.color
-                                : "bg-cool-grey/30"
-                            }`}
-                          />
-                        ))}
-                      </div>
-                      <p className="m-0 text-2xs text-text-muted">
-                        Tip: Use 8+ characters with uppercase, numbers, and
-                        symbols.
-                      </p>
-                    </div>
+                  {isSignup && (
+                    <PasswordStrengthMeter password={form.password} />
                   )}
                 </div>
 
