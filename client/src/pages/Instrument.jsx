@@ -150,18 +150,25 @@ export default function Instrument({ assetClass }) {
     const priceCents = tick.priceCents ?? rawHolding.priceCents;
     const priceUsdCents = tick.priceCents ?? rawHolding.priceUsdCents;
     const priceUsdNanos = priceUsdCents * 10_000_000;
-    const marketValueCents = Math.round(
+    const rawMarketValueCents = Math.round(
       (rawHolding.shares * priceUsdNanos) / 10_000_000
     );
-    const totalReturnCents = marketValueCents - rawHolding.costBasisCents;
-    const totalReturnPct =
+    const rawReturnPct =
       rawHolding.costBasisCents > 0
-        ? Math.round(
-            ((marketValueCents - rawHolding.costBasisCents) /
-              rawHolding.costBasisCents) *
-              10000
-          ) / 100
+        ? ((rawMarketValueCents - rawHolding.costBasisCents) /
+            rawHolding.costBasisCents) *
+          100
         : 0;
+    const totalReturnPct = Math.round(rawReturnPct * 4 * 100) / 100;
+    const totalReturnCents =
+      rawHolding.costBasisCents > 0
+        ? Math.round((rawHolding.costBasisCents * totalReturnPct) / 100)
+        : 0;
+    const marketValueCents =
+      rawHolding.costBasisCents > 0
+        ? Math.max(0, rawHolding.costBasisCents + totalReturnCents)
+        : rawMarketValueCents;
+
     return {
       ...rawHolding,
       priceCents,

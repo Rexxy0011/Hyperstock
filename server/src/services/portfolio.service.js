@@ -6,7 +6,7 @@ import { getInstruments, logoFor } from "./market.service.js";
 import { liveFeed } from "../market/liveFeed.js";
 import { MarketPrice } from "../models/MarketPrice.js";
 import { PortfolioSnapshot } from "../models/PortfolioSnapshot.js";
-import { SEED_CASH_CENTS } from "../config/env.js";
+import { env, SEED_CASH_CENTS } from "../config/env.js";
 import {
   avgCostCents,
   costCents,
@@ -238,8 +238,24 @@ export async function getPortfolio(userId, cashBalanceCents) {
       // NANOS, not cents — a coin quoting under a cent would value an entire
       // position at zero if this multiplied the rounded figure. `costCents`
       // rounds once, at the end, exactly as a fill does.
-      const marketValueCents = costCents(h.shares, ref.priceUsdNanos);
+      const rawMarketValueCents = costCents(h.shares, ref.priceUsdNanos);
       const avgCost = avgCostCents(h.costBasisCents, h.shares);
+
+      const rawReturnPct =
+        h.costBasisCents > 0
+          ? ((rawMarketValueCents - h.costBasisCents) / h.costBasisCents) * 100
+          : 0;
+
+      const mult = env.MARKET_VOLATILITY_MULTIPLIER ?? 1;
+      const totalReturnPct = round2(rawReturnPct * mult);
+      const totalReturnCents =
+        h.costBasisCents > 0
+          ? Math.round((h.costBasisCents * totalReturnPct) / 100)
+          : 0;
+      const marketValueCents =
+        h.costBasisCents > 0
+          ? Math.max(0, h.costBasisCents + totalReturnCents)
+          : rawMarketValueCents;
 
       return {
         assetClass,
@@ -260,13 +276,8 @@ export async function getPortfolio(userId, cashBalanceCents) {
         // basis rather than a live quote — the screen labels it.
         resolved: ref.resolved !== false,
         marketValueCents,
-        totalReturnCents: marketValueCents - h.costBasisCents,
-        totalReturnPct:
-          h.costBasisCents > 0
-            ? round2(
-                ((marketValueCents - h.costBasisCents) / h.costBasisCents) * 100
-              )
-            : 0,
+        totalReturnCents,
+        totalReturnPct,
       };
     })
     .sort((a, b) => b.marketValueCents - a.marketValueCents);
@@ -339,7 +350,7 @@ export async function getPortfolio(userId, cashBalanceCents) {
         : 0;
   const allTimeReturnCents =
     positions.length > 0
-      ? Math.round((holdingsValueCents * allTimeReturnPct) / 100)
+      ? holdingsReturnCents
       : portfolioValueCents - investedCents;
 
   return {

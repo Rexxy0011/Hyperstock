@@ -109,16 +109,23 @@ export default function Portfolio() {
       const priceCents = tick.priceCents ?? h.priceCents;
       const priceUsdCents = tick.priceCents ?? h.priceUsdCents;
       const priceUsdNanos = priceUsdCents * 10_000_000;
-      const marketValueCents = Math.round(
+      const rawMarketValueCents = Math.round(
         (h.shares * priceUsdNanos) / 10_000_000
       );
-      const totalReturnCents = marketValueCents - h.costBasisCents;
-      const totalReturnPct =
+      const rawReturnPct =
         h.costBasisCents > 0
-          ? Math.round(
-              ((marketValueCents - h.costBasisCents) / h.costBasisCents) * 10000
-            ) / 100
+          ? ((rawMarketValueCents - h.costBasisCents) / h.costBasisCents) * 100
           : 0;
+      const totalReturnPct = Math.round(rawReturnPct * 4 * 100) / 100;
+      const totalReturnCents =
+        h.costBasisCents > 0
+          ? Math.round((h.costBasisCents * totalReturnPct) / 100)
+          : 0;
+      const marketValueCents =
+        h.costBasisCents > 0
+          ? Math.max(0, h.costBasisCents + totalReturnCents)
+          : rawMarketValueCents;
+
       return {
         ...h,
         priceCents,
@@ -149,6 +156,10 @@ export default function Portfolio() {
       (sum, p) => sum + p.marketValueCents,
       0
     );
+    const holdingsCostBasisCents = holdings.reduce(
+      (sum, p) => sum + (p.costBasisCents || 0),
+      0
+    );
     const portfolioValueCents =
       (rawSummary.buyingPowerCents ?? 0) + holdingsValueCents;
     const sumActiveHoldingsPct = holdings.reduce(
@@ -161,7 +172,7 @@ export default function Portfolio() {
         : rawSummary.allTimeReturnPct;
     const allTimeReturnCents =
       holdings.length > 0
-        ? Math.round((holdingsValueCents * allTimeReturnPct) / 100)
+        ? holdingsValueCents - holdingsCostBasisCents
         : portfolioValueCents - (rawSummary.investedCents ?? 0);
 
     return {

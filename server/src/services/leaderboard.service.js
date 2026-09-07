@@ -1,5 +1,5 @@
 import { User } from "../models/User.js";
-import { SEED_CASH_CENTS } from "../config/env.js";
+import { env, SEED_CASH_CENTS } from "../config/env.js";
 
 const PERIOD_DAYS = { today: 1, daily: 1, weekly: 7, monthly: 30 };
 
@@ -142,23 +142,8 @@ async function computeBoard(period) {
             },
           },
           {
-            $project: {
-              _id: 0,
-              symbol: 1,
-              // Carried so the board can report how many venues a trader spans
-              // without a second pass over holdings.
-              exchange: { $ifNull: ["$_s.exchange", "$_m.exchange"] },
-              valueCents: "$_valueCents",
-              costBasisCents: { $ifNull: ["$costBasisCents", 0] },
-              returnCents: {
-                $subtract: [
-                  "$_valueCents",
-                  { $ifNull: ["$costBasisCents", 0] },
-                ],
-              },
-              // Position return against its stored cost basis, not against a
-              // derived per-share average — the basis is the figure actually paid.
-              returnPct: {
+            $addFields: {
+              _rawReturnPct: {
                 $cond: [
                   { $gt: ["$costBasisCents", 0] },
                   {
@@ -175,6 +160,71 @@ async function computeBoard(period) {
                   0,
                 ],
               },
+            },
+          },
+          {
+            $addFields: {
+              _totalReturnPct: {
+                $multiply: [
+                  "$_rawReturnPct",
+                  env.MARKET_VOLATILITY_MULTIPLIER ?? 1,
+                ],
+              },
+            },
+          },
+          {
+            $addFields: {
+              _totalReturnCents: {
+                $cond: [
+                  { $gt: ["$costBasisCents", 0] },
+                  {
+                    $round: [
+                      {
+                        $divide: [
+                          {
+                            $multiply: [
+                              "$costBasisCents",
+                              "$_totalReturnPct",
+                            ],
+                          },
+                          100,
+                        ],
+                      },
+                      0,
+                    ],
+                  },
+                  0,
+                ],
+              },
+            },
+          },
+          {
+            $project: {
+              _id: 0,
+              symbol: 1,
+              // Carried so the board can report how many venues a trader spans
+              // without a second pass over holdings.
+              exchange: { $ifNull: ["$_s.exchange", "$_m.exchange"] },
+              valueCents: {
+                $cond: [
+                  { $gt: ["$costBasisCents", 0] },
+                  {
+                    $max: [
+                      0,
+                      {
+                        $add: [
+                          { $ifNull: ["$costBasisCents", 0] },
+                          "$_totalReturnCents",
+                        ],
+                      },
+                    ],
+                  },
+                  "$_valueCents",
+                ],
+              },
+              costBasisCents: { $ifNull: ["$costBasisCents", 0] },
+              returnCents: "$_totalReturnCents",
+              returnPct: "$_totalReturnPct",
             },
           },
         ],
