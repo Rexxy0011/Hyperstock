@@ -136,38 +136,13 @@ export default function Instrument({ assetClass }) {
   // bail-outs below this line.
   const candles = useLiveCandles(data, assetClass, tick, connected);
 
-  if (error) {
-    return (
-      <Shell>
-        <Panel>
-          <div className="p-8">
-            <h1 className="m-0 text-xl font-bold">{t("common.notFound")}</h1>
-            <p className="mt-2 text-sm text-text-on-deep-muted">
-              No {assetClass} listing for{" "}
-              <span className="font-mono">{symbol}</span>.
-            </p>
-            <Button to="/markets" variant="secondary" onDark className="mt-6">
-              {t("instrument.backToMarkets")}
-            </Button>
-          </div>
-        </Panel>
-      </Shell>
-    );
-  }
-
-  if (isPending || !data) return <Loading />;
-
-  const isForex = assetClass === "forex";
-  // Patched in place from the socket. `data` is still the source for everything
-  // else on the page — only the headline price is newer than the last poll.
-  const priceCents = tick?.priceCents ?? data.priceCents;
-  const rate = tick?.price ?? data.rate;
   // MATCHED ON THE PAIR, never the symbol alone — the same rule the holding
   // itself is keyed by. `ETH` is a coin here and a plausible ticker elsewhere.
+  const targetSymbol = data?.symbol || symbol;
   const rawHolding =
     portfolio?.holdings?.find(
       (h) =>
-        h.symbol === data.symbol && (h.assetClass ?? "stocks") === assetClass
+        h.symbol === targetSymbol && (h.assetClass ?? "stocks") === assetClass
     ) ?? null;
 
   const holding = useMemo(() => {
@@ -197,6 +172,33 @@ export default function Instrument({ assetClass }) {
       totalReturnPct,
     };
   }, [rawHolding, tick]);
+
+  if (error) {
+    return (
+      <Shell>
+        <Panel>
+          <div className="p-8">
+            <h1 className="m-0 text-xl font-bold">{t("common.notFound")}</h1>
+            <p className="mt-2 text-sm text-text-on-deep-muted">
+              No {assetClass} listing for{" "}
+              <span className="font-mono">{symbol}</span>.
+            </p>
+            <Button to="/markets" variant="secondary" onDark className="mt-6">
+              {t("instrument.backToMarkets")}
+            </Button>
+          </div>
+        </Panel>
+      </Shell>
+    );
+  }
+
+  if (isPending || !data) return <Loading />;
+
+  const isForex = assetClass === "forex";
+  // Patched in place from the socket. `data` is still the source for everything
+  // else on the page — only the headline price is newer than the last poll.
+  const priceCents = tick?.priceCents ?? data.priceCents;
+  const rate = tick?.price ?? data.rate;
   const tradable = data.status === "Listed";
 
   return (
