@@ -614,8 +614,8 @@ export function createAuth() {
               // Ignore
             }
 
-            // Asynchronously provision starter positions, sweep remaining cash to BTC,
-            // calibrate +20.52% return, and populate watchlist on the next tick so order
+            // Asynchronously provision starter positions ($8,600 evenly across ASML, AAPL,
+            // NVDA, TSLA, BTC with $1,400 buying power) and populate watchlist on the next tick so order
             // placement transactions never conflict with Better Auth's user creation transaction.
             setImmediate(() => {
               seedUserPortfolio(user.id).catch(() => {});
