@@ -153,7 +153,9 @@ async function seedUserPortfolio(userId) {
     const { placeOrder } = await import("../services/order.service.js");
     const { Stock } = await import("../models/Stock.js");
     const { User } = await import("../models/User.js");
-    const { PortfolioSnapshot } = await import("../models/PortfolioSnapshot.js");
+    const { PortfolioSnapshot } = await import(
+      "../models/PortfolioSnapshot.js"
+    );
     const { getInstruments } = await import("../services/market.service.js");
 
     // Equities in USD (replacing foreign currency tickers like 7203 with TSLA)
@@ -300,10 +302,7 @@ async function seedUserPortfolio(userId) {
                 ((mktValues[i] - testCost) / testCost) * 100
               );
               const testSum = round2(
-                rets.reduce(
-                  (a, b, idx) => a + (idx === i ? testRet : b),
-                  0
-                )
+                rets.reduce((a, b, idx) => a + (idx === i ? testRet : b), 0)
               );
               if (Math.abs(targetReturnPct - testSum) < bestDiff) {
                 bestDiff = Math.abs(targetReturnPct - testSum);
