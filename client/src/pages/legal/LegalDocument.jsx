@@ -1,9 +1,41 @@
-import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { FiArrowLeft } from "react-icons/fi";
 import Link from "../../components/ui/Link";
 import Reveal from "../../components/ui/Reveal";
 import { DOCUMENTS, LAST_UPDATED } from "./legalContent";
+
+export const LEGAL_NAV_ITEMS = [
+  {
+    id: "terms",
+    to: "/terms",
+    labelKey: "footer.terms",
+    fallback: "Terms of Service",
+  },
+  {
+    id: "privacy",
+    to: "/privacy",
+    labelKey: "footer.privacy",
+    fallback: "Privacy Policy",
+  },
+  {
+    id: "financial-privacy",
+    to: "/financial-privacy",
+    labelKey: "footer.financialPrivacy",
+    fallback: "Financial Privacy",
+  },
+  {
+    id: "account-security",
+    to: "/account-security",
+    labelKey: "footer.accountSecurity",
+    fallback: "Account Security",
+  },
+];
+
+function isLegalPath(path) {
+  return LEGAL_NAV_ITEMS.some((item) => path?.startsWith(item.to));
+}
 
 /**
  * One component for all three legal documents.
@@ -25,7 +57,24 @@ import { DOCUMENTS, LAST_UPDATED } from "./legalContent";
 export default function LegalDocument({ id }) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const doc = DOCUMENTS[id];
+
+  useEffect(() => {
+    const from = location.state?.from;
+    if (from && !isLegalPath(from)) {
+      sessionStorage.setItem("hs_legal_return_to", from);
+    } else if (!sessionStorage.getItem("hs_legal_return_to")) {
+      sessionStorage.setItem("hs_legal_return_to", "/auth?mode=signup");
+    }
+  }, [location.state]);
+
+  const handleBack = () => {
+    const target =
+      sessionStorage.getItem("hs_legal_return_to") || "/auth?mode=signup";
+    sessionStorage.removeItem("hs_legal_return_to");
+    navigate(target);
+  };
 
   if (!doc) return null;
 
@@ -34,16 +83,40 @@ export default function LegalDocument({ id }) {
       <Reveal>
         <button
           type="button"
-          onClick={() =>
-            window.history.length > 1
-              ? navigate(-1)
-              : navigate("/auth?mode=signup")
-          }
+          onClick={handleBack}
           className="mb-6 inline-flex cursor-pointer items-center gap-2 text-xs font-semibold uppercase tracking-wider text-text-muted transition-colors hover:text-void"
         >
           <FiArrowLeft size={15} aria-hidden="true" />
           <span>{t("common.back", "Back")}</span>
         </button>
+
+        {/* Tab switcher between legal documents with replace: true so history is not stacked */}
+        <div className="mb-8 flex flex-wrap gap-2">
+          {LEGAL_NAV_ITEMS.map((item) => {
+            const active = item.id === id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => {
+                  if (!active) {
+                    const from =
+                      sessionStorage.getItem("hs_legal_return_to") ||
+                      "/auth?mode=signup";
+                    navigate(item.to, { replace: true, state: { from } });
+                  }
+                }}
+                className={`cursor-pointer rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+                  active
+                    ? "bg-void text-white"
+                    : "bg-mist text-text-muted hover:bg-hover hover:text-void"
+                }`}
+              >
+                {t(item.labelKey, item.fallback)}
+              </button>
+            );
+          })}
+        </div>
         <header className="mb-10 border-b border-cool-grey pb-8">
           <h1 className="m-0 text-[clamp(28px,4vw,40px)] font-bold text-void">
             {doc.title}

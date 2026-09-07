@@ -187,6 +187,14 @@ const SOCIALS = [
 
 export function SiteFooter() {
   const { t } = useTranslation();
+  const location = useLocation();
+  const legalPaths = [
+    "/terms",
+    "/privacy",
+    "/financial-privacy",
+    "/account-security",
+  ];
+  const onLegalPage = legalPaths.some((p) => location.pathname.startsWith(p));
   return (
     // bg-ink, full bleed. This is the fourth use of the same deep surface —
     // nav balance pill, ticker tape, Markets table, footer — so it reads as
@@ -255,6 +263,8 @@ export function SiteFooter() {
                 {col.links.map(({ label, to, external }) => {
                   const className =
                     "font-display text-base text-text-on-deep-muted no-underline transition-colors hover:text-text-on-deep";
+                  const isLegal = legalPaths.includes(to);
+                  const replace = onLegalPage && isLegal;
                   // A mailto is not a route, so it must not go through Link —
                   // the router would try to navigate to it and fail.
                   return external ? (
@@ -262,7 +272,21 @@ export function SiteFooter() {
                       {t(`footer.${label}`)}
                     </a>
                   ) : (
-                    <Link key={label} to={to} className={className}>
+                    <Link
+                      key={label}
+                      to={to}
+                      replace={replace}
+                      state={
+                        replace
+                          ? {
+                              from:
+                                sessionStorage.getItem("hs_legal_return_to") ||
+                                "/auth?mode=signup",
+                            }
+                          : undefined
+                      }
+                      className={className}
+                    >
                       {t(`footer.${label}`)}
                     </Link>
                   );
@@ -278,15 +302,29 @@ export function SiteFooter() {
           <p className="m-0">{t("footer.rights", { year: 2026 })}</p>
 
           <div className="flex flex-wrap gap-x-7 gap-y-2">
-            {BOTTOM_LINKS.map(([label, to]) => (
-              <Link
-                key={label}
-                to={to}
-                className="text-text-on-deep-muted underline underline-offset-2 transition-colors hover:text-text-on-deep"
-              >
-                {t(`footer.${label}`)}
-              </Link>
-            ))}
+            {BOTTOM_LINKS.map(([label, to]) => {
+              const isLegal = legalPaths.includes(to);
+              const replace = onLegalPage && isLegal;
+              return (
+                <Link
+                  key={label}
+                  to={to}
+                  replace={replace}
+                  state={
+                    replace
+                      ? {
+                          from:
+                            sessionStorage.getItem("hs_legal_return_to") ||
+                            "/auth?mode=signup",
+                        }
+                      : undefined
+                  }
+                  className="text-text-on-deep-muted underline underline-offset-2 transition-colors hover:text-text-on-deep"
+                >
+                  {t(`footer.${label}`)}
+                </Link>
+              );
+            })}
           </div>
         </div>
       </div>

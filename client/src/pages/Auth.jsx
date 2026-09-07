@@ -1034,6 +1034,34 @@ const COUNTRIES = [
 
 const SIGNIN = "signin";
 const SIGNUP = "signup";
+
+const AUTH_DRAFT_KEY = "hs_auth_draft";
+
+function loadAuthDraft() {
+  try {
+    const raw = sessionStorage.getItem(AUTH_DRAFT_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveAuthDraft(mode, form) {
+  try {
+    sessionStorage.setItem(AUTH_DRAFT_KEY, JSON.stringify({ mode, form }));
+  } catch {
+    // ignore
+  }
+}
+
+function clearAuthDraft() {
+  try {
+    sessionStorage.removeItem(AUTH_DRAFT_KEY);
+  } catch {
+    // ignore
+  }
+}
+
 export default function Auth() {
   const { t } = useTranslation();
   const [params] = useSearchParams();
@@ -1044,18 +1072,24 @@ export default function Auth() {
     const urlMode = params.get("mode");
     if (urlMode === "signup") return SIGNUP;
     if (urlMode === "signin") return SIGNIN;
+    const draft = loadAuthDraft();
+    if (draft?.mode === SIGNUP) return SIGNUP;
     return SIGNIN;
   });
 
   // `email` is carried over from Landing's CTA, which collects it before
   // sending the visitor here — without this the field arrives empty and they
-  // type it twice.
-  const [form, setForm] = useState(() => ({
-    username: "",
-    email: params.get("email") ?? "",
-    password: "",
-    country: "",
-  }));
+  // type it twice. Draft rehydration preserves credentials when reading terms/policy.
+  const [form, setForm] = useState(() => {
+    const draft = loadAuthDraft();
+    const draftForm = draft?.form || {};
+    return {
+      username: draftForm.username ?? "",
+      email: params.get("email") ?? draftForm.email ?? "",
+      password: draftForm.password ?? "",
+      country: draftForm.country ?? "",
+    };
+  });
   const [error, setError] = useState(() => {
     const err = params.get("error");
     const desc = params.get("error_description");
@@ -1092,6 +1126,10 @@ export default function Auth() {
   );
 
   const isSignup = mode === SIGNUP;
+
+  useEffect(() => {
+    saveAuthDraft(mode, form);
+  }, [mode, form]);
 
   const handleSuggestPassword = async () => {
     const pwd = generateStrongPassword();
@@ -1169,6 +1207,7 @@ export default function Auth() {
    * a sign-in and must not announce one.
    */
   if (authReady && user) {
+    clearAuthDraft();
     /**
      * AN OPERATOR LANDS IN THE ADMIN SECTION, everybody else on the landing
      * page. The role is only knowable HERE — `next` is computed before anyone
@@ -1258,8 +1297,10 @@ export default function Auth() {
           return;
         }
 
+        clearAuthDraft();
         setWelcomeKind(WELCOME.signUp);
       } else {
+        clearAuthDraft();
         setWelcomeKind(WELCOME.signIn);
         const identifier = (form.email || form.username || "").trim();
         await login({ email: identifier, password: form.password });
@@ -1589,16 +1630,26 @@ export default function Auth() {
                 terms: (
                   <Link
                     to="/terms"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    state={{ from: isSignup ? "/auth?mode=signup" : "/auth" }}
+                    onClick={() => {
+                      sessionStorage.setItem(
+                        "hs_legal_return_to",
+                        isSignup ? "/auth?mode=signup" : "/auth"
+                      );
+                    }}
                     className="text-text-body underline underline-offset-2 hover:text-gain"
                   />
                 ),
                 privacy: (
                   <Link
                     to="/privacy"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    state={{ from: isSignup ? "/auth?mode=signup" : "/auth" }}
+                    onClick={() => {
+                      sessionStorage.setItem(
+                        "hs_legal_return_to",
+                        isSignup ? "/auth?mode=signup" : "/auth"
+                      );
+                    }}
                     className="text-text-body underline underline-offset-2 hover:text-gain"
                   />
                 ),
