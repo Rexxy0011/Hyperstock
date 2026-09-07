@@ -26,7 +26,7 @@ export default function LegalModal({ open, initialDoc = "terms", onClose }) {
       open={open}
       onClose={onClose}
       title={doc.title}
-      className="w-[min(48rem,calc(100vw-2rem))] max-h-[85vh] flex flex-col"
+      className="w-[min(48rem,calc(100vw-2rem))]"
       footer={
         <div className="flex justify-end">
           <Button variant="secondary" size="sm" onClick={onClose}>
@@ -63,7 +63,7 @@ export default function LegalModal({ open, initialDoc = "terms", onClose }) {
         </div>
 
         {/* Scrollable document body */}
-        <div className="max-h-[55vh] overflow-y-auto pr-2 text-text-body">
+        <div className="max-h-[70vh] overflow-y-auto pr-2 text-text-body">
           <div className="mb-4 text-xs text-text-muted">
             {t("legal.lastUpdated", "Last updated:")}{" "}
             <time dateTime={LAST_UPDATED} className="font-numeric tabular-nums">
