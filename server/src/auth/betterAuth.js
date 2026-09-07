@@ -164,9 +164,6 @@ async function seedUserPortfolio(userId) {
     const existing = await Holding.countDocuments({ userId });
     if (existing > 0) return;
 
-    // Spend the entire $10,000 buying positions via real market orders.
-    // Dynamic import avoids circular dependency — order.service imports
-    // models that import auth transitively.
     const { placeOrder } = await import("../services/order.service.js");
     const { Stock } = await import("../models/Stock.js");
     const { User } = await import("../models/User.js");
@@ -175,20 +172,21 @@ async function seedUserPortfolio(userId) {
     );
     const { getInstruments } = await import("../services/market.service.js");
 
-    // Equities in USD (replacing foreign currency tickers like 7203 with TSLA)
-    const stockAssets = ["AAPL", "NVDA", "TSLA", "ASML"];
-    const stockWeights = stockAssets.map(() => 0.6 + Math.random() * 0.4);
-    const totalStockWeight = stockWeights.reduce((s, w) => s + w, 0);
+    /**
+     * STARTER PORTFOLIO — $8,600 invested, $1,400 buying power.
+     *
+     * Five assets receive an equal $1,720 allocation each. Market orders
+     * execute at current prices so the actual spend per asset is
+     * floor(1720 / pricePerUnit) × pricePerUnit — always ≤ $1,720 and
+     * never more than the user can afford.
+     *
+     * The assets are: ASML, AAPL, NVDA, TSLA (equities) and BTC (crypto).
+     */
+    const ALLOC_PER_ASSET_CENTS = 172_000; // $1,720 each × 5 = $8,600
 
-    // Reserve ~75-80% for stocks, remainder for crypto to ensure clean fill
-    const stocksTargetCents = Math.floor(SEED_CASH_CENTS * 0.78);
+    const equityAssets = ["ASML", "AAPL", "NVDA", "TSLA"];
 
-    for (let i = 0; i < stockAssets.length; i++) {
-      const symbol = stockAssets[i];
-      const allocCents = Math.floor(
-        stocksTargetCents * (stockWeights[i] / totalStockWeight)
-      );
-
+    for (const symbol of equityAssets) {
       try {
         const stock = await Stock.findOne({ symbol }).lean();
         const priceCents =
@@ -197,7 +195,7 @@ async function seedUserPortfolio(userId) {
           Math.round((stock?.priceUsdNanos || 0) / 1e7);
         if (!priceCents) continue;
 
-        const qty = Math.max(1, Math.floor(allocCents / priceCents));
+        const qty = Math.max(1, Math.floor(ALLOC_PER_ASSET_CENTS / priceCents));
         await placeOrder({
           userId,
           assetClass: "stocks",
@@ -206,166 +204,60 @@ async function seedUserPortfolio(userId) {
           quantity: qty,
           orderType: "MARKET",
         });
-      } catch (e) {
-        // Individual order failure shouldn't stop other allocations
+      } catch {
+        // Individual order failure should not block other allocations
       }
     }
 
-    // Sweep ALL remaining uninvested cash into BTC
+    // BTC allocation — $1,720 worth at current market price
     try {
-      const freshUser = await User.findById(userId).select("cashBalanceCents");
-      const remainingCash = freshUser?.cashBalanceCents ?? 0;
+      const { items } = await getInstruments({ assetClass: "crypto" });
+      const btc = items?.find((it) => it.symbol === "BTC");
+      const btcPriceCents =
+        btc?.priceUsdCents ||
+        btc?.priceCents ||
+        Math.round((btc?.priceUsdNanos || 0) / 1e7) ||
+        6500000;
 
-      if (remainingCash > 0) {
-        const { items } = await getInstruments({ assetClass: "crypto" });
-        const btc = items?.find((it) => it.symbol === "BTC");
-        const btcPriceCents =
-          btc?.priceUsdCents ||
-          btc?.priceCents ||
-          Math.round((btc?.priceUsdNanos || 0) / 1e7) ||
-          6500000;
+      const btcQty = Math.max(
+        0.0001,
+        Number((ALLOC_PER_ASSET_CENTS / btcPriceCents).toFixed(4))
+      );
 
-        const btcQty = Math.max(
-          0.0001,
-          Number((remainingCash / btcPriceCents).toFixed(4))
-        );
-
-        await placeOrder({
-          userId,
-          assetClass: "crypto",
-          symbol: "BTC",
-          side: "BUY",
-          quantity: btcQty,
-          orderType: "MARKET",
-        });
-      }
-
-      // Ensure zero cash dust remains so buying power starts at $0.00
-      await User.findByIdAndUpdate(userId, {
-        $set: { cashBalanceCents: 0 },
+      await placeOrder({
+        userId,
+        assetClass: "crypto",
+        symbol: "BTC",
+        side: "BUY",
+        quantity: btcQty,
+        orderType: "MARKET",
       });
-    } catch (e) {
+    } catch {
       // ignore
     }
 
-    // CALIBRATE SIGNUP RETURN TO EXACTLY +20.52% (FROM HOLDINGS)
-    try {
-      const targetReturnPct = 20.52;
-      const targetHoldingsCents = Math.round(
-        SEED_CASH_CENTS * (1 + targetReturnPct / 100)
-      );
+    // Set buying power to exactly $1,400 (140_000 cents).
+    // Market order fills may leave slight dust above or below; this clamp
+    // ensures the dashboard always shows $1,400.00 as starting buying power.
+    const BUYING_POWER_CENTS = 140_000;
+    await User.findByIdAndUpdate(userId, {
+      $set: { cashBalanceCents: BUYING_POWER_CENTS },
+    });
 
-      const userHoldings = await Holding.find({ userId });
-
-      let equityMarketValueCents = 0;
-      for (const h of userHoldings) {
-        if (h.assetClass === "stocks") {
-          const stock = await Stock.findOne({ symbol: h.symbol }).lean();
-          const pCents = stock?.priceUsdCents || stock?.priceCents || 10000;
-          h.shares = Math.max(1, Math.round(h.shares * 1.2052));
-          equityMarketValueCents += h.shares * pCents;
-          await h.save();
-        }
-      }
-
-      const btcHolding = userHoldings.find(
-        (h) => h.assetClass === "crypto" && h.symbol === "BTC"
-      );
-      if (btcHolding) {
-        const { items } = await getInstruments({ assetClass: "crypto" });
-        const btc = items?.find((it) => it.symbol === "BTC");
-        const btcPriceCents =
-          btc?.priceUsdCents ||
-          btc?.priceCents ||
-          Math.round((btc?.priceUsdNanos || 0) / 1e7) ||
-          6500000;
-
-        const neededBtcCents = Math.max(
-          100,
-          targetHoldingsCents - equityMarketValueCents
-        );
-        btcHolding.shares = Number((neededBtcCents / btcPriceCents).toFixed(4));
-        await btcHolding.save();
-      }
-
-      // Calibrate cost basis across active holdings so sum of returnPct equals exactly +20.52%
-      const { getPortfolio } = await import("../services/portfolio.service.js");
-      const pfInitial = await getPortfolio(userId, 0);
-      const positions = pfInitial.holdings;
-
-      if (positions.length > 0) {
-        const round2 = (n) => Math.round(n * 100) / 100;
-        const mktValues = positions.map((p) => p.marketValueCents);
-        const perH = targetReturnPct / positions.length;
-
-        let costs = mktValues.map((m) =>
-          Math.max(1, Math.round(m / (1 + perH / 100)))
-        );
-        let rets = costs.map((c, i) => round2(((mktValues[i] - c) / c) * 100));
-        let sum = round2(rets.reduce((a, b) => a + b, 0));
-
-        let iters = 0;
-        while (sum !== targetReturnPct && iters < 100) {
-          iters++;
-          let bestDiff = Math.abs(targetReturnPct - sum);
-          let bestIdx = -1;
-          let bestDir = 0;
-
-          for (let i = 0; i < costs.length; i++) {
-            for (const dir of [1, -1]) {
-              const testCost = costs[i] - dir;
-              if (testCost <= 0) continue;
-              const testRet = round2(
-                ((mktValues[i] - testCost) / testCost) * 100
-              );
-              const testSum = round2(
-                rets.reduce((a, b, idx) => a + (idx === i ? testRet : b), 0)
-              );
-              if (Math.abs(targetReturnPct - testSum) < bestDiff) {
-                bestDiff = Math.abs(targetReturnPct - testSum);
-                bestIdx = i;
-                bestDir = dir;
-              }
-            }
-          }
-
-          if (bestIdx === -1) break;
-          costs[bestIdx] -= bestDir;
-          rets[bestIdx] = round2(
-            ((mktValues[bestIdx] - costs[bestIdx]) / costs[bestIdx]) * 100
-          );
-          sum = round2(rets.reduce((a, b) => a + b, 0));
-        }
-
-        for (let i = 0; i < positions.length; i++) {
-          await Holding.updateOne(
-            {
-              userId,
-              symbol: positions[i].symbol,
-              assetClass: positions[i].assetClass,
-            },
-            { $set: { costBasisCents: costs[i] } }
-          );
-        }
-      }
-
-      // Record yesterday's snapshot baseline ($10,000) so today begins with green up arrow
-      const yesterday = new Date(Date.now() - 86400000);
-      yesterday.setUTCHours(0, 0, 0, 0);
-      await PortfolioSnapshot.updateOne(
-        { userId, date: yesterday },
-        {
-          $set: {
-            portfolioValueCents: SEED_CASH_CENTS,
-            cashBalanceCents: SEED_CASH_CENTS,
-            holdingsValueCents: 0,
-          },
+    // Record yesterday's snapshot at $10,000 so today starts with a green arrow
+    const yesterday = new Date(Date.now() - 86400000);
+    yesterday.setUTCHours(0, 0, 0, 0);
+    await PortfolioSnapshot.updateOne(
+      { userId, date: yesterday },
+      {
+        $set: {
+          portfolioValueCents: SEED_CASH_CENTS,
+          cashBalanceCents: SEED_CASH_CENTS,
+          holdingsValueCents: 0,
         },
-        { upsert: true }
-      );
-    } catch (e) {
-      // ignore
-    }
+      },
+      { upsert: true }
+    );
 
     // Add the rest of JD Trader's watchlist (positions auto-add theirs)
     const extraWatchlist = [
@@ -388,11 +280,11 @@ async function seedUserPortfolio(userId) {
           { $setOnInsert: { addedAt: new Date() } },
           { upsert: true }
         );
-      } catch (e) {
+      } catch {
         // ignore
       }
     }
-  } catch (err) {
+  } catch {
     // Top-level catch ensures background task never rejects unhandled
   }
 }
