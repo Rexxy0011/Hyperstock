@@ -8,7 +8,7 @@ import mongoSanitize from "express-mongo-sanitize";
 import cookieParser from "cookie-parser";
 import morgan from "morgan";
 import { toNodeHandler } from "better-auth/node";
-import { env, isTrustedOrigin } from "./config/env.js";
+import { env, isTrustedOrigin, isProd } from "./config/env.js";
 import { createAuth } from "./auth/betterAuth.js";
 import routes from "./routes/index.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
@@ -70,22 +70,29 @@ export function createApp() {
     // When Render's static site proxy forwards to hyperstocks-api, the host header is
     // rewritten to the onrender domain. Recover the public host from origin/referer
     // so Better Auth derives the public OAuth callback and sets cookies on the visitor's domain.
-    const origin = req.headers["origin"] || req.headers["referer"];
     if (
-      origin &&
-      (!req.headers["x-forwarded-host"] ||
-        req.headers["x-forwarded-host"].includes("onrender.com"))
+      !req.headers["x-forwarded-host"] ||
+      req.headers["x-forwarded-host"].includes("onrender.com")
     ) {
-      try {
-        const parsed = new URL(origin);
-        if (
-          parsed.hostname === "hyperstocks.finance" ||
-          parsed.hostname.endsWith(".hyperstocks.finance")
-        ) {
-          req.headers["x-forwarded-host"] = parsed.host;
-          req.headers["x-forwarded-proto"] = parsed.protocol.replace(":", "");
-        }
-      } catch {}
+      let recovered = false;
+      const origin = req.headers["origin"] || req.headers["referer"];
+      if (origin) {
+        try {
+          const parsed = new URL(origin);
+          if (
+            parsed.hostname === "hyperstocks.finance" ||
+            parsed.hostname.endsWith(".hyperstocks.finance")
+          ) {
+            req.headers["x-forwarded-host"] = parsed.host;
+            req.headers["x-forwarded-proto"] = parsed.protocol.replace(":", "");
+            recovered = true;
+          }
+        } catch {}
+      }
+      if (!recovered && isProd) {
+        req.headers["x-forwarded-host"] = "www.hyperstocks.finance";
+        req.headers["x-forwarded-proto"] = "https";
+      }
     }
     next();
   });

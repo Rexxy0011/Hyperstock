@@ -1106,6 +1106,15 @@ export default function Auth() {
     ) {
       return "Google authentication failed or expired. Please try again or sign in with your password.";
     }
+    if (err === "account_not_linked") {
+      return "An account with this email already exists. Please sign in with your email and password to link your Google account.";
+    }
+    if (err === "unable_to_create_user") {
+      return "Account creation could not be completed. Please try again or sign up with email.";
+    }
+    if (err === "unable_to_link_account") {
+      return "Could not link this Google account. Please try signing in with your email and password.";
+    }
     return "Sign-in could not be completed. Please try again.";
   });
   const [infoNotice, setInfoNotice] = useState(null);
