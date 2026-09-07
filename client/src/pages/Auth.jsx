@@ -5,7 +5,6 @@ import { FcGoogle } from "react-icons/fc";
 import { FiLock, FiMail, FiUser, FiKey, FiInfo, FiCheck } from "react-icons/fi";
 import { get } from "../lib/api";
 import CodeForm from "../components/auth/CodeForm";
-import LegalModal from "../components/auth/LegalModal";
 import { Navigate, useSearchParams } from "react-router-dom";
 import Link from "../components/ui/Link";
 import Button from "../components/ui/Button";
@@ -1125,9 +1124,6 @@ export default function Auth() {
   const [welcomeKind, setWelcomeKind] = useState(
     /** @type {string | null} */ (null)
   );
-  const [legalModalDoc, setLegalModalDoc] = useState(
-    /** @type {null | 'terms' | 'privacy'} */ (null)
-  );
 
   const isSignup = mode === SIGNUP;
 
@@ -1632,17 +1628,29 @@ export default function Auth() {
               i18nKey="auth.termsNotice"
               components={{
                 terms: (
-                  <button
-                    type="button"
-                    onClick={() => setLegalModalDoc("terms")}
-                    className="cursor-pointer text-text-body underline underline-offset-2 hover:text-gain"
+                  <Link
+                    to="/terms"
+                    state={{ from: isSignup ? "/auth?mode=signup" : "/auth" }}
+                    onClick={() => {
+                      sessionStorage.setItem(
+                        "hs_legal_return_to",
+                        isSignup ? "/auth?mode=signup" : "/auth"
+                      );
+                    }}
+                    className="text-text-body underline underline-offset-2 hover:text-gain"
                   />
                 ),
                 privacy: (
-                  <button
-                    type="button"
-                    onClick={() => setLegalModalDoc("privacy")}
-                    className="cursor-pointer text-text-body underline underline-offset-2 hover:text-gain"
+                  <Link
+                    to="/privacy"
+                    state={{ from: isSignup ? "/auth?mode=signup" : "/auth" }}
+                    onClick={() => {
+                      sessionStorage.setItem(
+                        "hs_legal_return_to",
+                        isSignup ? "/auth?mode=signup" : "/auth"
+                      );
+                    }}
+                    className="text-text-body underline underline-offset-2 hover:text-gain"
                   />
                 ),
               }}
@@ -1650,12 +1658,6 @@ export default function Auth() {
           </p>
         </div>
       </div>
-
-      <LegalModal
-        open={Boolean(legalModalDoc)}
-        initialDoc={legalModalDoc ?? "terms"}
-        onClose={() => setLegalModalDoc(null)}
-      />
     </div>
   );
 }
