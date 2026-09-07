@@ -182,10 +182,7 @@ async function computeBoard(period) {
                       {
                         $divide: [
                           {
-                            $multiply: [
-                              "$costBasisCents",
-                              "$_totalReturnPct",
-                            ],
+                            $multiply: ["$costBasisCents", "$_totalReturnPct"],
                           },
                           100,
                         ],
