@@ -56,25 +56,36 @@ async function main() {
     );
   });
 
+  let shuttingDown = false;
   const shutdown = async (signal) => {
+    if (shuttingDown) return;
+    shuttingDown = true;
     console.log(`\n${signal} received, shutting down…`);
-    if (typeof server.closeIdleConnections === "function") {
-      server.closeIdleConnections();
-    }
-    await new Promise((resolve) => server.close(resolve));
+
+    // Ensure the process terminates even if an async cleanup hangs
+    const forceExit = setTimeout(() => {
+      process.exit(0);
+    }, 1500);
+    forceExit.unref();
+
+    try {
+      if (typeof server.closeAllConnections === "function") {
+        server.closeAllConnections();
+      } else if (typeof server.closeIdleConnections === "function") {
+        server.closeIdleConnections();
+      }
+      await new Promise((resolve) => server.close(resolve));
+    } catch {}
+
     stopQuoteRefresh();
     stopTickFlush();
     liveFeed.stop();
-    await disconnectDb();
-    if (signal === "SIGUSR2") {
-      process.kill(process.pid, "SIGUSR2");
-    } else {
-      process.exit(0);
-    }
+    await disconnectDb().catch(() => {});
+    process.exit(0);
   };
   process.on("SIGINT", () => shutdown("SIGINT"));
   process.on("SIGTERM", () => shutdown("SIGTERM"));
-  process.once("SIGUSR2", () => shutdown("SIGUSR2"));
+  process.on("SIGUSR2", () => shutdown("SIGUSR2"));
 }
 
 main().catch((err) => {
