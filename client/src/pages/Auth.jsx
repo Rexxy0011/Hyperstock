@@ -1090,7 +1090,17 @@ export default function Auth() {
     password: "",
     country: "",
   }));
-  const [error, setError] = useState(null);
+  const [error, setError] = useState(() => {
+    const err = params.get("error");
+    if (!err) return null;
+    if (err === "access_denied") {
+      return "Google sign-in was canceled.";
+    }
+    if (err === "oauth" || err === "state_mismatch" || err === "state_not_found") {
+      return "Google authentication failed or expired. Please try again or sign in with your password.";
+    }
+    return "Sign-in could not be completed. Please try again.";
+  });
   const [infoNotice, setInfoNotice] = useState(null);
   const [busy, setBusy] = useState(false);
   const [animating, setAnimating] = useState(false);

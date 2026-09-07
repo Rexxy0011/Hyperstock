@@ -157,10 +157,23 @@ export function createAuth() {
     // Better Auth warn about low entropy on every boot. The env schema pins
     // this at its 32-character floor and production refuses the dev default.
     secret: env.BETTER_AUTH_SECRET,
-    // NOT hardcoded to localhost: the Google callback URL is derived from this,
-    // so a production deploy with the dev value sends users to a machine that
-    // is not on the internet. `config/env.js` refuses to boot on that in prod.
-    baseURL: apiOrigin,
+    // Dynamic baseURL allows Google OAuth and session cookies to match whichever
+    // domain the visitor is using (www.hyperstocks.finance, apex domain, render staging, or localhost).
+    baseURL: isProd
+      ? {
+          allowedHosts: [
+            "hyperstocks.finance",
+            "www.hyperstocks.finance",
+            "*.hyperstocks.finance",
+            "hyperstocks-client.onrender.com",
+            "hyperstocks-api.onrender.com",
+            "localhost:*",
+            "127.0.0.1:*",
+          ],
+          protocol: "https",
+          fallback: apiOrigin,
+        }
+      : apiOrigin,
     basePath: "/api/auth",
     // Trusted origins for browser CORS and CSRF verification.
     // Handles hyperstocks.finance (root & subdomains), localhost, render previews,
@@ -649,6 +662,9 @@ export function createAuth() {
       // production only so localhost over plain HTTP still works.
       useSecureCookies: isProd,
       cookiePrefix: "hs",
+      // Trust x-forwarded-host and x-forwarded-proto from reverse proxies (Render, Cloudflare)
+      // so dynamic baseURL correctly resolves to the user-facing domain (www.hyperstocks.finance).
+      trustedProxyHeaders: true,
     },
   });
 
