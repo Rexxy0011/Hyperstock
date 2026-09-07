@@ -207,6 +207,12 @@ export default function Instrument({ assetClass }) {
   const priceCents = tick?.priceCents ?? data.priceCents;
   const rate = tick?.price ?? data.rate;
   const tradable = data.status === "Listed";
+  const livePriceNanos = tick
+    ? (isForex && Number.isFinite(tick.price)
+        ? Math.round(tick.price * 1_000_000_000)
+        : (tick.priceCents != null ? tick.priceCents * 10_000_000 : data?.priceUsdNanos))
+    : data?.priceUsdNanos;
+  const livePriceCents = tick?.priceCents ?? data?.priceUsdCents ?? priceCents;
 
   return (
     <Shell>
@@ -399,8 +405,8 @@ export default function Instrument({ assetClass }) {
         /* NANOS is the one the ticket prices and the guard compares on. The
            cents figure is passed only as a fallback, and for forex it is not
            even cents — it is the rate scaled by 10,000. */
-        priceUsdNanos={data.priceUsdNanos}
-        priceUsdCents={data.priceUsdCents ?? priceCents}
+        priceUsdNanos={livePriceNanos}
+        priceUsdCents={livePriceCents}
         holding={holding}
       />
     </Shell>

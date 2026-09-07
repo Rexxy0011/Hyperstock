@@ -88,7 +88,9 @@ async function resolveTradable(assetClass, symbol) {
   }
   const live = liveFeed.priceFor(symbol, assetClass);
   const fillPriceUsdNanos = live
-    ? live.priceCents * 10_000_000
+    ? (assetClass === "forex" && Number.isFinite(live.price)
+        ? Math.round(live.price * 1_000_000_000)
+        : live.priceCents * 10_000_000)
     : row.priceUsdNanos;
   const fillPriceCents = live ? live.priceCents : row.priceCents;
 

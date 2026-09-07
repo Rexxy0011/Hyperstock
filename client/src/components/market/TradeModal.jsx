@@ -11,6 +11,7 @@ import { useAuth } from '../../auth/AuthProvider';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import Tabs from '../ui/Tabs';
+import { useLivePrices, livePrice } from '../../hooks/useLivePrices';
 
 /**
  * The order ticket: choose a side and a quantity, confirm against a live total.
@@ -99,9 +100,31 @@ export default function TradeModal({
 
   const whole = assetClass === 'stocks';
   const units = UNITS[assetClass] ?? UNITS.stocks;
-  // Falls back to the cents figure so a caller that has not been updated still
-  // prices correctly for equities, where the two are exact multiples.
-  const nanos = Number(priceUsdNanos) || Number(priceUsdCents) * NANOS_PER_CENT || 0;
+  const propNanos = Number(priceUsdNanos) || Number(priceUsdCents) * NANOS_PER_CENT || 0;
+  const [nanos, setNanos] = useState(propNanos);
+
+  const { live } = useLivePrices();
+  const liveTick = livePrice(live, assetClass, instrument?.symbol);
+
+  useEffect(() => {
+    if (propNanos > 0) {
+      setNanos(propNanos);
+    }
+  }, [propNanos]);
+
+  useEffect(() => {
+    if (!liveTick || pending) return;
+    const tickNanos =
+      assetClass === 'forex' && Number.isFinite(liveTick.price)
+        ? Math.round(liveTick.price * 1_000_000_000)
+        : liveTick.priceCents != null
+          ? liveTick.priceCents * NANOS_PER_CENT
+          : null;
+    if (tickNanos && tickNanos > 0) {
+      setNanos(tickNanos);
+    }
+  }, [liveTick, assetClass, pending]);
+
   /**
    * Forex is quoted to four decimals, and to two once a pair trades above ~50
    * (USDJPY at 159.12, not 159.1200). Without this the ticket showed EURUSD at
@@ -114,12 +137,15 @@ export default function TradeModal({
   useEffect(() => {
     if (!open) return;
     setSide(initialSide);
+    const startNanos =
+      Number(priceUsdNanos) || Number(priceUsdCents) * NANOS_PER_CENT || 0;
+    setNanos(startNanos);
     // A default of 1 is a reasonable share order and an absurd Bitcoin one —
     // roughly eight times a starting account — so the fractional classes open
     // on a quantity the user can actually afford rather than one that greets
     // them with an error.
     setQuantity(
-      initialQuantity ?? (whole ? '1' : defaultQty(nanos, user?.cashBalanceCents ?? 0)),
+      initialQuantity ?? (whole ? '1' : defaultQty(startNanos, user?.cashBalanceCents ?? 0)),
     );
     setError(null);
     setReceipt(null);
@@ -219,6 +245,17 @@ export default function TradeModal({
       // apologise for — it is the guard doing its job — and every other code
       // now reaches the user in their own language, falling back to the
       // server's English sentence rather than to a bare code.
+      if (err?.code === 'PRICE_MOVED') {
+        const nextNanos =
+          Number(err.details?.currentPriceUsdNanos) ||
+          (err.details?.currentPriceUsdCents
+            ? Number(err.details.currentPriceUsdCents) * NANOS_PER_CENT
+            : null);
+        if (nextNanos && nextNanos > 0) {
+          setNanos(nextNanos);
+        }
+        setIdempotencyKey(crypto.randomUUID());
+      }
       setError(errorMessage(err));
     } finally {
       setPending(false);
