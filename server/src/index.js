@@ -58,15 +58,23 @@ async function main() {
 
   const shutdown = async (signal) => {
     console.log(`\n${signal} received, shutting down…`);
-    server.close();
+    if (typeof server.closeIdleConnections === "function") {
+      server.closeIdleConnections();
+    }
+    await new Promise((resolve) => server.close(resolve));
     stopQuoteRefresh();
     stopTickFlush();
     liveFeed.stop();
     await disconnectDb();
-    process.exit(0);
+    if (signal === "SIGUSR2") {
+      process.kill(process.pid, "SIGUSR2");
+    } else {
+      process.exit(0);
+    }
   };
   process.on("SIGINT", () => shutdown("SIGINT"));
   process.on("SIGTERM", () => shutdown("SIGTERM"));
+  process.once("SIGUSR2", () => shutdown("SIGUSR2"));
 }
 
 main().catch((err) => {
