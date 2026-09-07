@@ -5,7 +5,9 @@ import {
   Outlet,
   ScrollRestoration,
   useLocation,
+  useRouteError,
 } from 'react-router-dom';
+import Button from './components/ui/Button';
 import { ADMIN_BASE, ADMIN_HOME } from './components/nav/navItems';
 import { AuthProvider } from './auth/AuthProvider';
 import ProtectedRoute from './auth/ProtectedRoute';
@@ -103,9 +105,27 @@ function Root() {
   );
 }
 
+function RootErrorBoundary() {
+  const error = useRouteError();
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center bg-mist px-4 py-16 text-center">
+      <div className="w-full max-w-md rounded-xl border border-cool-grey bg-white p-8 shadow-panel">
+        <h1 className="m-0 text-xl font-bold text-void">Something went wrong</h1>
+        <p className="mt-3 mb-6 text-sm text-text-muted">
+          {error?.message || "An unexpected error occurred. Please refresh or return home."}
+        </p>
+        <Button to="/" variant="primary" className="w-full">
+          Return to home
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export const router = createBrowserRouter([
   {
     element: <Root />,
+    errorElement: <RootErrorBoundary />,
     children: [
       // Marketing only — the landing page sells the product, so it keeps the
       // public shell regardless of session.
