@@ -26,8 +26,15 @@ import Input from '../ui/Input';
  * @param {string=} props.initialEmail carried over from the form behind this
  * @param {() => void} props.onCancel
  * @param {() => void} props.onSuccess
+ * @param {((email: string) => void)=} props.onUserNotFound
  */
-export default function CodeForm({ purpose, initialEmail = '', onCancel, onSuccess }) {
+export default function CodeForm({
+  purpose,
+  initialEmail = '',
+  onCancel,
+  onSuccess,
+  onUserNotFound,
+}) {
   const { t } = useTranslation();
   const { requestCode, signInWithCode, resetPasswordWithCode, verifyEmailWithCode } = useAuth();
 
@@ -39,7 +46,15 @@ export default function CodeForm({ purpose, initialEmail = '', onCancel, onSucce
   const [otp, setOtp] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(/** @type {string|null} */ (null));
+  const [userNotFound, setUserNotFound] = useState(false);
   const [busy, setBusy] = useState(false);
+  const redirectTimer = useRef(/** @type {ReturnType<typeof setTimeout> | undefined} */ (undefined));
+
+  useEffect(() => {
+    return () => {
+      clearTimeout(redirectTimer.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (initialEmail) setEmail(initialEmail);
@@ -78,13 +93,28 @@ export default function CodeForm({ purpose, initialEmail = '', onCancel, onSucce
 
   const send = async (e) => {
     e?.preventDefault();
+    clearTimeout(redirectTimer.current);
     setError(null);
+    setUserNotFound(false);
     setBusy(true);
     try {
       await requestCode({ email: email.trim(), purpose });
       setStep('code');
       setCooldown(60);
     } catch (err) {
+      if (
+        err?.code === 'USER_NOT_FOUND' ||
+        err?.status === 404 ||
+        err?.message === 'USER_NOT_FOUND' ||
+        err?.message?.includes('No account found')
+      ) {
+        setUserNotFound(true);
+        setError(t('auth.code.emailNotFoundRedirect'));
+        redirectTimer.current = setTimeout(() => {
+          onUserNotFound?.(email.trim());
+        }, 1800);
+        return;
+      }
       // Through `errorMessage`, so the CODE is the translation key — Better
       // Auth's own strings are developer English ("Invalid OTP") and do
       // not translate. It falls back to the server sentence, never to a
@@ -143,9 +173,32 @@ export default function CodeForm({ purpose, initialEmail = '', onCancel, onSucce
             icon={<FiMail size={16} />}
             placeholder={t('auth.emailPlaceholder')}
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              if (userNotFound) {
+                setUserNotFound(false);
+                setError(null);
+                clearTimeout(redirectTimer.current);
+              }
+            }}
           />
-          {error && <ErrorNote>{error}</ErrorNote>}
+          {error && (
+            <ErrorNote>
+              <div>{error}</div>
+              {userNotFound && onUserNotFound && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    clearTimeout(redirectTimer.current);
+                    onUserNotFound(email.trim());
+                  }}
+                  className="mt-1 inline-block cursor-pointer font-medium underline underline-offset-2 hover:opacity-80"
+                >
+                  {t('auth.signUp')} &rarr;
+                </button>
+              )}
+            </ErrorNote>
+          )}
           <Button type="submit" className="w-full" loading={busy}>
             {t('auth.code.send')}
           </Button>

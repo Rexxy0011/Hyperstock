@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { betterAuth } from "better-auth";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
 import { username as usernamePlugin, emailOTP } from "better-auth/plugins";
+import { createAuthMiddleware, APIError } from "better-auth/api";
 import {
   env,
   SEED_CASH_CENTS,
@@ -580,6 +581,29 @@ export function createAuth() {
         },
       }),
     ],
+
+    hooks: {
+      before: createAuthMiddleware(async (ctx) => {
+        if (
+          ctx.path === "/email-otp/send-verification-otp" ||
+          ctx.path === "/email-otp/request-password-reset" ||
+          ctx.path === "/forget-password/email-otp"
+        ) {
+          if (ctx.body?.type === "sign-in" || !ctx.body?.type) {
+            const email = ctx.body?.email?.trim().toLowerCase();
+            if (email) {
+              const user = await ctx.context.internalAdapter.findUserByEmail(email);
+              if (!user) {
+                throw new APIError("NOT_FOUND", {
+                  code: "USER_NOT_FOUND",
+                  message: "No account found with this email address",
+                });
+              }
+            }
+          }
+        }
+      }),
+    },
 
     /**
      * EVERY ACCOUNT STARTS WITH THE GRANT ON ITS LEDGER, and this hook is the

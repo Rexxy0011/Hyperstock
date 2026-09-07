@@ -324,6 +324,7 @@
     "createAccount": "Erstellen Sie Ihr Konto",
     "signinLead": "Melden Sie sich bei Ihrem Konto an.",
     "signupLead": "Handeln Sie in unter einer Minute an acht Börsen.",
+    "notFoundNotice": "Kein Konto mit dieser E-Mail-Adresse gefunden. Erstellen Sie unten eines, um zu beginnen.",
     "username": "Benutzername",
     "email": "E-Mail",
     "password": "Passwort",
@@ -358,7 +359,8 @@
       "back": "Zurück zur Anmeldung",
       "backSignup": "Zurück zur Registrierung",
       "wrong": "Dieser Code ist falsch oder abgelaufen.",
-      "sendFailed": "Der Code konnte nicht gesendet werden. Versuchen Sie es erneut."
+      "sendFailed": "Der Code konnte nicht gesendet werden. Versuchen Sie es erneut.",
+      "emailNotFoundRedirect": "Kein Konto mit dieser E-Mail gefunden. Weiterleitung zur Registrierung..."
     },
     "showPassword": "Passwort anzeigen",
     "hidePassword": "Passwort verbergen",

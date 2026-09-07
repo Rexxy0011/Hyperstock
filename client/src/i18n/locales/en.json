@@ -324,6 +324,7 @@
     "createAccount": "Create your account",
     "signinLead": "Sign in to your account.",
     "signupLead": "Start trading eight exchanges in under a minute.",
+    "notFoundNotice": "No account found with that email address. Create one below to get started.",
     "username": "Username",
     "email": "Email",
     "password": "Password",
@@ -358,7 +359,8 @@
       "back": "Back to sign in",
       "backSignup": "Back to create account",
       "wrong": "That code is wrong or has expired.",
-      "sendFailed": "Could not send the code. Try again."
+      "sendFailed": "Could not send the code. Try again.",
+      "emailNotFoundRedirect": "No account found with this email. Redirecting to sign up..."
     },
     "showPassword": "Show password",
     "hidePassword": "Hide password",

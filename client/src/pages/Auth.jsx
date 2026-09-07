@@ -1394,6 +1394,12 @@ export default function Auth() {
                 );
                 setCodeFlow(null);
               }}
+              onUserNotFound={(email) => {
+                setCodeFlow(null);
+                setMode(SIGNUP);
+                setForm((prev) => ({ ...prev, email }));
+                setInfoNotice(t("auth.notFoundNotice"));
+              }}
             />
           ) : (
             <>

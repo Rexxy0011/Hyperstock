@@ -324,6 +324,7 @@
     "createAccount": "Crea tu cuenta",
     "signinLead": "Inicia sesión en tu cuenta.",
     "signupLead": "Empieza a operar en ocho mercados en menos de un minuto.",
+    "notFoundNotice": "No se encontró ninguna cuenta con esa dirección de correo. Crea una a continuación para comenzar.",
     "username": "Nombre de usuario",
     "email": "Correo electrónico",
     "password": "Contraseña",
@@ -358,7 +359,8 @@
       "back": "Volver a iniciar sesión",
       "backSignup": "Volver a crear cuenta",
       "wrong": "Ese código no es correcto o ha caducado.",
-      "sendFailed": "No se ha podido enviar el código. Inténtalo de nuevo."
+      "sendFailed": "No se ha podido enviar el código. Inténtalo de nuevo.",
+      "emailNotFoundRedirect": "No se encontró ninguna cuenta con este correo. Redirigiendo a crear cuenta..."
     },
     "showPassword": "Mostrar contraseña",
     "hidePassword": "Ocultar contraseña",
