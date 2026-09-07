@@ -1,44 +1,43 @@
-import { useLayoutEffect } from "react";
+import { useLayoutEffect } from 'react';
 import {
   createBrowserRouter,
   Navigate,
   Outlet,
   ScrollRestoration,
   useLocation,
-} from "react-router-dom";
-import { ADMIN_BASE, ADMIN_HOME } from "./components/nav/navItems";
-import { AuthProvider } from "./auth/AuthProvider";
-import ProtectedRoute from "./auth/ProtectedRoute";
-import Toasts from "./components/ui/Toasts";
-import MarketNotices from "./components/market/MarketNotices";
-import WelcomeNotice from "./components/auth/WelcomeNotice";
-import LiveChat from "./components/support/LiveChat";
-import LiveGains from "./components/market/LiveGains";
-import Fund from "./pages/Fund";
-import Withdraw from "./pages/Withdraw";
+} from 'react-router-dom';
+import { ADMIN_BASE, ADMIN_HOME } from './components/nav/navItems';
+import { AuthProvider } from './auth/AuthProvider';
+import ProtectedRoute from './auth/ProtectedRoute';
+import Toasts from './components/ui/Toasts';
+import MarketNotices from './components/market/MarketNotices';
+import WelcomeNotice from './components/auth/WelcomeNotice';
+import LiveChat from './components/support/LiveChat';
+import Fund from './pages/Fund';
+import Withdraw from './pages/Withdraw';
 
-import PublicLayout from "./layouts/PublicLayout";
-import DashboardLayout from "./layouts/DashboardLayout";
-import AdaptiveLayout from "./layouts/AdaptiveLayout";
+import PublicLayout from './layouts/PublicLayout';
+import DashboardLayout from './layouts/DashboardLayout';
+import AdaptiveLayout from './layouts/AdaptiveLayout';
 
-import Landing from "./pages/Landing";
-import About from "./pages/About";
-import Faqs from "./pages/Faqs";
-import Contact from "./pages/Contact";
-import LegalDocument from "./pages/legal/LegalDocument";
-import Auth from "./pages/Auth";
-import Markets from "./pages/Markets";
-import Leaderboard from "./pages/Leaderboard";
-import News from "./pages/News";
-import Instrument from "./pages/Instrument";
-import Portfolio from "./pages/Portfolio";
-import Admin from "./pages/Admin";
-import Approvals from "./pages/Approvals";
-import Subscribers from "./pages/Subscribers";
-import Messages from "./pages/Messages";
-import Users from "./pages/Users";
-import Unsubscribe from "./pages/Unsubscribe";
-import ComingSoon from "./pages/ComingSoon";
+import Landing from './pages/Landing';
+import About from './pages/About';
+import Faqs from './pages/Faqs';
+import Contact from './pages/Contact';
+import LegalDocument from './pages/legal/LegalDocument';
+import Auth from './pages/Auth';
+import Markets from './pages/Markets';
+import Leaderboard from './pages/Leaderboard';
+import News from './pages/News';
+import Instrument from './pages/Instrument';
+import Portfolio from './pages/Portfolio';
+import Admin from './pages/Admin';
+import Approvals from './pages/Approvals';
+import Subscribers from './pages/Subscribers';
+import Messages from './pages/Messages';
+import Users from './pages/Users';
+import Unsubscribe from './pages/Unsubscribe';
+import ComingSoon from './pages/ComingSoon';
 
 /**
  * Suppresses smooth scrolling for the duration of a route change.
@@ -62,10 +61,8 @@ function ScrollBehaviour() {
 
   useLayoutEffect(() => {
     const el = document.documentElement;
-    el.setAttribute("data-navigating", "");
-    const raf = requestAnimationFrame(() =>
-      el.removeAttribute("data-navigating")
-    );
+    el.setAttribute('data-navigating', '');
+    const raf = requestAnimationFrame(() => el.removeAttribute('data-navigating'));
     return () => cancelAnimationFrame(raf);
   }, [key]);
 
@@ -101,7 +98,6 @@ function Root() {
           the same reason as the rest: an open conversation must survive a
           route change, and remounting would drop it. */}
       <LiveChat />
-      <LiveGains />
       <Toasts />
     </AuthProvider>
   );
@@ -116,38 +112,32 @@ export const router = createBrowserRouter([
       {
         element: <PublicLayout />,
         children: [
-          { path: "/", element: <Landing /> },
+          { path: '/', element: <Landing /> },
           // Marketing regardless of session, like '/' — signing in does not
           // make the company page part of the app.
-          { path: "/about", element: <About /> },
+          { path: '/about', element: <About /> },
           // Marketing too, and public regardless of session — a signed-in user
           // asking how withdrawals work wants the same page as a visitor, and
           // the footer that carries support and legal links with it.
-          { path: "/faqs", element: <Faqs /> },
+          { path: '/faqs', element: <Faqs /> },
           /* PUBLIC, AND IT WAS BEHIND THE SESSION UNTIL NOW. `/faqs` is public
              and carries two buttons pointing here, so an anonymous reader
              following "Contact support" was bounced to `/auth` — which inverts
              what a contact page is for, since the people most likely to need
              one have not signed up yet. */
-          { path: "/contact", element: <Contact /> },
+          { path: '/contact', element: <Contact /> },
           /* Linked from every newsletter, so it is public and must never sit
              behind a session — somebody unsubscribing is by definition not
              signing in to do it. */
-          { path: "/unsubscribe", element: <Unsubscribe /> },
+          { path: '/unsubscribe', element: <Unsubscribe /> },
           // Legal documents are marketing-shell regardless of session: a
           // signed-in reader wants the same page as a visitor, plus the footer
           // that carries the rest of the legal links.
-          {
-            path: "/account-security",
-            element: <LegalDocument id="account-security" />,
-          },
-          { path: "/privacy", element: <LegalDocument id="privacy" /> },
-          {
-            path: "/financial-privacy",
-            element: <LegalDocument id="financial-privacy" />,
-          },
-          { path: "/terms", element: <LegalDocument id="terms" /> },
-          { path: "*", element: <ComingSoon title="Not found" /> },
+          { path: '/account-security', element: <LegalDocument id="account-security" /> },
+          { path: '/privacy', element: <LegalDocument id="privacy" /> },
+          { path: '/financial-privacy', element: <LegalDocument id="financial-privacy" /> },
+          { path: '/terms', element: <LegalDocument id="terms" /> },
+          { path: '*', element: <ComingSoon title="Not found" /> },
         ],
       },
 
@@ -160,33 +150,24 @@ export const router = createBrowserRouter([
          typed is an interruption at the worst moment. */
       {
         element: <PublicLayout chrome={false} />,
-        children: [{ path: "/auth", element: <Auth /> }],
+        children: [{ path: '/auth', element: <Auth /> }],
       },
 
       // Public content that becomes app content once you sign in.
       {
         element: <AdaptiveLayout />,
         children: [
-          { path: "/markets", element: <Markets /> },
-          { path: "/leaderboard", element: <Leaderboard /> },
+          { path: '/markets', element: <Markets /> },
+          { path: '/leaderboard', element: <Leaderboard /> },
           // Readable signed out, like /markets — announcements and headlines
           // are not account data.
-          { path: "/news", element: <News /> },
+          { path: '/news', element: <News /> },
           // Market data is public, so the detail screens are too — the class
           // lives in the path rather than a query string so a pasted URL still
           // says which kind of thing it is.
-          {
-            path: "/stocks/:symbol",
-            element: <Instrument assetClass="stocks" />,
-          },
-          {
-            path: "/crypto/:symbol",
-            element: <Instrument assetClass="crypto" />,
-          },
-          {
-            path: "/forex/:symbol",
-            element: <Instrument assetClass="forex" />,
-          },
+          { path: '/stocks/:symbol', element: <Instrument assetClass="stocks" /> },
+          { path: '/crypto/:symbol', element: <Instrument assetClass="crypto" /> },
+          { path: '/forex/:symbol', element: <Instrument assetClass="forex" /> },
         ],
       },
 
@@ -198,16 +179,16 @@ export const router = createBrowserRouter([
           </ProtectedRoute>
         ),
         children: [
-          { path: "/portfolio", element: <Portfolio /> },
+          { path: '/portfolio', element: <Portfolio /> },
           // A deposit's REFERENCE is in the URL, so the page is shareable,
           // bookmarkable and survives everything a browser can do to it — the
           // row in Mongo is the state, this is only a view of it.
-          { path: "/fund", element: <Fund /> },
-          { path: "/fund/:reference", element: <Fund /> },
-          { path: "/withdraw", element: <Withdraw /> },
-          { path: "/withdraw/:reference", element: <Withdraw /> },
-          { path: "/dashboard", element: <Portfolio /> },
-          { path: "/wallet", element: <ComingSoon title="Wallet" /> },
+          { path: '/fund', element: <Fund /> },
+          { path: '/fund/:reference', element: <Fund /> },
+          { path: '/withdraw', element: <Withdraw /> },
+          { path: '/withdraw/:reference', element: <Withdraw /> },
+          { path: '/dashboard', element: <Portfolio /> },
+          { path: '/wallet', element: <ComingSoon title="Wallet" /> },
           /**
            * THE ADMIN SECTION, MOUNTED UNDER `ADMIN_BASE` RATHER THAN `/admin`.
            * The prefix is deliberately unguessable and `navItems.js` owns the
