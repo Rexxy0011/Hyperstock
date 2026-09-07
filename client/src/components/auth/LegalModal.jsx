@@ -9,11 +9,7 @@ import { DOCUMENTS, LAST_UPDATED } from "../../pages/legal/legalContent";
  * Renders Terms of Service or Privacy Policy directly inside a Modal on the Auth page.
  * Keeps the user on /auth so form state (username, email, password, country) is never unmounted or lost.
  */
-export default function LegalModal({
-  open,
-  initialDoc = "terms",
-  onClose,
-}) {
+export default function LegalModal({ open, initialDoc = "terms", onClose }) {
   const { t, i18n } = useTranslation();
   const [activeDoc, setActiveDoc] = useState(initialDoc);
 
@@ -84,7 +80,10 @@ export default function LegalModal({
 
           {i18n.language !== "en" && (
             <p className="mt-2 mb-4 rounded-md border border-cool-grey bg-mist px-3 py-2 text-xs text-text-body">
-              {t("legal.englishOnly", "This legal document is available in English only.")}
+              {t(
+                "legal.englishOnly",
+                "This legal document is available in English only."
+              )}
             </p>
           )}
 
