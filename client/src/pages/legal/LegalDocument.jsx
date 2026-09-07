@@ -19,18 +19,6 @@ export const LEGAL_NAV_ITEMS = [
     labelKey: "footer.privacy",
     fallback: "Privacy Policy",
   },
-  {
-    id: "financial-privacy",
-    to: "/financial-privacy",
-    labelKey: "footer.financialPrivacy",
-    fallback: "Financial Privacy",
-  },
-  {
-    id: "account-security",
-    to: "/account-security",
-    labelKey: "footer.accountSecurity",
-    fallback: "Account Security",
-  },
 ];
 
 function isLegalPath(path) {
