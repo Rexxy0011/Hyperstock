@@ -66,6 +66,30 @@ export function createApp() {
    * The instance is built here rather than at import time because it borrows
    * the mongoose connection, which `index.js` opens before calling createApp().
    */
+  app.use("/api/auth", (req, _res, next) => {
+    // When Render's static site proxy forwards to hyperstocks-api, the host header is
+    // rewritten to the onrender domain. Recover the public host from origin/referer
+    // so Better Auth derives the public OAuth callback and sets cookies on the visitor's domain.
+    const origin = req.headers["origin"] || req.headers["referer"];
+    if (
+      origin &&
+      (!req.headers["x-forwarded-host"] ||
+        req.headers["x-forwarded-host"].includes("onrender.com"))
+    ) {
+      try {
+        const parsed = new URL(origin);
+        if (
+          parsed.hostname === "hyperstocks.finance" ||
+          parsed.hostname.endsWith(".hyperstocks.finance")
+        ) {
+          req.headers["x-forwarded-host"] = parsed.host;
+          req.headers["x-forwarded-proto"] = parsed.protocol.replace(":", "");
+        }
+      } catch {}
+    }
+    next();
+  });
+
   app.all("/api/auth/*", authLimiter, toNodeHandler(createAuth()));
 
   app.use(express.json({ limit: "100kb" }));
