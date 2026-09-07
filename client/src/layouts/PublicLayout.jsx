@@ -1,13 +1,12 @@
-import { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Outlet, useLocation } from 'react-router-dom';
-import Link from '../components/ui/Link';
-import TopNav from '../components/nav/TopNav';
-import MobileDrawer from '../components/nav/MobileDrawer';
-import Logo from '../components/ui/Logo';
-import { assets } from '../assets/assets';
-import { SUPPORT_EMAIL } from '../lib/contact';
-import LiveGains from '../components/market/LiveGains';
+import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Outlet, useLocation } from "react-router-dom";
+import Link from "../components/ui/Link";
+import TopNav from "../components/nav/TopNav";
+import MobileDrawer from "../components/nav/MobileDrawer";
+import Logo from "../components/ui/Logo";
+import { assets } from "../assets/assets";
+import { SUPPORT_EMAIL } from "../lib/contact";
 
 /**
  * The marketing shell. It shares the app's navbar rather than carrying a
@@ -44,17 +43,6 @@ export default function PublicLayout({ chrome = true }) {
       {chrome && <SiteFooter />}
 
       {drawerOpen && <MobileDrawer onClose={() => setDrawerOpen(false)} />}
-
-      {/* MARKETING SHELL ONLY, and that is a deliberate boundary rather than
-          where it happened to be mounted. This shell is where social proof does
-          its job — somebody deciding whether to open an account. The signed-in
-          dashboard is where people trade, fund and withdraw, and a toast that
-          arrives on its own lands bottom-right over exactly the controls a
-          person is reaching for: the Trade button, the deposit address they are
-          copying, the withdrawal they are confirming. Interrupting a money
-          action to say somebody else is up $4,000 is the one place this feature
-          does harm. Move it to `Root` if it is ever wanted everywhere. */}
-      {chrome && <LiveGains />}
     </>
   );
 }
@@ -90,16 +78,16 @@ export default function PublicLayout({ chrome = true }) {
  */
 const FOOTER_COLUMNS = [
   {
-    key: 'legal',
+    key: "legal",
     links: [
-      { label: 'privacy', to: '/privacy' },
-      { label: 'financialPrivacy', to: '/financial-privacy' },
+      { label: "privacy", to: "/privacy" },
+      { label: "financialPrivacy", to: "/financial-privacy" },
     ],
   },
   {
-    key: 'security',
+    key: "security",
     links: [
-      { label: 'accountSecurity', to: '/account-security' },
+      { label: "accountSecurity", to: "/account-security" },
       // A security report is an ADDRESS, not a screen. Shipping this one as a
       // dead link is the worst of the set: somebody with a vulnerability to
       // report is exactly who must not hit "Not found".
@@ -107,15 +95,19 @@ const FOOTER_COLUMNS = [
       // It is `support@` rather than a separate `security@`: one inbox that is
       // actually read beats a second that merely implies somebody is watching
       // it. `lib/contact.js` is the single owner.
-      { label: 'reportIssue', to: `mailto:${SUPPORT_EMAIL}`, external: true },
+      { label: "reportIssue", to: `mailto:${SUPPORT_EMAIL}`, external: true },
     ],
   },
   {
-    key: 'support',
+    key: "support",
     links: [
-      { label: 'faq', to: '/faqs' },
-      { label: 'contactSupport', to: `mailto:${SUPPORT_EMAIL}`, external: true },
-      { label: 'about', to: '/about' },
+      { label: "faq", to: "/faqs" },
+      {
+        label: "contactSupport",
+        to: `mailto:${SUPPORT_EMAIL}`,
+        external: true,
+      },
+      { label: "about", to: "/about" },
     ],
   },
 ];
@@ -136,8 +128,8 @@ const FOOTER_COLUMNS = [
  * signed-in user.
  */
 export const BOTTOM_LINKS = [
-  ['privacy', '/privacy'],
-  ['terms', '/terms'],
+  ["privacy", "/privacy"],
+  ["terms", "/terms"],
 ];
 
 /**
@@ -164,16 +156,20 @@ export const BOTTOM_LINKS = [
  * the old prop name would have quietly rendered `<Icon>` as an unknown element.
  */
 const SOCIALS = [
-  { label: 'Facebook', src: assets.icons.facebook, href: 'https://www.facebook.com/hyperstocks' },
   {
-    label: 'Instagram',
-    src: assets.icons.instagram,
-    href: 'https://www.instagram.com/hyperstocks/',
+    label: "Facebook",
+    src: assets.icons.facebook,
+    href: "https://www.facebook.com/hyperstocks",
   },
   {
-    label: 'YouTube',
+    label: "Instagram",
+    src: assets.icons.instagram,
+    href: "https://www.instagram.com/hyperstocks/",
+  },
+  {
+    label: "YouTube",
     src: assets.icons.youtube,
-    href: 'https://www.youtube.com/channel/UCFGgrokJj_MkRwKDwbywGGg',
+    href: "https://www.youtube.com/channel/UCFGgrokJj_MkRwKDwbywGGg",
   },
 ];
 
@@ -198,7 +194,7 @@ export function SiteFooter() {
                 describes a data-visualisation tool, which would be false here.
                 Same shape — one sentence, two lines, em-dash turn. */}
             <p className="mt-6 mb-0 font-display text-base leading-relaxed font-normal text-text-on-deep-muted">
-              {t('footer.blurb')}
+              {t("footer.blurb")}
             </p>
 
             {/* 22px rather than the glyphs' 19: these are filled marks inside
@@ -246,7 +242,7 @@ export function SiteFooter() {
                 </span>
                 {col.links.map(({ label, to, external }) => {
                   const className =
-                    'font-display text-base text-text-on-deep-muted no-underline transition-colors hover:text-text-on-deep';
+                    "font-display text-base text-text-on-deep-muted no-underline transition-colors hover:text-text-on-deep";
                   // A mailto is not a route, so it must not go through Link —
                   // the router would try to navigate to it and fail.
                   return external ? (
@@ -267,7 +263,7 @@ export function SiteFooter() {
         {/* Copyright left, legal links right and underlined — the reference's
             bottom bar, which carries no disclaimer block above it. */}
         <div className="mt-14 flex flex-col gap-4 border-t border-white/10 pt-8 font-display text-xs text-text-on-deep-muted sm:flex-row sm:items-center sm:justify-between">
-          <p className="m-0">{t('footer.rights', { year: 2026 })}</p>
+          <p className="m-0">{t("footer.rights", { year: 2026 })}</p>
 
           <div className="flex flex-wrap gap-x-7 gap-y-2">
             {BOTTOM_LINKS.map(([label, to]) => (

@@ -533,6 +533,7 @@ async function computeBoard(period) {
         best: {
           symbol: "$best.symbol",
           returnPct: { $round: [{ $ifNull: ["$best.returnPct", 0] }, 2] },
+          returnCents: { $round: [{ $ifNull: ["$best.returnCents", 0] }, 0] },
         },
       },
     },
