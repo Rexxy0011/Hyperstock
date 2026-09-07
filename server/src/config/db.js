@@ -66,6 +66,7 @@ export async function connectDb() {
   await backfillAssetClass();
   await backfillUnsubscribeTokens();
   await migrateLegacyCredentials();
+  await cleanupOrphanedAuthRecords();
   await dropSupersededIndexes();
 
   if (supportsTransactions) {
@@ -260,6 +261,39 @@ export async function migrateLegacyCredentials() {
   }
 
   if (migrated > 0) console.log(`  Migrated credentials to Better Auth: ${migrated}`);
+}
+
+/**
+ * Sweeps orphaned accounts and sessions whose referenced user has been removed.
+ * Without this, Better Auth's OAuth linking detects an orphaned account row
+ * and aborts with "OAuth account references a missing user", permanently blocking
+ * that Google identity from creating a new account or signing in.
+ */
+export async function cleanupOrphanedAuthRecords() {
+  try {
+    const db = mongoose.connection.db;
+    const accountsColl = db.collection('accounts');
+    const sessionsColl = db.collection('sessions');
+    const usersColl = db.collection('users');
+
+    const accounts = await accountsColl.find({}, { projection: { _id: 1, userId: 1 } }).toArray();
+    for (const acc of accounts) {
+      const exists = await usersColl.findOne({ _id: acc.userId }, { projection: { _id: 1 } });
+      if (!exists) {
+        await accountsColl.deleteOne({ _id: acc._id });
+      }
+    }
+
+    const sessions = await sessionsColl.find({}, { projection: { _id: 1, userId: 1 } }).toArray();
+    for (const sess of sessions) {
+      const exists = await usersColl.findOne({ _id: sess.userId }, { projection: { _id: 1 } });
+      if (!exists) {
+        await sessionsColl.deleteOne({ _id: sess._id });
+      }
+    }
+  } catch (err) {
+    // Non-fatal cleanup guard
+  }
 }
 
 export async function backfillAssetClass() {
