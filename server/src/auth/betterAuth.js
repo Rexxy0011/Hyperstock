@@ -284,6 +284,10 @@ export function createAuth() {
          */
         trustedProviders: ["google"],
       },
+      // State is cryptographically verified against MongoDB (verifications collection).
+      // Disabling the redundant cookie check prevents state_mismatch when reverse proxies
+      // (Render/Cloudflare) or browser SameSite policies drop the transient cookie on redirect.
+      skipStateCookieCheck: true,
     },
 
     plugins: [

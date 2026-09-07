@@ -201,7 +201,7 @@ export function AuthProvider({ children }) {
     const { url } = await post("/auth/sign-in/social", {
       provider: "google",
       callbackURL: `${window.location.origin}${next}`,
-      errorCallbackURL: `${window.location.origin}/auth?error=oauth`,
+      errorCallbackURL: `${window.location.origin}/auth`,
     });
     if (url) window.location.href = url;
   }, []);
