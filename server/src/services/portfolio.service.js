@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { User } from "../models/User.js";
 import { Holding } from "../models/Holding.js";
 import { LedgerEntry, LEDGER_TYPE } from "../models/LedgerEntry.js";
 import { Stock } from "../models/Stock.js";
@@ -254,9 +255,7 @@ export async function getPortfolio(userId, cashBalanceCents) {
 
       // Return % on the user's committed margin
       const totalReturnPct =
-        marginCents > 0
-          ? round2((unrealizedPnLCents / marginCents) * 100)
-          : 0;
+        marginCents > 0 ? round2((unrealizedPnLCents / marginCents) * 100) : 0;
       const totalReturnCents = unrealizedPnLCents;
 
       // Daily P&L: position exposure moves with real-time asset changePct
@@ -294,12 +293,6 @@ export async function getPortfolio(userId, cashBalanceCents) {
     })
     .sort((a, b) => b.marketValueCents - a.marketValueCents);
 
-  const holdingsValueCents = positions.reduce(
-    (sum, p) => sum + p.marketValueCents,
-    0
-  );
-  const portfolioValueCents = cashBalanceCents + holdingsValueCents;
-
   const totalMarginCents = positions.reduce(
     (sum, p) => sum + (p.marginCents || 0),
     0
@@ -311,25 +304,31 @@ export async function getPortfolio(userId, cashBalanceCents) {
 
   // Today's daily % is driven solely by the actual P&L of the 2x leveraged positions
   const todayChangePct =
-    totalMarginCents > 0
-      ? round2((todayPnLCents / totalMarginCents) * 100)
+    totalMarginCents > 0 ? round2((todayPnLCents / totalMarginCents) * 100) : 0;
+
+  const user = await User.findById(userId).select("allTimeReturnPct").lean();
+  const userReturnRate = user?.allTimeReturnPct;
+  const baseReturnCents =
+    userReturnRate != null
+      ? Math.round(totalMarginCents * (userReturnRate / 100))
       : 0;
 
-  const holdingsReturnCents = holdingsValueCents - totalMarginCents;
-  const investedCents = await contributedCapitalCents(userId);
+  const livePnLCents = positions.reduce(
+    (sum, p) => sum + p.totalReturnCents,
+    0
+  );
+
+  const allTimeReturnCents =
+    positions.length > 0 ? baseReturnCents + livePnLCents : 0;
 
   const allTimeReturnPct =
-    positions.length > 0
-      ? totalMarginCents > 0
-        ? round2((holdingsReturnCents / totalMarginCents) * 100)
-        : 0
-      : investedCents > 0
-        ? round2(((portfolioValueCents - investedCents) / investedCents) * 100)
-        : 0;
-  const allTimeReturnCents =
-    positions.length > 0
-      ? holdingsReturnCents
-      : portfolioValueCents - investedCents;
+    positions.length > 0 && totalMarginCents > 0
+      ? round2((allTimeReturnCents / totalMarginCents) * 100)
+      : (userReturnRate ?? 0);
+
+  const holdingsValueCents = Math.max(0, totalMarginCents + allTimeReturnCents);
+  const portfolioValueCents = cashBalanceCents + holdingsValueCents;
+  const investedCents = await contributedCapitalCents(userId);
 
   return {
     summary: {
@@ -342,6 +341,7 @@ export async function getPortfolio(userId, cashBalanceCents) {
       todayChangePct,
       allTimeReturnCents,
       allTimeReturnPct,
+      allTimeReturnBaseCents: baseReturnCents,
       positionsCount: positions.length,
       exchangeCount: new Set(positions.map((p) => p.exchange)).size,
     },

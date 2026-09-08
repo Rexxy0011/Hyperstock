@@ -199,10 +199,7 @@ async function computeBoard(period) {
                 $cond: [
                   { $gt: ["$_marginCents", 0] },
                   {
-                    $max: [
-                      0,
-                      { $add: ["$_marginCents", "$_pnlCents"] },
-                    ],
+                    $max: [0, { $add: ["$_marginCents", "$_pnlCents"] }],
                   },
                   "$_valueCents",
                 ],
@@ -218,8 +215,76 @@ async function computeBoard(period) {
     },
     {
       $addFields: {
-        holdingsValueCents: { $sum: "$h.valueCents" },
         holdingsCostBasisCents: { $sum: "$h.costBasisCents" },
+        allTimeReturnBaseCents: {
+          $cond: [
+            {
+              $and: [
+                { $ne: [{ $ifNull: ["$allTimeReturnPct", null] }, null] },
+                { $gt: [{ $sum: "$h.costBasisCents" }, 0] },
+              ],
+            },
+            {
+              $round: [
+                {
+                  $divide: [
+                    {
+                      $multiply: [
+                        { $sum: "$h.costBasisCents" },
+                        "$allTimeReturnPct",
+                      ],
+                    },
+                    100,
+                  ],
+                },
+                0,
+              ],
+            },
+            0,
+          ],
+        },
+        holdingsValueCents: {
+          $max: [
+            0,
+            {
+              $add: [
+                { $sum: "$h.valueCents" },
+                {
+                  $cond: [
+                    {
+                      $and: [
+                        {
+                          $ne: [
+                            { $ifNull: ["$allTimeReturnPct", null] },
+                            null,
+                          ],
+                        },
+                        { $gt: [{ $sum: "$h.costBasisCents" }, 0] },
+                      ],
+                    },
+                    {
+                      $round: [
+                        {
+                          $divide: [
+                            {
+                              $multiply: [
+                                { $sum: "$h.costBasisCents" },
+                                "$allTimeReturnPct",
+                              ],
+                            },
+                            100,
+                          ],
+                        },
+                        0,
+                      ],
+                    },
+                    0,
+                  ],
+                },
+              ],
+            },
+          ],
+        },
         sumActiveHoldingsPct: { $sum: "$h.returnPct" },
         losingHoldingsReturnCents: {
           $sum: {

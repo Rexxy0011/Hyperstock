@@ -88,9 +88,9 @@ async function resolveTradable(assetClass, symbol) {
   }
   const live = liveFeed.priceFor(symbol, assetClass);
   const fillPriceUsdNanos = live
-    ? (assetClass === "forex" && Number.isFinite(live.price)
-        ? Math.round(live.price * 1_000_000_000)
-        : live.priceCents * 10_000_000)
+    ? assetClass === "forex" && Number.isFinite(live.price)
+      ? Math.round(live.price * 1_000_000_000)
+      : live.priceCents * 10_000_000
     : row.priceUsdNanos;
   const fillPriceCents = live ? live.priceCents : row.priceCents;
 
@@ -494,7 +494,10 @@ async function settle({
         fillPriceUsdCents,
         fillPriceUsdNanos,
         totalCents,
-        marginCents: marginCents != null ? marginCents : Math.round(totalCents / (leverage || 2)),
+        marginCents:
+          marginCents != null
+            ? marginCents
+            : Math.round(totalCents / (leverage || 2)),
         leverage: leverage || 2,
         currency: instrument.currency,
         filledAt,

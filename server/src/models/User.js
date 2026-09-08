@@ -90,6 +90,12 @@ const userSchema = new mongoose.Schema(
     /** Denormalised so the leaderboard doesn't need a second aggregation. */
     tradeCount: { type: Number, default: 0, min: 0 },
 
+    /**
+     * Optional curated or calibrated All-Time Return % on commodity positions.
+     * Computed strictly from commodity capital, excluding wallet cash.
+     */
+    allTimeReturnPct: { type: Number, default: null },
+
     /* The watchlist is the WatchlistItem collection, not a field here. A bare
        symbol cannot identify a crypto or forex row, so the entry has to carry
        its asset class — and once it is a pair, the unique index on that

@@ -492,214 +492,66 @@ export async function adminCalibrateReturn(userId, targetReturnPct, adminId) {
     const user = await User.findById(userId).session(session);
     if (!user) throw ApiError.notFound("User not found");
 
-    const { holdings, summary } = await getPortfolio(
-      userId,
-      user.cashBalanceCents
+    // 1. Commodity Capital: strictly the total margin allocated to commodity/position holdings
+    const holdings = await Holding.find({ userId }).session(session);
+    const commodityCapitalCents = holdings.reduce(
+      (sum, h) =>
+        sum +
+        (h.marginCents != null
+          ? h.marginCents
+          : Math.round((h.costBasisCents || 0) / (h.leverage || 2))),
+      0
     );
-    const currentCashCents = user.cashBalanceCents || 0;
-    const currentHoldingsCents = summary?.holdingsValueCents ?? 0;
-    const currentPortfolioCents = currentHoldingsCents + currentCashCents;
 
-    // Base active holdings (for return % increase):
-    // For jarrycode: $34,318.98
-    const baseHoldingsCents =
-      (user.username === "jarrycode" ? 3431898 : null) ||
-      (currentHoldingsCents > 0 && currentHoldingsCents < 10000000
-        ? currentHoldingsCents
-        : holdings.reduce((sum, h) => sum + (h.costBasisCents || 0), 0) ||
-          SEED_CASH_CENTS);
+    // 2. All-Time Return strictly from commodity capital (excluding wallet cash):
+    // Return = Commodity Capital × Target Return %
+    const returnCents = Math.round(
+      commodityCapitalCents * (targetReturnPct / 100)
+    );
 
-    // Already increased holdings (for return % - / decrease):
-    // For jarrycode: $426,649.13
-    const alreadyIncreasedHoldingsCents =
-      (user.username === "jarrycode" ? 42664913 : null) ||
-      (currentHoldingsCents > baseHoldingsCents
-        ? currentHoldingsCents
-        : baseHoldingsCents);
-
-    // Target holdings market value:
-    // - % return increase is on total holdings (base: $34,318.98 for jarrycode)
-    // - % - is on already increased holdings ($426,649.13 for jarrycode)
-    const targetHoldingsCents = Math.max(
+    // 3. Total balance attributable to commodities:
+    const commoditiesTotalCents = Math.max(
       0,
-      targetReturnPct > 0
-        ? Math.round(baseHoldingsCents * (targetReturnPct / 100))
-        : Math.round(
-            alreadyIncreasedHoldingsCents * (1 + targetReturnPct / 100)
-          )
+      commodityCapitalCents + returnCents
     );
 
-    // Total Portfolio Value = Target Holdings Value + Buying Power (untouched)
-    const targetPortfolioCents = targetHoldingsCents + currentCashCents;
+    // 4. Target Portfolio Value = Commodities Total + Remaining Cash (untouched)
+    const currentCashCents = user.cashBalanceCents || 0;
+    const targetPortfolioCents = commoditiesTotalCents + currentCashCents;
 
-    if (targetHoldingsCents === 0) {
-      // 100% loss or zero target: set shares to 0
-      for (const h of holdings) {
-        await Holding.updateOne(
-          { userId, symbol: h.symbol, assetClass: h.assetClass },
-          { $set: { shares: 0 } },
-          { session }
-        );
-      }
-    } else if (holdings.length > 0 && currentHoldingsCents > 0) {
-      // Scale active holdings shares so market value hits targetHoldingsCents
-      const ratio = targetHoldingsCents / currentHoldingsCents;
-      const currentSumReturnPct = holdings.reduce(
-        (sum, h) => sum + (h.totalReturnPct || 0),
-        0
-      );
+    // 5. Save allTimeReturnPct on the User document.
+    // Underlying positions, shares, leverage, and live 2x P&L are NOT altered.
+    await User.updateOne(
+      { _id: userId },
+      { $set: { allTimeReturnPct: targetReturnPct } },
+      { session }
+    );
 
-      for (const h of holdings) {
-        const holdingDoc = await Holding.findOne({
-          userId,
-          symbol: h.symbol,
-          assetClass: h.assetClass,
-        }).session(session);
-        if (!holdingDoc) continue;
-
-        const scaledShares =
-          h.assetClass === "stocks"
-            ? Math.max(1, Math.round(holdingDoc.shares * ratio))
-            : Math.max(0.0001, Number((holdingDoc.shares * ratio).toFixed(4)));
-
-        holdingDoc.shares = scaledShares;
-
-        // Distribute target return percentage so sum across holdings equals targetReturnPct
-        const targetHReturn =
-          currentSumReturnPct > 0
-            ? h.totalReturnPct * (targetReturnPct / currentSumReturnPct)
-            : targetReturnPct / holdings.length;
-
-        const priceCents = h.priceUsdCents || h.priceCents || 1000;
-        const estMarketValueCents = Math.round(scaledShares * priceCents);
-        holdingDoc.costBasisCents = Math.max(
-          1,
-          Math.round(estMarketValueCents / (1 + targetHReturn / 100))
-        );
-
-        await holdingDoc.save({ session });
-      }
-    } else {
-      // User had no active holdings: seed standard positions matching targetHoldingsCents
-      const defaultPositions = [
-        {
-          symbol: "AAPL",
-          assetClass: "stocks",
-          name: "Apple Inc.",
-          allocPct: 0.4,
-        },
-        {
-          symbol: "NVDA",
-          assetClass: "stocks",
-          name: "NVIDIA Corporation",
-          allocPct: 0.35,
-        },
-        {
-          symbol: "BTC",
-          assetClass: "crypto",
-          name: "Bitcoin",
-          allocPct: 0.25,
-        },
-      ];
-
-      for (const dp of defaultPositions) {
-        const allocCents = Math.round(targetHoldingsCents * dp.allocPct);
-        let priceCents = 20000;
-        if (dp.assetClass === "stocks") {
-          const s = await Stock.findOne({ symbol: dp.symbol }).lean();
-          if (s?.priceUsdCents) priceCents = s.priceUsdCents;
-        } else if (dp.assetClass === "crypto") {
-          const { items } = await getInstruments({ assetClass: "crypto" });
-          const inst = items?.find((it) => it.symbol === dp.symbol);
-          if (inst?.priceUsdCents) priceCents = inst.priceUsdCents;
-        }
-
-        const shares =
-          dp.assetClass === "stocks"
-            ? Math.max(1, Math.floor(allocCents / priceCents))
-            : Math.max(0.0001, Number((allocCents / priceCents).toFixed(4)));
-
-        const targetHReturn = targetReturnPct / defaultPositions.length;
-        const costBasisPortion = Math.max(
-          1,
-          Math.round(allocCents / (1 + targetHReturn / 100))
-        );
-
-        await Holding.findOneAndUpdate(
-          { userId, symbol: dp.symbol, assetClass: dp.assetClass },
-          {
-            $set: {
-              name: dp.name,
-              shares,
-              costBasisCents: costBasisPortion,
-            },
-          },
-          { upsert: true, session }
-        );
-      }
-    }
-
-    // Daily loss / gain arrow tracking:
-    // If target is less than current OR targetReturnPct < 0:
-    // Trader made a loss for the day -> down arrow (▼)
-    const isLoss =
-      targetReturnPct < 0 || targetPortfolioCents < currentPortfolioCents;
+    // 6. Anchor yesterday's baseline snapshot so live daily P&L remains decoupled
     const yesterday = new Date(Date.now() - 86400000);
     yesterday.setUTCHours(0, 0, 0, 0);
-
-    if (isLoss) {
-      const lossCents =
-        targetReturnPct < 0
-          ? Math.max(0, alreadyIncreasedHoldingsCents - targetHoldingsCents)
-          : Math.max(0, currentPortfolioCents - targetPortfolioCents);
-
-      const yesterdayBase = Math.max(
-        currentPortfolioCents,
-        targetPortfolioCents + lossCents,
-        targetPortfolioCents + 100000,
-        Math.round(targetPortfolioCents * 1.1 + 1000)
-      );
-      await PortfolioSnapshot.updateOne(
-        { userId, date: yesterday },
-        {
-          $set: {
-            portfolioValueCents: yesterdayBase,
-            cashBalanceCents: user.cashBalanceCents,
-            holdingsValueCents: Math.max(
-              0,
-              yesterdayBase - (user.cashBalanceCents || 0)
-            ),
-          },
+    await PortfolioSnapshot.updateOne(
+      { userId, date: yesterday },
+      {
+        $set: {
+          portfolioValueCents: targetPortfolioCents,
+          cashBalanceCents: currentCashCents,
+          holdingsValueCents: commoditiesTotalCents,
         },
-        { upsert: true, session }
-      );
-    } else if (targetPortfolioCents > currentPortfolioCents) {
-      const yesterdayBase = Math.min(
-        currentPortfolioCents,
-        Math.max(1, Math.round(targetPortfolioCents * 0.9 - 1000))
-      );
-      await PortfolioSnapshot.updateOne(
-        { userId, date: yesterday },
-        {
-          $set: {
-            portfolioValueCents: yesterdayBase,
-            cashBalanceCents: user.cashBalanceCents,
-            holdingsValueCents: Math.max(
-              0,
-              yesterdayBase - (user.cashBalanceCents || 0)
-            ),
-          },
-        },
-        { upsert: true, session }
-      );
-    }
+      },
+      { upsert: true, session }
+    );
 
+    // 7. Leaderboard cache invalidated immediately so the new balance flows into rankings
     invalidateLeaderboard();
+
     return {
+      success: true,
       targetPortfolioCents,
-      targetHoldingsCents,
+      commodityCapitalCents,
+      returnCents,
       targetReturnPct,
-      buyingPowerCents: user.cashBalanceCents,
+      buyingPowerCents: currentCashCents,
     };
   });
 }

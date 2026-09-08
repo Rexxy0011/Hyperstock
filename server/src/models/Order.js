@@ -1,21 +1,25 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
 const orderSchema = new mongoose.Schema(
   {
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
 
     /** Which market this order was placed in — see the note on Holding. */
     assetClass: {
       type: String,
-      enum: ['stocks', 'crypto', 'forex'],
+      enum: ["stocks", "crypto", "forex"],
       required: true,
-      default: 'stocks',
+      default: "stocks",
     },
 
     symbol: { type: String, required: true, uppercase: true, trim: true },
 
-    side: { type: String, enum: ['BUY', 'SELL'], required: true },
-    orderType: { type: String, enum: ['MARKET', 'LIMIT'], required: true },
+    side: { type: String, enum: ["BUY", "SELL"], required: true },
+    orderType: { type: String, enum: ["MARKET", "LIMIT"], required: true },
 
     /**
      * Whole units for equities, fractional for crypto and forex.
@@ -31,9 +35,11 @@ const orderSchema = new mongoose.Schema(
       min: 1e-8,
       validate: {
         validator: function (v) {
-          return this.assetClass === 'stocks' ? Number.isInteger(v) : Number.isFinite(v);
+          return this.assetClass === "stocks"
+            ? Number.isInteger(v)
+            : Number.isFinite(v);
         },
-        message: 'quantity must be a whole number for equities',
+        message: "quantity must be a whole number for equities",
       },
     },
 
@@ -55,13 +61,13 @@ const orderSchema = new mongoose.Schema(
     totalCents: { type: Number, min: 0 }, // USD, total position exposure (quantity * fillPriceUsdCents)
     leverage: { type: Number, default: 2 },
     marginCents: { type: Number, min: 0 }, // USD, user's cash margin committed (totalCents / leverage)
-    currency: { type: String, default: 'USD' },
+    currency: { type: String, default: "USD" },
     filledAt: { type: Date },
 
     status: {
       type: String,
-      enum: ['PENDING', 'FILLED', 'REJECTED', 'CANCELLED'],
-      default: 'PENDING',
+      enum: ["PENDING", "FILLED", "REJECTED", "CANCELLED"],
+      default: "PENDING",
       required: true,
     },
     rejectReason: { type: String },
@@ -73,18 +79,21 @@ const orderSchema = new mongoose.Schema(
      */
     idempotencyKey: { type: String },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 orderSchema.index({ userId: 1, createdAt: -1 });
 orderSchema.index(
   { idempotencyKey: 1 },
-  { unique: true, partialFilterExpression: { idempotencyKey: { $exists: true } } },
+  {
+    unique: true,
+    partialFilterExpression: { idempotencyKey: { $exists: true } },
+  }
 );
 /** Used by the sweeper that fills limit orders once they become marketable. */
 orderSchema.index({ status: 1, symbol: 1 });
 
-orderSchema.set('toJSON', {
+orderSchema.set("toJSON", {
   transform(_doc, /** @type {any} */ ret) {
     delete ret.__v;
     ret.id = ret._id;
@@ -93,4 +102,4 @@ orderSchema.set('toJSON', {
   },
 });
 
-export const Order = mongoose.model('Order', orderSchema);
+export const Order = mongoose.model("Order", orderSchema);

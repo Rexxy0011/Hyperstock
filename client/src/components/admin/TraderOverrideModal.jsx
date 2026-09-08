@@ -121,17 +121,17 @@ export default function TraderOverrideModal({ open, onClose, trader }) {
     return heldList.reduce((sum, h) => sum + (h.valueCents || 0), 0);
   }, [heldList]);
 
-  // Original purchase prices of active holdings:
-  // For jarrycode: $34,318.98
-  const activeHoldingsOriginalCost = useMemo(() => {
-    return (
-      (trader?.username === "jarrycode" ? 3431898 : null) ||
-      heldList.reduce((sum, h) => sum + (h.costBasisCents || 0), 0) ||
-      (currentHoldingsValue > 0 && currentHoldingsValue < 10000000
-        ? currentHoldingsValue
-        : 3431898)
+  // Commodity Capital: strictly the total margin allocated to commodity/position holdings
+  const commodityCapital = useMemo(() => {
+    return heldList.reduce(
+      (sum, h) =>
+        sum +
+        (h.marginCents != null
+          ? h.marginCents
+          : Math.round((h.costBasisCents || 0) / (h.leverage || 2))),
+      0
     );
-  }, [trader?.username, heldList, currentHoldingsValue]);
+  }, [heldList]);
 
   const currentCash = trader?.cashBalanceCents ?? 0;
   const currentPortfolioValue =
@@ -300,24 +300,14 @@ export default function TraderOverrideModal({ open, onClose, trader }) {
     placeTrade.mutate({ symbol: selectedSymbol, side, quantity: q });
   };
 
-  // Active Holdings Base (prices of stocks bought originally: jarrycode: $34,318.98)
-  const baseHoldings = activeHoldingsOriginalCost;
-
-  // Already increased holdings (for return % -: jarrycode: $426,649.13)
-  const alreadyIncreasedHoldings =
-    (trader.username === "jarrycode" ? 42664913 : null) ||
-    Math.max(currentHoldingsValue, baseHoldings);
-
   const targetReturnPercent = parseFloat(returnPct || 0);
-  const targetHoldings = Math.max(
-    0,
-    targetReturnPercent > 0
-      ? Math.round(baseHoldings * (targetReturnPercent / 100))
-      : Math.round(alreadyIncreasedHoldings * (1 + targetReturnPercent / 100))
+  const returnCents = Math.round(
+    commodityCapital * (targetReturnPercent / 100)
   );
-  // Total Portfolio = Target Holdings + Buying Power (preserved intact)
-  const targetPortfolio = targetHoldings + currentCash;
-  const holdingsDelta = targetHoldings - currentHoldingsValue;
+  // Total balance attributable to commodities:
+  const targetCommodities = Math.max(0, commodityCapital + returnCents);
+  // Total Portfolio = Target Commodities + Buying Power (preserved intact)
+  const targetPortfolio = targetCommodities + currentCash;
   const isLossToday =
     targetPortfolio < currentPortfolioValue || targetReturnPercent < 0;
 
@@ -525,7 +515,7 @@ export default function TraderOverrideModal({ open, onClose, trader }) {
           <div className="rounded-lg border border-cool-grey bg-white p-3 shadow-card">
             <div className="text-2xs text-text-muted">Active Holdings</div>
             <div className="mt-0.5 font-numeric text-base font-semibold tabular-nums text-void">
-              {money(activeHoldingsOriginalCost)}
+              {money(commodityCapital)}
             </div>
           </div>
           <div className="rounded-lg border border-cool-grey bg-white p-3 shadow-card">
@@ -855,15 +845,12 @@ export default function TraderOverrideModal({ open, onClose, trader }) {
             <div className="rounded-xl border border-cool-grey bg-white p-5 shadow-card">
               <div className="border-b border-cool-grey/60 pb-3 mb-4">
                 <h3 className="text-sm font-semibold text-void">
-                  Calibrate All-Time Return (Holdings-Based Performance)
+                  Calibrate All-Time Return (Commodity-Based Performance)
                 </h3>
                 <p className="mt-0.5 text-xs text-text-muted">
-                  Set a specific all-time return percentage. The % return
-                  increase applies to total holdings (e.g. 1,243.19% ×
-                  $34,318.98 = $426,649.13), while % − (loss) is calculated on
-                  the already increased holdings ($426,649.13). Buying power
-                  ($100,000) is preserved untouched. Total portfolio value
-                  equals active holdings plus buying power.
+                  Set a specific all-time return percentage. The All-Time Return %
+                  is calculated strictly from commodity capital, excluding wallet
+                  cash. Live 2x leveraged P&L is preserved and continues updating normally.
                 </p>
               </div>
 
@@ -877,7 +864,7 @@ export default function TraderOverrideModal({ open, onClose, trader }) {
                     step="0.1"
                     value={returnPct}
                     onChange={(e) => setReturnPct(e.target.value)}
-                    placeholder="e.g. 1243.19"
+                    placeholder="e.g. 20.0"
                   />
                 </div>
                 <Button
@@ -892,21 +879,13 @@ export default function TraderOverrideModal({ open, onClose, trader }) {
               {/* Live Arithmetic Breakdown Card */}
               <div className="mt-5 rounded-xl border border-cool-grey bg-mist p-4">
                 <h4 className="text-2xs font-semibold uppercase tracking-wider text-text-muted mb-3">
-                  Accounting & Rebalancing Breakdown
+                  Accounting & Return Breakdown
                 </h4>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
                   <div>
-                    <span className="text-text-muted">
-                      {targetReturnPercent < 0
-                        ? "Increased Holdings Base:"
-                        : "Active Holdings (Original):"}
-                    </span>
+                    <span className="text-text-muted">Commodity Capital:</span>
                     <div className="font-semibold text-void font-numeric">
-                      {money(
-                        targetReturnPercent < 0
-                          ? alreadyIncreasedHoldings
-                          : baseHoldings
-                      )}
+                      {money(commodityCapital)}
                     </div>
                   </div>
                   <div>
@@ -920,9 +899,21 @@ export default function TraderOverrideModal({ open, onClose, trader }) {
                     </div>
                   </div>
                   <div>
-                    <span className="text-text-muted">Target Holdings:</span>
+                    <span className="text-text-muted">Return Value:</span>
+                    <div
+                      className={`font-semibold font-numeric ${
+                        returnCents >= 0 ? "text-gain" : "text-loss"
+                      }`}
+                    >
+                      {returnCents >= 0
+                        ? `+${money(returnCents)}`
+                        : money(returnCents)}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-text-muted">Commodities Total:</span>
                     <div className="font-semibold text-void font-numeric">
-                      {money(targetHoldings)}
+                      {money(targetCommodities)}
                     </div>
                   </div>
                   <div>
@@ -940,18 +931,6 @@ export default function TraderOverrideModal({ open, onClose, trader }) {
                     <span className="text-text-muted">Target Portfolio:</span>
                     <div className="font-semibold text-gain font-numeric">
                       {money(targetPortfolio)}
-                    </div>
-                  </div>
-                  <div>
-                    <span className="text-text-muted">Holdings Rebalance:</span>
-                    <div
-                      className={`font-semibold font-numeric ${
-                        holdingsDelta >= 0 ? "text-gain" : "text-loss"
-                      }`}
-                    >
-                      {holdingsDelta >= 0
-                        ? `+${money(holdingsDelta)}`
-                        : money(holdingsDelta)}
                     </div>
                   </div>
                 </div>

@@ -1,17 +1,17 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import { useQueryClient } from '@tanstack/react-query';
-import { post } from '../../lib/api';
-import { keys } from '../../lib/queryClient';
-import { fundingUrl } from '../../lib/tradeIntent';
-import { errorMessage } from '../../lib/apiError';
-import { money, priceUsd, qty as fmtQty } from '../../lib/format';
-import { useAuth } from '../../auth/AuthProvider';
-import Modal from '../ui/Modal';
-import Button from '../ui/Button';
-import Tabs from '../ui/Tabs';
-import { useLivePrices, livePrice } from '../../hooks/useLivePrices';
+import { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { useQueryClient } from "@tanstack/react-query";
+import { post } from "../../lib/api";
+import { keys } from "../../lib/queryClient";
+import { fundingUrl } from "../../lib/tradeIntent";
+import { errorMessage } from "../../lib/apiError";
+import { money, priceUsd, qty as fmtQty } from "../../lib/format";
+import { useAuth } from "../../auth/AuthProvider";
+import Modal from "../ui/Modal";
+import Button from "../ui/Button";
+import Tabs from "../ui/Tabs";
+import { useLivePrices, livePrice } from "../../hooks/useLivePrices";
 
 /**
  * The order ticket: choose a side and a quantity, confirm against a live total.
@@ -31,8 +31,8 @@ import { useLivePrices, livePrice } from '../../hooks/useLivePrices';
  * moved at all.
  */
 const SIDES = [
-  { value: 'BUY', label: 'Buy' },
-  { value: 'SELL', label: 'Sell' },
+  { value: "BUY", label: "Buy" },
+  { value: "SELL", label: "Sell" },
 ];
 
 const NANOS_PER_CENT = 10_000_000;
@@ -53,16 +53,16 @@ const NANOS_PER_CENT = 10_000_000;
  * word, so those take the symbol there too.
  */
 const UNITS = {
-  stocks: { oneKey: 'trade.perShare', nounKey: 'trade.sharesNoun' },
-  crypto: { oneKey: null, nounKey: 'trade.unitsNoun' },
-  forex: { oneKey: null, nounKey: 'trade.unitsNoun' },
+  stocks: { oneKey: "trade.perShare", nounKey: "trade.sharesNoun" },
+  crypto: { oneKey: null, nounKey: "trade.unitsNoun" },
+  forex: { oneKey: null, nounKey: "trade.unitsNoun" },
 };
 
 export default function TradeModal({
   open,
   onClose,
   instrument,
-  assetClass = 'stocks',
+  assetClass = "stocks",
   priceUsdCents,
   priceUsdNanos,
   holding,
@@ -71,7 +71,7 @@ export default function TradeModal({
    * the caller may be a dedicated Buy or Sell button — landing on Buy after
    * somebody pressed Sell reads as the click having missed.
    */
-  initialSide = 'BUY',
+  initialSide = "BUY",
   /**
    * The quantity to open on, when the caller knows better than the default —
    * which today means one thing: the user is coming back from funding and this
@@ -86,7 +86,7 @@ export default function TradeModal({
   const location = useLocation();
 
   const [side, setSide] = useState(initialSide);
-  const [quantity, setQuantity] = useState('1');
+  const [quantity, setQuantity] = useState("1");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState(null);
   const [receipt, setReceipt] = useState(null);
@@ -96,11 +96,14 @@ export default function TradeModal({
    * reuse it — that is the whole point of the unique index behind it — so it is
    * regenerated when the ticket opens and never on submit.
    */
-  const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
+  const [idempotencyKey, setIdempotencyKey] = useState(() =>
+    crypto.randomUUID()
+  );
 
-  const whole = assetClass === 'stocks';
+  const whole = assetClass === "stocks";
   const units = UNITS[assetClass] ?? UNITS.stocks;
-  const propNanos = Number(priceUsdNanos) || Number(priceUsdCents) * NANOS_PER_CENT || 0;
+  const propNanos =
+    Number(priceUsdNanos) || Number(priceUsdCents) * NANOS_PER_CENT || 0;
   const [nanos, setNanos] = useState(propNanos);
 
   const { live } = useLivePrices();
@@ -115,7 +118,7 @@ export default function TradeModal({
   useEffect(() => {
     if (!liveTick || pending) return;
     const tickNanos =
-      assetClass === 'forex' && Number.isFinite(liveTick.price)
+      assetClass === "forex" && Number.isFinite(liveTick.price)
         ? Math.round(liveTick.price * 1_000_000_000)
         : liveTick.priceCents != null
           ? liveTick.priceCents * NANOS_PER_CENT
@@ -132,7 +135,8 @@ export default function TradeModal({
    * figure comes to $491.40 against the $489.89 actually charged, and the
    * arithmetic visibly fails on one small panel.
    */
-  const priceDecimals = assetClass === 'forex' ? (nanos / 1e9 >= 50 ? 2 : 4) : undefined;
+  const priceDecimals =
+    assetClass === "forex" ? (nanos / 1e9 >= 50 ? 2 : 4) : undefined;
 
   useEffect(() => {
     if (!open) return;
@@ -145,7 +149,8 @@ export default function TradeModal({
     // on a quantity the user can actually afford rather than one that greets
     // them with an error.
     setQuantity(
-      initialQuantity ?? (whole ? '1' : defaultQty(startNanos, user?.cashBalanceCents ?? 0)),
+      initialQuantity ??
+        (whole ? "1" : defaultQty(startNanos, user?.cashBalanceCents ?? 0))
     );
     setError(null);
     setReceipt(null);
@@ -155,9 +160,14 @@ export default function TradeModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, whole, initialSide, initialQuantity]);
 
-  const qty = whole ? Number.parseInt(quantity, 10) : Number.parseFloat(quantity);
+  const qty = whole
+    ? Number.parseInt(quantity, 10)
+    : Number.parseFloat(quantity);
   const validQty =
-    Number.isFinite(qty) && qty > 0 && (!whole || Number.isInteger(qty)) && (whole || qty >= 1e-8);
+    Number.isFinite(qty) &&
+    qty > 0 &&
+    (!whole || Number.isInteger(qty)) &&
+    (whole || qty >= 1e-8);
 
   // Total market exposure (quantity * price)
   const totalCents = validQty ? Math.round(qty * (nanos / NANOS_PER_CENT)) : 0;
@@ -168,22 +178,34 @@ export default function TradeModal({
 
   const problem = useMemo(() => {
     if (!validQty) {
-      return whole ? t('trade.wholeShares') : t('trade.positiveQty');
+      return whole ? t("trade.wholeShares") : t("trade.positiveQty");
     }
-    if (side === 'BUY' && marginCents > buyingPowerCents) return t('trade.notEnough');
-    if (side === 'SELL' && qty > held) {
+    if (side === "BUY" && marginCents > buyingPowerCents)
+      return t("trade.notEnough");
+    if (side === "SELL" && qty > held) {
       return held === 0
-        ? t('trade.holdNone', { symbol: instrument.symbol })
-        : t('trade.holdOnly', {
+        ? t("trade.holdNone", { symbol: instrument.symbol })
+        : t("trade.holdOnly", {
             quantity: fmtQty(held, assetClass),
             symbol: instrument.symbol,
           });
     }
     return null;
-  }, [validQty, whole, side, marginCents, buyingPowerCents, qty, held, instrument.symbol, assetClass, t]);
+  }, [
+    validQty,
+    whole,
+    side,
+    marginCents,
+    buyingPowerCents,
+    qty,
+    held,
+    instrument.symbol,
+    assetClass,
+    t,
+  ]);
 
   const shortfallCents =
-    side === 'BUY' && validQty && marginCents > buyingPowerCents
+    side === "BUY" && validQty && marginCents > buyingPowerCents
       ? Math.ceil((marginCents - buyingPowerCents) / 100) * 100
       : 0;
 
@@ -199,17 +221,19 @@ export default function TradeModal({
 
   /** The largest quantity this side can support with 2x leverage */
   function fillMax() {
-    if (side === 'SELL') return setQuantity(String(fmtQty(held, assetClass)));
+    if (side === "SELL") return setQuantity(String(fmtQty(held, assetClass)));
     if (!nanos) return;
     const raw = (buyingPowerCents * 2) / (nanos / NANOS_PER_CENT);
-    setQuantity(whole ? String(Math.floor(raw)) : String(Math.floor(raw * 1e8) / 1e8));
+    setQuantity(
+      whole ? String(Math.floor(raw)) : String(Math.floor(raw * 1e8) / 1e8)
+    );
   }
 
   async function submit() {
     setPending(true);
     setError(null);
     try {
-      const result = await post('/orders', {
+      const result = await post("/orders", {
         assetClass,
         symbol: instrument.symbol,
         side,
@@ -224,14 +248,14 @@ export default function TradeModal({
       setReceipt(result);
 
       queryClient.invalidateQueries({ queryKey: keys.portfolio });
-      queryClient.invalidateQueries({ queryKey: ['orders'] });
-      queryClient.invalidateQueries({ queryKey: keys.leaderboard('all') });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: keys.leaderboard("all") });
     } catch (err) {
       // Through the shared code map. PRICE_MOVED is not a failure to
       // apologise for — it is the guard doing its job — and every other code
       // now reaches the user in their own language, falling back to the
       // server's English sentence rather than to a bare code.
-      if (err?.code === 'PRICE_MOVED') {
+      if (err?.code === "PRICE_MOVED") {
         const nextNanos =
           Number(err.details?.currentPriceUsdNanos) ||
           (err.details?.currentPriceUsdCents
@@ -253,10 +277,10 @@ export default function TradeModal({
       <Modal
         open={open}
         onClose={onClose}
-        title={t('trade.filled')}
+        title={t("trade.filled")}
         footer={
           <Button variant="secondary" onClick={onClose} className="w-full">
-            {t('common.back')}
+            {t("common.back")}
           </Button>
         }
       >
@@ -275,11 +299,13 @@ export default function TradeModal({
     <Modal
       open={open}
       onClose={onClose}
-      title={t('trade.title', { symbol: instrument.symbol })}
+      title={t("trade.title", { symbol: instrument.symbol })}
       footer={
         <div className="flex flex-col gap-2">
           {error && (
-            <p className="m-0 rounded-md bg-red-tint px-3 py-2 text-xs text-loss">{error}</p>
+            <p className="m-0 rounded-md bg-red-tint px-3 py-2 text-xs text-loss">
+              {error}
+            </p>
           )}
           {/*
             A SHORTFALL GETS AN ACTION, not just a refusal.
@@ -302,24 +328,24 @@ export default function TradeModal({
           {shortfallCents > 0 ? (
             <>
               <p className="m-0 text-center text-2xs text-text-muted">
-                {t('trade.shortOf', {
+                {t("trade.shortOf", {
                   missing: money(shortfallCents),
                   total: money(totalCents),
                 })}
               </p>
               <Button onClick={goToDeposit} className="w-full">
-                {t('trade.depositAmount', { amount: money(shortfallCents) })}
+                {t("trade.depositAmount", { amount: money(shortfallCents) })}
               </Button>
               <p className="m-0 text-center text-2xs text-text-muted">
                 {/* Sets the expectation before the trip rather than after it: a
                     deposit does not clear on this screen, and the order is not
                     lost while it does. */}
-                {t('trade.depositNote')}
+                {t("trade.depositNote")}
               </p>
             </>
           ) : (
             <Button
-              variant={side === 'BUY' ? 'primary' : 'outline-red'}
+              variant={side === "BUY" ? "primary" : "outline-red"}
               onClick={submit}
               loading={pending}
               disabled={Boolean(problem)}
@@ -329,11 +355,11 @@ export default function TradeModal({
                   Ukrainian puts it in a different place from English, and a
                   concatenated label cannot express that. */}
               {validQty
-                ? t(side === 'BUY' ? 'trade.submitBuy' : 'trade.submitSell', {
+                ? t(side === "BUY" ? "trade.submitBuy" : "trade.submitSell", {
                     quantity: fmtQty(qty, assetClass),
                     symbol: instrument.symbol,
                   })
-                : t(side === 'BUY' ? 'trade.buy' : 'trade.sell')}
+                : t(side === "BUY" ? "trade.buy" : "trade.sell")}
             </Button>
           )}
         </div>
@@ -358,8 +384,8 @@ export default function TradeModal({
       <input
         id="trade-qty"
         type="number"
-        min={whole ? '1' : '0.00000001'}
-        step={whole ? '1' : 'any'}
+        min={whole ? "1" : "0.00000001"}
+        step={whole ? "1" : "any"}
         inputMode="decimal"
         value={quantity}
         onChange={(e) => setQuantity(e.target.value)}
@@ -369,23 +395,28 @@ export default function TradeModal({
       <dl className="mt-5 grid grid-cols-2 gap-y-2.5 text-sm">
         {/* priceUsd, not money: a coin under a cent renders as "$0.01" through
             the cents formatter, which is not the price being agreed to. */}
-        <Line label={t('trade.marketPrice')} value={priceUsd(nanos, priceDecimals)} />
+        <Line
+          label={t("trade.marketPrice")}
+          value={priceUsd(nanos, priceDecimals)}
+        />
         <Line label="Market Exposure (2x)" value={money(totalCents)} />
-        {side === 'BUY' && (
+        {side === "BUY" && (
           <Line label="Margin Required" value={money(marginCents)} strong />
         )}
         <Line
           label={
-            side === 'BUY'
-              ? t('trade.buyingPower')
-              : t('trade.held', { noun: t(units.nounKey) })
+            side === "BUY"
+              ? t("trade.buyingPower")
+              : t("trade.held", { noun: t(units.nounKey) })
           }
-          value={side === 'BUY' ? money(buyingPowerCents) : fmtQty(held, assetClass)}
+          value={
+            side === "BUY" ? money(buyingPowerCents) : fmtQty(held, assetClass)
+          }
         />
         <Line
-          label={side === 'BUY' ? t('trade.remaining') : t('trade.afterSale')}
+          label={side === "BUY" ? t("trade.remaining") : t("trade.afterSale")}
           value={
-            side === 'BUY'
+            side === "BUY"
               ? money(Math.max(0, buyingPowerCents - marginCents))
               : fmtQty(Math.max(0, held - (validQty ? qty : 0)), assetClass)
           }
@@ -398,7 +429,6 @@ export default function TradeModal({
         Market order, filled immediately at the price above. HyperStocks trades
         virtual capital - no real money moves.
       </p>
-
     </Modal>
   );
 }
@@ -411,10 +441,10 @@ export default function TradeModal({
  * number that is affordable and roughly round.
  */
 function defaultQty(nanos, cashCents) {
-  if (!nanos) return '1';
+  if (!nanos) return "1";
   const budget = Math.min(50_000, Math.max(0, cashCents));
   const raw = budget / (nanos / NANOS_PER_CENT);
-  if (!Number.isFinite(raw) || raw <= 0) return '1';
+  if (!Number.isFinite(raw) || raw <= 0) return "1";
   // Two significant figures reads as a chosen number rather than a computed
   // one — 0.0063, not 0.00634117.
   const magnitude = Math.pow(10, Math.floor(Math.log10(raw)) - 1);
@@ -426,7 +456,7 @@ function Line({ label, value, strong = false }) {
     <>
       <dt className="text-text-muted">{label}</dt>
       <dd
-        className={`m-0 text-right font-numeric tabular-nums ${strong ? 'font-semibold text-text-body' : ''}`}
+        className={`m-0 text-right font-numeric tabular-nums ${strong ? "font-semibold text-text-body" : ""}`}
       >
         {value}
       </dd>
@@ -446,37 +476,43 @@ function Receipt({ receipt, instrument, assetClass, units, priceDecimals }) {
         </span>
         <div>
           <div className="text-md font-bold">
-            {order.side === 'BUY' ? t('trade.bought') : t('trade.sold')}{' '}
-            {fmtQty(order.quantity, assetClass)}{' '}
-            {instrument.symbol}
+            {order.side === "BUY" ? t("trade.bought") : t("trade.sold")}{" "}
+            {fmtQty(order.quantity, assetClass)} {instrument.symbol}
           </div>
           <div className="text-xs text-text-muted">
             {/* The nanos figure is what the total was computed from, so the
                 receipt reproduces the arithmetic instead of approximately
                 agreeing with it. */}
-            at{' '}
+            at{" "}
             {priceUsd(
-              order.fillPriceUsdNanos ?? order.fillPriceUsdCents * NANOS_PER_CENT,
-              priceDecimals,
-            )}{' '}
+              order.fillPriceUsdNanos ??
+                order.fillPriceUsdCents * NANOS_PER_CENT,
+              priceDecimals
+            )}{" "}
             {units.oneKey ? t(units.oneKey) : instrument.symbol}
           </div>
         </div>
       </div>
 
       <dl className="grid grid-cols-2 gap-y-2.5 text-sm">
-        <Line label={t('nav.total')} value={money(order.totalCents)} strong />
-        <Line label={t('trade.buyingPower')} value={money(receipt.cashBalanceCents)} />
+        <Line label={t("nav.total")} value={money(order.totalCents)} strong />
+        <Line
+          label={t("trade.buyingPower")}
+          value={money(receipt.cashBalanceCents)}
+        />
         <Line
           label="Position"
           value={
             receipt.holding
               ? `${fmtQty(receipt.holding.shares, assetClass)} ${instrument.symbol}`
-              : 'Closed'
+              : "Closed"
           }
         />
         {receipt.holding && (
-          <Line label="Average cost" value={money(receipt.holding.avgCostCents)} />
+          <Line
+            label="Average cost"
+            value={money(receipt.holding.avgCostCents)}
+          />
         )}
       </dl>
     </div>

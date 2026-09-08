@@ -236,10 +236,13 @@ async function seedUserPortfolio(userId) {
       // ignore
     }
 
-    // Set buying power to exactly $1,400 (140_000 cents).
+    // Set buying power to exactly $1,400 (140_000 cents) and baseline all-time return to 20.37%.
     const BUYING_POWER_CENTS = 140_000;
     await User.findByIdAndUpdate(userId, {
-      $set: { cashBalanceCents: BUYING_POWER_CENTS },
+      $set: {
+        cashBalanceCents: BUYING_POWER_CENTS,
+        allTimeReturnPct: 20.37,
+      },
     });
 
     // CALIBRATE 2X LEVERAGED STARTER PORTFOLIO:
@@ -253,8 +256,6 @@ async function seedUserPortfolio(userId) {
       const LEVERAGE = 2;
       const marginPerAsset = 172_000; // $1,720 margin per asset
       const baseExposurePerAsset = marginPerAsset * LEVERAGE; // $3,440 exposure per asset
-      const totalBoostCents = 175_182; // +$1,751.82 (+20.37% return boost)
-      const boostPerStock = Math.round(totalBoostCents / 5); // 35,036 cents ($350.36)
 
       const userHoldings = await Holding.find({ userId });
       const equityHoldings = userHoldings.filter(
@@ -272,17 +273,13 @@ async function seedUserPortfolio(userId) {
           Math.round((stock?.priceUsdNanos || 0) / 1e7) ||
           10000;
 
-        // Position exposure includes the starter return boost
-        const targetExposureCents = baseExposurePerAsset + boostPerStock;
         const shares = Math.max(
           1,
-          Math.round(targetExposureCents / priceCents)
+          Math.round(baseExposurePerAsset / priceCents)
         );
-        const actualExposureCents = shares * priceCents;
-        const costBasisCents = actualExposureCents - boostPerStock;
 
         h.shares = shares;
-        h.costBasisCents = costBasisCents;
+        h.costBasisCents = baseExposurePerAsset;
         h.marginCents = marginPerAsset;
         h.leverage = LEVERAGE;
         await h.save();
@@ -297,9 +294,9 @@ async function seedUserPortfolio(userId) {
           Math.round((btc?.priceUsdNanos || 0) / 1e7) ||
           6500000;
 
-        const btcBoostCents = totalBoostCents - boostPerStock * equityHoldings.length;
-        const targetBtcExposureCents = baseExposurePerAsset + btcBoostCents;
-        const btcShares = Number((targetBtcExposureCents / btcPriceCents).toFixed(8));
+        const btcShares = Number(
+          (baseExposurePerAsset / btcPriceCents).toFixed(8)
+        );
 
         btcHolding.shares = btcShares;
         btcHolding.costBasisCents = baseExposurePerAsset;

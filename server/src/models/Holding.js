@@ -1,11 +1,15 @@
-import mongoose from 'mongoose';
-import { QTY_DECIMALS } from '../lib/money.js';
+import mongoose from "mongoose";
+import { QTY_DECIMALS } from "../lib/money.js";
 
-export const HOLDING_CLASSES = ['stocks', 'crypto', 'forex'];
+export const HOLDING_CLASSES = ["stocks", "crypto", "forex"];
 
 const holdingSchema = new mongoose.Schema(
   {
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
 
     /**
      * WHAT KIND OF THING THIS IS, and it is not optional information.
@@ -22,7 +26,7 @@ const holdingSchema = new mongoose.Schema(
       type: String,
       enum: HOLDING_CLASSES,
       required: true,
-      default: 'stocks',
+      default: "stocks",
       index: true,
     },
 
@@ -47,11 +51,11 @@ const holdingSchema = new mongoose.Schema(
       min: 0,
       validate: {
         validator: function (v) {
-          if (this.assetClass === 'stocks') return Number.isInteger(v);
+          if (this.assetClass === "stocks") return Number.isInteger(v);
           // Anything finer than the quantisation step is dust, not a position.
           return Number.isFinite(v) && v >= 0;
         },
-        message: 'shares must be a whole number for equities',
+        message: "shares must be a whole number for equities",
       },
     },
 
@@ -66,7 +70,10 @@ const holdingSchema = new mongoose.Schema(
       type: Number,
       required: true,
       min: 0,
-      validate: { validator: Number.isInteger, message: 'costBasisCents must be an integer' },
+      validate: {
+        validator: Number.isInteger,
+        message: "costBasisCents must be an integer",
+      },
     },
 
     /**
@@ -88,11 +95,11 @@ const holdingSchema = new mongoose.Schema(
       min: 0,
       validate: {
         validator: (v) => v == null || Number.isInteger(v),
-        message: 'marginCents must be an integer',
+        message: "marginCents must be an integer",
       },
     },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 /**
@@ -103,7 +110,7 @@ const holdingSchema = new mongoose.Schema(
  * needs it; this is the display value, and a fractional cent is not a price
  * anyone can act on.
  */
-holdingSchema.virtual('avgCostCents').get(function () {
+holdingSchema.virtual("avgCostCents").get(function () {
   return this.shares ? Math.round(this.costBasisCents / this.shares) : 0;
 });
 
@@ -121,4 +128,4 @@ holdingSchema.index({ symbol: 1 });
 /** Quantities are rounded to the storage precision on the way in, always. */
 export const HOLDING_QTY_DECIMALS = QTY_DECIMALS;
 
-export const Holding = mongoose.model('Holding', holdingSchema);
+export const Holding = mongoose.model("Holding", holdingSchema);

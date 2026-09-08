@@ -126,9 +126,7 @@ export default function Portfolio() {
           : 0;
 
       const changePct = tick?.changePct ?? h.changePct ?? 0;
-      const dailyPnLCents = Math.round(
-        liveExposureCents * (changePct / 100)
-      );
+      const dailyPnLCents = Math.round(liveExposureCents * (changePct / 100));
 
       return {
         ...h,
@@ -161,22 +159,27 @@ export default function Portfolio() {
   const rawSummary = portfolio?.summary;
   const s = useMemo(() => {
     if (!rawSummary) return rawSummary;
-    const holdingsValueCents = holdings.reduce(
-      (sum, p) => sum + p.marketValueCents,
-      0
-    );
     const totalMarginCents = holdings.reduce(
       (sum, p) => sum + (p.marginCents || 0),
       0
     );
-    const portfolioValueCents =
-      (rawSummary.buyingPowerCents ?? 0) + holdingsValueCents;
-
-    const allTimeReturnCents = holdingsValueCents - totalMarginCents;
+    const baseReturnCents = rawSummary.allTimeReturnBaseCents ?? 0;
+    const livePnLCents = holdings.reduce(
+      (sum, p) => sum + (p.totalReturnCents || 0),
+      0
+    );
+    const allTimeReturnCents = baseReturnCents + livePnLCents;
     const allTimeReturnPct =
       totalMarginCents > 0
         ? Math.round((allTimeReturnCents / totalMarginCents) * 10000) / 100
-        : rawSummary.allTimeReturnPct ?? 0;
+        : (rawSummary.allTimeReturnPct ?? 0);
+
+    const holdingsValueCents = Math.max(
+      0,
+      totalMarginCents + allTimeReturnCents
+    );
+    const portfolioValueCents =
+      (rawSummary.buyingPowerCents ?? 0) + holdingsValueCents;
 
     const todayPnLCents = holdings.reduce(
       (sum, p) => sum + (p.dailyPnLCents || 0),
@@ -185,7 +188,7 @@ export default function Portfolio() {
     const todayChangePct =
       totalMarginCents > 0
         ? Math.round((todayPnLCents / totalMarginCents) * 10000) / 100
-        : rawSummary.todayChangePct ?? 0;
+        : (rawSummary.todayChangePct ?? 0);
 
     return {
       ...rawSummary,

@@ -157,9 +157,9 @@ export default function Instrument({ assetClass }) {
     const marginCents =
       rawHolding.marginCents != null
         ? rawHolding.marginCents
-        : (rawHolding.costBasisCents > 0
-            ? Math.round(rawHolding.costBasisCents / leverage)
-            : liveExposureCents);
+        : rawHolding.costBasisCents > 0
+          ? Math.round(rawHolding.costBasisCents / leverage)
+          : liveExposureCents;
 
     const unrealizedPnLCents =
       rawHolding.costBasisCents > 0
@@ -214,9 +214,11 @@ export default function Instrument({ assetClass }) {
   const rate = tick?.price ?? data.rate;
   const tradable = data.status === "Listed";
   const livePriceNanos = tick
-    ? (isForex && Number.isFinite(tick.price)
-        ? Math.round(tick.price * 1_000_000_000)
-        : (tick.priceCents != null ? tick.priceCents * 10_000_000 : data?.priceUsdNanos))
+    ? isForex && Number.isFinite(tick.price)
+      ? Math.round(tick.price * 1_000_000_000)
+      : tick.priceCents != null
+        ? tick.priceCents * 10_000_000
+        : data?.priceUsdNanos
     : data?.priceUsdNanos;
   const livePriceCents = tick?.priceCents ?? data?.priceUsdCents ?? priceCents;
 
