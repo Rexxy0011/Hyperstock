@@ -313,7 +313,7 @@
     "INVALID_OTP": "That code is wrong. Check it and try again.",
     "OTP_EXPIRED": "That code has expired. Ask for a new one.",
     "TOO_MANY_ATTEMPTS": "Too many wrong codes. Ask for a new one.",
-    "INVALID_EMAIL_OR_PASSWORD": "Email or password is incorrect.",
+    "INVALID_EMAIL_OR_PASSWORD": "Invalid email or password",
     "USER_NOT_FOUND": "No account matches that.",
     "PROVIDER_NOT_FOUND": "That sign-in method is not available right now.",
     "PASSWORD_TOO_WEAK": "Password must be at least 8 characters and include uppercase, numbers, and symbols."

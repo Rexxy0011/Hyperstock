@@ -1064,7 +1064,7 @@ function clearAuthDraft() {
 
 export default function Auth() {
   const { t } = useTranslation();
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
   const { user, authReady, login, register, signInWithGoogle, requestCode } =
     useAuth();
 
@@ -1126,6 +1126,18 @@ export default function Auth() {
   );
 
   const isSignup = mode === SIGNUP;
+  const [showSignupPrompt, setShowSignupPrompt] = useState(false);
+
+  const goToSignup = () => {
+    setMode(SIGNUP);
+    setError(null);
+    setInfoNotice(null);
+    setShowSignupPrompt(false);
+    setAnimating(true);
+    const nextParams = new URLSearchParams(params);
+    nextParams.set("mode", "signup");
+    setParams(nextParams, { replace: true });
+  };
 
   useEffect(() => {
     saveAuthDraft(mode, form);
@@ -1172,6 +1184,7 @@ export default function Auth() {
         return nextForm;
       });
       if (error) setError(null);
+      if (showSignupPrompt) setShowSignupPrompt(false);
     },
   });
 
@@ -1251,6 +1264,7 @@ export default function Auth() {
     e.preventDefault();
     setError(null);
     setInfoNotice(null);
+    setShowSignupPrompt(false);
     setBusy(true);
     try {
       if (isSignup) {
@@ -1353,7 +1367,8 @@ export default function Auth() {
 
         setError(err.message ?? "Something went wrong. Try again.");
       } else {
-        setError(errorMessage(err, t("errors.INVALID_EMAIL_OR_PASSWORD")));
+        setError(t("errors.INVALID_EMAIL_OR_PASSWORD", { defaultValue: "Invalid email or password" }));
+        setShowSignupPrompt(true);
       }
     } finally {
       setBusy(false);
@@ -1413,6 +1428,7 @@ export default function Auth() {
                   setMode(m);
                   setError(null);
                   setInfoNotice(null);
+                  setShowSignupPrompt(false);
                   setAnimating(true);
                 }}
                 size="sm"
@@ -1573,7 +1589,18 @@ export default function Auth() {
 
                 {error && (
                   <div className="rounded-md border border-cool-grey bg-red-tint px-3 py-2 text-xs text-loss">
-                    {error}
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <span>{error}</span>
+                      {!isSignup && showSignupPrompt && (
+                        <button
+                          type="button"
+                          onClick={goToSignup}
+                          className="inline-flex items-center font-semibold underline underline-offset-2 hover:opacity-80 cursor-pointer text-loss"
+                        >
+                          Create an account →
+                        </button>
+                      )}
+                    </div>
                   </div>
                 )}
 
