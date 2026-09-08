@@ -576,7 +576,9 @@ export async function adminUpdateProfile(
   }
 
   if (username !== undefined) {
-    const trimmedUser = String(username || "").trim().toLowerCase();
+    const trimmedUser = String(username || "")
+      .trim()
+      .toLowerCase();
     if (!/^[a-z0-9_]{3,24}$/i.test(trimmedUser)) {
       throw ApiError.badRequest(
         "INVALID_USERNAME",
@@ -621,4 +623,3 @@ export async function adminUpdateProfile(
     },
   };
 }
-

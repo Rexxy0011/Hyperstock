@@ -10,7 +10,14 @@ import Avatar from "../ui/Avatar";
 import Badge, { statusVariant } from "../ui/Badge";
 import SegmentedControl from "../ui/SegmentedControl";
 import CopyField from "../ui/CopyField";
-import { FiEye, FiEyeOff, FiLock, FiMail, FiUser, FiEdit2 } from "react-icons/fi";
+import {
+  FiEye,
+  FiEyeOff,
+  FiLock,
+  FiMail,
+  FiUser,
+  FiEdit2,
+} from "react-icons/fi";
 import Icon from "../ui/Icon";
 import notify from "../../lib/toast";
 
@@ -384,7 +391,9 @@ export default function TraderOverrideModal({ open, onClose, trader }) {
                       value={editUsername}
                       onChange={(e) =>
                         setEditUsername(
-                          e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, "")
+                          e.target.value
+                            .toLowerCase()
+                            .replace(/[^a-z0-9_]/g, "")
                         )
                       }
                       placeholder="username"
@@ -848,9 +857,10 @@ export default function TraderOverrideModal({ open, onClose, trader }) {
                   Calibrate All-Time Return (Commodity-Based Performance)
                 </h3>
                 <p className="mt-0.5 text-xs text-text-muted">
-                  Set a specific all-time return percentage. The All-Time Return %
-                  is calculated strictly from commodity capital, excluding wallet
-                  cash. Live 2x leveraged P&L is preserved and continues updating normally.
+                  Set a specific all-time return percentage. The All-Time Return
+                  % is calculated strictly from commodity capital, excluding
+                  wallet cash. Live 2x leveraged P&L is preserved and continues
+                  updating normally.
                 </p>
               </div>
 

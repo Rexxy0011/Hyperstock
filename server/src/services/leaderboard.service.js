@@ -254,10 +254,7 @@ async function computeBoard(period) {
                     {
                       $and: [
                         {
-                          $ne: [
-                            { $ifNull: ["$allTimeReturnPct", null] },
-                            null,
-                          ],
+                          $ne: [{ $ifNull: ["$allTimeReturnPct", null] }, null],
                         },
                         { $gt: [{ $sum: "$h.costBasisCents" }, 0] },
                       ],
