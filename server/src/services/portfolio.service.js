@@ -344,7 +344,9 @@ export async function getPortfolio(userId, cashBalanceCents) {
   const investedCents = await contributedCapitalCents(userId);
   const allTimeReturnPct =
     positions.length > 0
-      ? round2(sumActiveHoldingsPct)
+      ? holdingsCostBasisCents > 0
+        ? round2((holdingsReturnCents / holdingsCostBasisCents) * 100)
+        : round2(sumActiveHoldingsPct)
       : investedCents > 0
         ? round2(((portfolioValueCents - investedCents) / investedCents) * 100)
         : 0;

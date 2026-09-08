@@ -237,12 +237,83 @@ async function seedUserPortfolio(userId) {
     }
 
     // Set buying power to exactly $1,400 (140_000 cents).
-    // Market order fills may leave slight dust above or below; this clamp
-    // ensures the dashboard always shows $1,400.00 as starting buying power.
     const BUYING_POWER_CENTS = 140_000;
     await User.findByIdAndUpdate(userId, {
       $set: { cashBalanceCents: BUYING_POWER_CENTS },
     });
+
+    // CALIBRATE STARTER PORTFOLIO:
+    // - Cost basis: $8,600.00 (860,000 cents) shared across ASML, AAPL, NVDA, TSLA, BTC
+    // - All-time return: +20.37% of $8,600 = +$1,751.82 (175,182 cents)
+    // - Holdings value: $8,600 + $1,751.82 = $10,351.82 (1,035,182 cents)
+    // - Buying power: $1,400.00 (140,000 cents)
+    // - Total balance: 8,600 + 1,400 + 1,751.82 = $11,751.82 (1,175,182 cents)
+    try {
+      const { env } = await import("../config/env.js");
+      const mult = env.MARKET_VOLATILITY_MULTIPLIER ?? 1;
+      const targetReturnPct = 20.37;
+      const rawTargetReturnPct = targetReturnPct / mult; // 5.0925% when mult=4
+
+      const userHoldings = await Holding.find({ userId });
+      const equityHoldings = userHoldings.filter(
+        (h) => h.assetClass === "stocks"
+      );
+      const btcHolding = userHoldings.find(
+        (h) => h.assetClass === "crypto" && h.symbol === "BTC"
+      );
+
+      const costBasisPerAsset = 172_000; // $1,720
+      const targetRawMarketValueCents = Math.round(
+        costBasisPerAsset * (1 + rawTargetReturnPct / 100)
+      );
+
+      let equitiesCostBasisSum = 0;
+      for (const h of equityHoldings) {
+        const stock = await Stock.findOne({ symbol: h.symbol }).lean();
+        const priceCents =
+          stock?.priceUsdCents ||
+          stock?.priceCents ||
+          Math.round((stock?.priceUsdNanos || 0) / 1e7) ||
+          10000;
+
+        const shares = Math.max(
+          1,
+          Math.round(targetRawMarketValueCents / priceCents)
+        );
+        const actualRawMktCents = shares * priceCents;
+        const costBasisCents = Math.round(
+          actualRawMktCents / (1 + rawTargetReturnPct / 100)
+        );
+
+        h.shares = shares;
+        h.costBasisCents = costBasisCents;
+        equitiesCostBasisSum += costBasisCents;
+        await h.save();
+      }
+
+      if (btcHolding) {
+        const { items } = await getInstruments({ assetClass: "crypto" });
+        const btc = items?.find((it) => it.symbol === "BTC");
+        const btcPriceCents =
+          btc?.priceUsdCents ||
+          btc?.priceCents ||
+          Math.round((btc?.priceUsdNanos || 0) / 1e7) ||
+          6500000;
+
+        // BTC absorbs remainder so total cost basis is exactly $8,600.00 (860,000 cents)
+        const btcCostBasis = 860_000 - equitiesCostBasisSum;
+        const btcRawMkt = Math.round(
+          btcCostBasis * (1 + rawTargetReturnPct / 100)
+        );
+        const btcShares = Number((btcRawMkt / btcPriceCents).toFixed(8));
+
+        btcHolding.shares = btcShares;
+        btcHolding.costBasisCents = btcCostBasis;
+        await btcHolding.save();
+      }
+    } catch {
+      // ignore
+    }
 
     // Record yesterday's snapshot at $10,000 so today starts with a green arrow
     const yesterday = new Date(Date.now() - 86400000);

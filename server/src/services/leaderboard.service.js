@@ -456,7 +456,33 @@ async function computeBoard(period) {
                 returnPct: {
                   $cond: [
                     { $gt: [{ $size: "$h" }, 0] },
-                    { $round: ["$sumActiveHoldingsPct", 2] },
+                    {
+                      $cond: [
+                        { $gt: ["$holdingsCostBasisCents", 0] },
+                        {
+                          $round: [
+                            {
+                              $multiply: [
+                                {
+                                  $divide: [
+                                    {
+                                      $subtract: [
+                                        "$holdingsValueCents",
+                                        "$holdingsCostBasisCents",
+                                      ],
+                                    },
+                                    "$holdingsCostBasisCents",
+                                  ],
+                                },
+                                100,
+                              ],
+                            },
+                            2,
+                          ],
+                        },
+                        { $round: ["$sumActiveHoldingsPct", 2] },
+                      ],
+                    },
                     {
                       $cond: [
                         { $gt: ["$portfolioValueCents", SEED_CASH_CENTS] },

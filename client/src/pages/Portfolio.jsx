@@ -168,7 +168,13 @@ export default function Portfolio() {
     );
     const allTimeReturnPct =
       holdings.length > 0
-        ? Math.round(sumActiveHoldingsPct * 100) / 100
+        ? holdingsCostBasisCents > 0
+          ? Math.round(
+              ((holdingsValueCents - holdingsCostBasisCents) /
+                holdingsCostBasisCents) *
+                10000
+            ) / 100
+          : Math.round(sumActiveHoldingsPct * 100) / 100
         : rawSummary.allTimeReturnPct;
     const allTimeReturnCents =
       holdings.length > 0
