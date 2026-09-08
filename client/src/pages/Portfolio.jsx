@@ -610,7 +610,22 @@ function ChartCard({
   const candles = useLiveCandles(data, assetClass, tick, connected);
 
   if (!symbol) {
-    return <div className="min-h-105 rounded-xl border border-cool-grey" />;
+    return (
+      <div className="flex min-h-105 flex-col items-center justify-center rounded-xl border border-cool-grey p-8 text-center">
+        <div className="text-sm font-semibold text-void">
+          {t("portfolio.noPositions")}
+        </div>
+        <p className="mt-1 text-xs text-text-muted">
+          Pick an asset from the markets to view its live chart and place trades.
+        </p>
+        <Link
+          to="/markets"
+          className="mt-4 inline-flex rounded-lg bg-gain px-4 py-2 text-xs font-semibold text-white no-underline"
+        >
+          {t("portfolio.browseMarkets")}
+        </Link>
+      </div>
+    );
   }
 
   const isForex = assetClass === "forex";

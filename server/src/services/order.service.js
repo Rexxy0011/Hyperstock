@@ -251,7 +251,27 @@ export async function placeOrder(input) {
       const existing = await Order.findOne({
         idempotencyKey: input.idempotencyKey,
       }).lean();
-      if (existing) return { order: existing, replayed: true };
+      if (existing) {
+        const u = await User.findById(input.userId).lean();
+        const h = await Holding.findOne({
+          userId: input.userId,
+          assetClass,
+          symbol,
+        }).lean();
+        return {
+          order: existing,
+          replayed: true,
+          cashBalanceCents: u?.cashBalanceCents ?? 0,
+          holding: h
+            ? {
+                assetClass: h.assetClass,
+                symbol: h.symbol,
+                shares: h.shares,
+                avgCostCents: h.avgPriceCents ?? 0,
+              }
+            : null,
+        };
+      }
     }
     throw err;
   }
@@ -365,7 +385,7 @@ async function executeSell({
       userId: input.userId,
       assetClass,
       symbol: instrument.symbol,
-      shares: { $gte: quantity },
+      shares: { $gte: assetClass === "stocks" ? quantity : quantity - 1e-7 },
     },
     { $inc: { shares: -quantity } },
     { new: false, session }

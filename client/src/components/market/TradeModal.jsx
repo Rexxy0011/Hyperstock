@@ -138,19 +138,24 @@ export default function TradeModal({
   const priceDecimals =
     assetClass === "forex" ? (nanos / 1e9 >= 50 ? 2 : 4) : undefined;
 
+  const held = holding?.shares ?? 0;
+
   useEffect(() => {
     if (!open) return;
     setSide(initialSide);
     const startNanos =
       Number(priceUsdNanos) || Number(priceUsdCents) * NANOS_PER_CENT || 0;
     setNanos(startNanos);
-    // A default of 1 is a reasonable share order and an absurd Bitcoin one —
-    // roughly eight times a starting account — so the fractional classes open
-    // on a quantity the user can actually afford rather than one that greets
-    // them with an error.
+    // When selling, default to the held quantity so the ticket doesn't open
+    // with an invalid or exceeding quantity. When buying, default to 1 share
+    // or an affordable fractional amount.
     setQuantity(
       initialQuantity ??
-        (whole ? "1" : defaultQty(startNanos, user?.cashBalanceCents ?? 0))
+        (initialSide === "SELL" && held > 0
+          ? String(fmtQty(held, assetClass))
+          : whole
+            ? "1"
+            : defaultQty(startNanos, user?.cashBalanceCents ?? 0))
     );
     setError(null);
     setReceipt(null);
@@ -158,7 +163,7 @@ export default function TradeModal({
     // `nanos` moves on every poll; re-running this on it would reset the input
     // under the user's cursor mid-edit.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, whole, initialSide, initialQuantity]);
+  }, [open, whole, initialSide, initialQuantity, held, assetClass]);
 
   const qty = whole
     ? Number.parseInt(quantity, 10)
@@ -174,7 +179,6 @@ export default function TradeModal({
   // With fixed 2x leverage, required cash margin is 50% of market exposure
   const marginCents = Math.round(totalCents / 2);
   const buyingPowerCents = user?.cashBalanceCents ?? 0;
-  const held = holding?.shares ?? 0;
 
   const problem = useMemo(() => {
     if (!validQty) {
@@ -230,6 +234,7 @@ export default function TradeModal({
   }
 
   async function submit() {
+    if (pending) return;
     setPending(true);
     setError(null);
     try {
@@ -238,7 +243,6 @@ export default function TradeModal({
         symbol: instrument.symbol,
         side,
         quantity: qty,
-        quotedPriceUsdNanos: nanos,
         idempotencyKey,
       });
 
@@ -249,12 +253,10 @@ export default function TradeModal({
 
       queryClient.invalidateQueries({ queryKey: keys.portfolio });
       queryClient.invalidateQueries({ queryKey: ["orders"] });
-      queryClient.invalidateQueries({ queryKey: keys.leaderboard("all") });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["wallet"] });
+      queryClient.invalidateQueries({ queryKey: ["leaderboard"] });
     } catch (err) {
-      // Through the shared code map. PRICE_MOVED is not a failure to
-      // apologise for — it is the guard doing its job — and every other code
-      // now reaches the user in their own language, falling back to the
-      // server's English sentence rather than to a bare code.
       if (err?.code === "PRICE_MOVED") {
         const nextNanos =
           Number(err.details?.currentPriceUsdNanos) ||
