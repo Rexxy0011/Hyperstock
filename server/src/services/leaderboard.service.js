@@ -143,21 +143,26 @@ async function computeBoard(period) {
           },
           {
             $addFields: {
-              _rawReturnPct: {
-                $cond: [
-                  { $gt: ["$costBasisCents", 0] },
+              _marginCents: {
+                $ifNull: [
+                  "$marginCents",
                   {
-                    $multiply: [
+                    $round: [
                       {
                         $divide: [
-                          { $subtract: ["$_valueCents", "$costBasisCents"] },
-                          "$costBasisCents",
+                          { $ifNull: ["$costBasisCents", 0] },
+                          { $ifNull: ["$leverage", 2] },
                         ],
                       },
-                      100,
+                      0,
                     ],
                   },
-                  0,
+                ],
+              },
+              _pnlCents: {
+                $subtract: [
+                  "$_valueCents",
+                  { $ifNull: ["$costBasisCents", 0] },
                 ],
               },
             },
@@ -165,29 +170,17 @@ async function computeBoard(period) {
           {
             $addFields: {
               _totalReturnPct: {
-                $multiply: [
-                  "$_rawReturnPct",
-                  env.MARKET_VOLATILITY_MULTIPLIER ?? 1,
-                ],
-              },
-            },
-          },
-          {
-            $addFields: {
-              _totalReturnCents: {
                 $cond: [
-                  { $gt: ["$costBasisCents", 0] },
+                  { $gt: ["$_marginCents", 0] },
                   {
                     $round: [
                       {
-                        $divide: [
-                          {
-                            $multiply: ["$costBasisCents", "$_totalReturnPct"],
-                          },
+                        $multiply: [
+                          { $divide: ["$_pnlCents", "$_marginCents"] },
                           100,
                         ],
                       },
-                      0,
+                      2,
                     ],
                   },
                   0,
@@ -204,23 +197,18 @@ async function computeBoard(period) {
               exchange: { $ifNull: ["$_s.exchange", "$_m.exchange"] },
               valueCents: {
                 $cond: [
-                  { $gt: ["$costBasisCents", 0] },
+                  { $gt: ["$_marginCents", 0] },
                   {
                     $max: [
                       0,
-                      {
-                        $add: [
-                          { $ifNull: ["$costBasisCents", 0] },
-                          "$_totalReturnCents",
-                        ],
-                      },
+                      { $add: ["$_marginCents", "$_pnlCents"] },
                     ],
                   },
                   "$_valueCents",
                 ],
               },
-              costBasisCents: { $ifNull: ["$costBasisCents", 0] },
-              returnCents: "$_totalReturnCents",
+              costBasisCents: { $ifNull: ["$_marginCents", 0] },
+              returnCents: "$_pnlCents",
               returnPct: "$_totalReturnPct",
             },
           },

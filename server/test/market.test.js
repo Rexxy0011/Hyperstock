@@ -72,10 +72,7 @@ test("tick flush", async (t) => {
     assert.deepEqual(pct.$cond[1].$multiply[0].$divide[0], {
       $subtract: [31_000, "$previousCloseCents"],
     });
-    assert.equal(
-      pct.$cond[1].$multiply[1],
-      100 * (env.MARKET_VOLATILITY_MULTIPLIER ?? 1)
-    );
+    assert.equal(pct.$cond[1].$multiply[1], 100);
 
     // Computed in-document rather than in JS, because the close belongs to the
     // row being written and reading it first would race the refresh job.

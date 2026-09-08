@@ -105,37 +105,44 @@ export default function Portfolio() {
   const holdings = useMemo(() => {
     return rawHoldings.map((h) => {
       const tick = livePrice(live, h.assetClass ?? "stocks", h.symbol);
-      if (!tick) return h;
-      const priceCents = tick.priceCents ?? h.priceCents;
-      const priceUsdCents = tick.priceCents ?? h.priceUsdCents;
+      const priceCents = tick?.priceCents ?? h.priceCents;
+      const priceUsdCents = tick?.priceCents ?? h.priceUsdCents;
       const priceUsdNanos = priceUsdCents * 10_000_000;
-      const rawMarketValueCents = Math.round(
+      const liveExposureCents = Math.round(
         (h.shares * priceUsdNanos) / 10_000_000
       );
-      const rawReturnPct =
-        h.costBasisCents > 0
-          ? ((rawMarketValueCents - h.costBasisCents) / h.costBasisCents) * 100
+      const leverage = h.leverage || 2;
+      const marginCents =
+        h.marginCents != null
+          ? h.marginCents
+          : Math.round(h.costBasisCents / leverage);
+
+      const unrealizedPnLCents = liveExposureCents - h.costBasisCents;
+      const marketValueCents = Math.max(0, marginCents + unrealizedPnLCents);
+      const totalReturnCents = unrealizedPnLCents;
+      const totalReturnPct =
+        marginCents > 0
+          ? Math.round((unrealizedPnLCents / marginCents) * 10000) / 100
           : 0;
-      const totalReturnPct = Math.round(rawReturnPct * 4 * 100) / 100;
-      const totalReturnCents =
-        h.costBasisCents > 0
-          ? Math.round((h.costBasisCents * totalReturnPct) / 100)
-          : 0;
-      const marketValueCents =
-        h.costBasisCents > 0
-          ? Math.max(0, h.costBasisCents + totalReturnCents)
-          : rawMarketValueCents;
-      const changePct = tick.changePct ?? h.changePct;
+
+      const changePct = tick?.changePct ?? h.changePct ?? 0;
+      const dailyPnLCents = Math.round(
+        liveExposureCents * (changePct / 100)
+      );
 
       return {
         ...h,
         priceCents,
         priceUsdCents,
         priceUsdNanos,
+        marginCents,
+        leverage,
         changePct,
+        liveExposureCents,
         marketValueCents,
         totalReturnCents,
         totalReturnPct,
+        dailyPnLCents,
       };
     });
   }, [rawHoldings, live]);
@@ -158,41 +165,26 @@ export default function Portfolio() {
       (sum, p) => sum + p.marketValueCents,
       0
     );
-    const holdingsCostBasisCents = holdings.reduce(
-      (sum, p) => sum + (p.costBasisCents || 0),
+    const totalMarginCents = holdings.reduce(
+      (sum, p) => sum + (p.marginCents || 0),
       0
     );
     const portfolioValueCents =
       (rawSummary.buyingPowerCents ?? 0) + holdingsValueCents;
-    const sumActiveHoldingsPct = holdings.reduce(
-      (sum, p) => sum + (p.totalReturnPct || 0),
-      0
-    );
-    const allTimeReturnPct =
-      holdings.length > 0
-        ? holdingsCostBasisCents > 0
-          ? Math.round(
-              ((holdingsValueCents - holdingsCostBasisCents) /
-                holdingsCostBasisCents) *
-                10000
-            ) / 100
-          : Math.round(sumActiveHoldingsPct * 100) / 100
-        : rawSummary.allTimeReturnPct;
-    const allTimeReturnCents =
-      holdings.length > 0
-        ? holdingsValueCents - holdingsCostBasisCents
-        : portfolioValueCents - (rawSummary.investedCents ?? 0);
 
-    const previousValueCents = holdings.reduce(
-      (sum, p) => sum + p.marketValueCents / (1 + (p.changePct || 0) / 100),
+    const allTimeReturnCents = holdingsValueCents - totalMarginCents;
+    const allTimeReturnPct =
+      totalMarginCents > 0
+        ? Math.round((allTimeReturnCents / totalMarginCents) * 10000) / 100
+        : rawSummary.allTimeReturnPct ?? 0;
+
+    const todayPnLCents = holdings.reduce(
+      (sum, p) => sum + (p.dailyPnLCents || 0),
       0
     );
     const todayChangePct =
-      previousValueCents > 0
-        ? Math.round(
-            ((holdingsValueCents - previousValueCents) / previousValueCents) *
-              10000
-          ) / 100
+      totalMarginCents > 0
+        ? Math.round((todayPnLCents / totalMarginCents) * 10000) / 100
         : rawSummary.todayChangePct ?? 0;
 
     return {

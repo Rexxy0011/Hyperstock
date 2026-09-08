@@ -299,11 +299,15 @@ async function executeBuy({
   totalCents,
   session,
 }) {
+  const LEVERAGE = 2;
+  // With 2x leverage, required margin is 50% of the total position exposure.
+  const marginCents = Math.round(totalCents / LEVERAGE);
+
   // The guard is the FILTER. A concurrent buy that would overdraw matches no
   // document and returns null — no read-then-check window exists to lose.
   const user = await User.findOneAndUpdate(
-    { _id: input.userId, cashBalanceCents: { $gte: totalCents } },
-    { $inc: { cashBalanceCents: -totalCents } },
+    { _id: input.userId, cashBalanceCents: { $gte: marginCents } },
+    { $inc: { cashBalanceCents: -marginCents } },
     { new: true, session }
   );
 
@@ -314,12 +318,13 @@ async function executeBuy({
     );
   }
 
-  // Upsert with $inc on both fields. COST BASIS IS SUMMED, never averaged —
-  // storing an average would round on every partial buy and drift the book
-  // value away from what was actually paid. The average is a virtual.
+  // Upsert with 2x exposure in costBasisCents and committed cash in marginCents
   const holding = await Holding.findOneAndUpdate(
     { userId: input.userId, assetClass, symbol: instrument.symbol },
-    { $inc: { shares: quantity, costBasisCents: totalCents } },
+    {
+      $inc: { shares: quantity, costBasisCents: totalCents, marginCents },
+      $set: { leverage: LEVERAGE },
+    },
     { new: true, upsert: true, session, setDefaultsOnInsert: true }
   );
 
@@ -332,11 +337,13 @@ async function executeBuy({
     fillPriceUsdCents,
     fillPriceUsdNanos,
     totalCents,
+    marginCents,
+    leverage: LEVERAGE,
     session,
     user,
     holding,
     type: "Buy",
-    amountCents: -totalCents,
+    amountCents: -marginCents,
   });
 }
 
@@ -371,26 +378,28 @@ async function executeSell({
     );
   }
 
-  // Cost basis is relieved PROPORTIONALLY to the shares sold, so the remaining
-  // basis still reflects what was paid for what is left. Taking it off at the
-  // current price instead would silently book the gain into the basis.
-  /**
-   * DUST IS A CLOSE, not a remainder — and this is what fractional quantities
-   * made necessary.
-   *
-   * `shares` is a float for crypto and forex, so a position built from three
-   * buys of 0.1 holds 0.30000000000000004, and selling the 0.3 the screen
-   * showed leaves 4e-17 of a coin behind. That residue is not a position: it is
-   * a row that can never be closed, pollutes the donut and the positions count,
-   * and shows the user a holding they cannot get rid of. Anything below one
-   * unit of storage precision therefore closes the position and relieves the
-   * WHOLE basis, so no cost is stranded either.
-   */
+  const LEVERAGE = before.leverage || 2;
   const remaining = before.shares - quantity;
   const closed = remaining < QTY_EPSILON;
+
   const basisOut = closed
     ? before.costBasisCents
     : Math.round((before.costBasisCents * quantity) / before.shares);
+
+  const beforeMargin =
+    before.marginCents != null
+      ? before.marginCents
+      : Math.round(before.costBasisCents / LEVERAGE);
+
+  const marginOut = closed
+    ? beforeMargin
+    : Math.round((beforeMargin * quantity) / before.shares);
+
+  // Position P&L on sold portion: closing exposure minus initial cost basis exposure
+  const pnlCents = totalCents - basisOut;
+
+  // Proceeds returned to user: initial margin plus P&L (floored at 0)
+  const proceedsCents = Math.max(0, marginOut + pnlCents);
 
   let holding = null;
   if (closed) {
@@ -400,14 +409,14 @@ async function executeSell({
   } else {
     holding = await Holding.findOneAndUpdate(
       { _id: before._id },
-      { $inc: { costBasisCents: -basisOut } },
+      { $inc: { costBasisCents: -basisOut, marginCents: -marginOut } },
       { new: true, session }
     );
   }
 
   const user = await User.findOneAndUpdate(
     { _id: input.userId },
-    { $inc: { cashBalanceCents: totalCents } },
+    { $inc: { cashBalanceCents: proceedsCents } },
     { new: true, session }
   );
 
@@ -420,11 +429,13 @@ async function executeSell({
     fillPriceUsdCents,
     fillPriceUsdNanos,
     totalCents,
+    marginCents: marginOut,
+    leverage: LEVERAGE,
     session,
     user,
     holding,
     type: "Sell",
-    amountCents: totalCents,
+    amountCents: proceedsCents,
   });
 }
 
@@ -464,6 +475,8 @@ async function settle({
   fillPriceUsdCents,
   fillPriceUsdNanos,
   totalCents,
+  marginCents,
+  leverage,
   session,
   user,
   holding,
@@ -477,12 +490,12 @@ async function settle({
     {
       $set: {
         status: "FILLED",
-        // Native for the receipt, USD for the ledger — the same two-price rule
-        // the rest of the product follows. They differ on a non-US listing.
         fillPriceCents: instrument.priceCents,
         fillPriceUsdCents,
         fillPriceUsdNanos,
         totalCents,
+        marginCents: marginCents != null ? marginCents : Math.round(totalCents / (leverage || 2)),
+        leverage: leverage || 2,
         currency: instrument.currency,
         filledAt,
       },

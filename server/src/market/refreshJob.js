@@ -106,7 +106,6 @@ export async function refreshQuotesOnce() {
     }
 
     const quotedAt = new Date();
-    const mult = env.MARKET_VOLATILITY_MULTIPLIER ?? 1;
     const ops = [...quotes].map(([symbol, q]) => {
       const prevClose = q.previousCloseCents > 0 ? q.previousCloseCents : 0;
       const rawPrice = q.priceCents ?? q.priceUsdCents;
@@ -114,11 +113,11 @@ export async function refreshQuotesOnce() {
       const priceUsdCents = q.priceUsdCents;
       let changePct = q.changePct;
 
-      if (prevClose > 0 && mult !== 1) {
+      if (prevClose > 0) {
         const rawPct = ((rawPrice - prevClose) / prevClose) * 100;
-        changePct = Number((rawPct * mult).toFixed(2));
-      } else if (mult !== 1 && Number.isFinite(q.changePct)) {
-        changePct = Number((q.changePct * mult).toFixed(2));
+        changePct = Number(rawPct.toFixed(2));
+      } else if (Number.isFinite(q.changePct)) {
+        changePct = Number(q.changePct.toFixed(2));
       }
 
       return {
@@ -309,7 +308,6 @@ const maxTickAgeMs = () => env.QUOTE_FULL_REFRESH_MS;
  */
 export function tickFlushOps(now) {
   const ops = [];
-  const mult = env.MARKET_VOLATILITY_MULTIPLIER ?? 1;
 
   for (const [, sub] of liveFeed.subscriptions) {
     if (sub.assetClass !== "stocks") continue;
@@ -347,7 +345,7 @@ export function tickFlushOps(now) {
                           "$previousCloseCents",
                         ],
                       },
-                      100 * mult,
+                      100,
                     ],
                   },
                   // No usable close — keep what REST struck rather than

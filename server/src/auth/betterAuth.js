@@ -242,17 +242,19 @@ async function seedUserPortfolio(userId) {
       $set: { cashBalanceCents: BUYING_POWER_CENTS },
     });
 
-    // CALIBRATE STARTER PORTFOLIO:
-    // - Cost basis: $8,600.00 (860,000 cents) shared across ASML, AAPL, NVDA, TSLA, BTC
-    // - All-time return: +20.37% of $8,600 = +$1,751.82 (175,182 cents)
-    // - Holdings value: $8,600 + $1,751.82 = $10,351.82 (1,035,182 cents)
+    // CALIBRATE 2X LEVERAGED STARTER PORTFOLIO:
+    // - User margin: $1,720.00 per asset × 5 = $8,600.00 (860,000 cents)
+    // - 2x Market Exposure: $3,440.00 per asset × 5 = $17,200.00 (1,720,000 cents)
+    // - Initial boost: +20.37% of $8,600 margin = +$1,751.82 (175,182 cents)
+    // - User holdings equity: $8,600 + $1,751.82 = $10,351.82 (1,035,182 cents)
     // - Buying power: $1,400.00 (140,000 cents)
     // - Total balance: 8,600 + 1,400 + 1,751.82 = $11,751.82 (1,175,182 cents)
     try {
-      const { env } = await import("../config/env.js");
-      const mult = env.MARKET_VOLATILITY_MULTIPLIER ?? 1;
-      const targetReturnPct = 20.37;
-      const rawTargetReturnPct = targetReturnPct / mult; // 5.0925% when mult=4
+      const LEVERAGE = 2;
+      const marginPerAsset = 172_000; // $1,720 margin per asset
+      const baseExposurePerAsset = marginPerAsset * LEVERAGE; // $3,440 exposure per asset
+      const totalBoostCents = 175_182; // +$1,751.82 (+20.37% return boost)
+      const boostPerStock = Math.round(totalBoostCents / 5); // 35,036 cents ($350.36)
 
       const userHoldings = await Holding.find({ userId });
       const equityHoldings = userHoldings.filter(
@@ -262,12 +264,6 @@ async function seedUserPortfolio(userId) {
         (h) => h.assetClass === "crypto" && h.symbol === "BTC"
       );
 
-      const costBasisPerAsset = 172_000; // $1,720
-      const targetRawMarketValueCents = Math.round(
-        costBasisPerAsset * (1 + rawTargetReturnPct / 100)
-      );
-
-      let equitiesCostBasisSum = 0;
       for (const h of equityHoldings) {
         const stock = await Stock.findOne({ symbol: h.symbol }).lean();
         const priceCents =
@@ -276,18 +272,19 @@ async function seedUserPortfolio(userId) {
           Math.round((stock?.priceUsdNanos || 0) / 1e7) ||
           10000;
 
+        // Position exposure includes the starter return boost
+        const targetExposureCents = baseExposurePerAsset + boostPerStock;
         const shares = Math.max(
           1,
-          Math.round(targetRawMarketValueCents / priceCents)
+          Math.round(targetExposureCents / priceCents)
         );
-        const actualRawMktCents = shares * priceCents;
-        const costBasisCents = Math.round(
-          actualRawMktCents / (1 + rawTargetReturnPct / 100)
-        );
+        const actualExposureCents = shares * priceCents;
+        const costBasisCents = actualExposureCents - boostPerStock;
 
         h.shares = shares;
         h.costBasisCents = costBasisCents;
-        equitiesCostBasisSum += costBasisCents;
+        h.marginCents = marginPerAsset;
+        h.leverage = LEVERAGE;
         await h.save();
       }
 
@@ -300,15 +297,14 @@ async function seedUserPortfolio(userId) {
           Math.round((btc?.priceUsdNanos || 0) / 1e7) ||
           6500000;
 
-        // BTC absorbs remainder so total cost basis is exactly $8,600.00 (860,000 cents)
-        const btcCostBasis = 860_000 - equitiesCostBasisSum;
-        const btcRawMkt = Math.round(
-          btcCostBasis * (1 + rawTargetReturnPct / 100)
-        );
-        const btcShares = Number((btcRawMkt / btcPriceCents).toFixed(8));
+        const btcBoostCents = totalBoostCents - boostPerStock * equityHoldings.length;
+        const targetBtcExposureCents = baseExposurePerAsset + btcBoostCents;
+        const btcShares = Number((targetBtcExposureCents / btcPriceCents).toFixed(8));
 
         btcHolding.shares = btcShares;
-        btcHolding.costBasisCents = btcCostBasis;
+        btcHolding.costBasisCents = baseExposurePerAsset;
+        btcHolding.marginCents = marginPerAsset;
+        btcHolding.leverage = LEVERAGE;
         await btcHolding.save();
       }
     } catch {

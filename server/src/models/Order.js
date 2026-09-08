@@ -52,7 +52,9 @@ const orderSchema = new mongoose.Schema(
      * arithmetic rather than approximately agree with it. See lib/money.js.
      */
     fillPriceUsdNanos: { type: Number, min: 0 },
-    totalCents: { type: Number, min: 0 }, // USD, quantity * fillPriceUsdCents
+    totalCents: { type: Number, min: 0 }, // USD, total position exposure (quantity * fillPriceUsdCents)
+    leverage: { type: Number, default: 2 },
+    marginCents: { type: Number, min: 0 }, // USD, user's cash margin committed (totalCents / leverage)
     currency: { type: String, default: 'USD' },
     filledAt: { type: Date },
 

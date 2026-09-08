@@ -68,15 +68,13 @@ export async function fetchRows() {
       return fallbackRows();
     }
 
-    const mult = env.MARKET_VOLATILITY_MULTIPLIER ?? 1;
-
     return rows
       .filter((c) => Number.isFinite(c?.current_price))
       .map((c) => {
         const rawChange = Number(c.price_change_percentage_24h ?? 0);
         const displayPrice = c.current_price;
         const changePct = Number.isFinite(rawChange)
-          ? Number((rawChange * mult).toFixed(2))
+          ? Number(rawChange.toFixed(2))
           : 0;
 
         return {

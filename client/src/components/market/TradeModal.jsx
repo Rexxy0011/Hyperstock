@@ -159,9 +159,10 @@ export default function TradeModal({
   const validQty =
     Number.isFinite(qty) && qty > 0 && (!whole || Number.isInteger(qty)) && (whole || qty >= 1e-8);
 
-  // Rounded ONCE, from nanos, exactly as the server rounds the fill — so the
-  // total on the ticket is the total on the receipt.
+  // Total market exposure (quantity * price)
   const totalCents = validQty ? Math.round(qty * (nanos / NANOS_PER_CENT)) : 0;
+  // With fixed 2x leverage, required cash margin is 50% of market exposure
+  const marginCents = Math.round(totalCents / 2);
   const buyingPowerCents = user?.cashBalanceCents ?? 0;
   const held = holding?.shares ?? 0;
 
@@ -169,7 +170,7 @@ export default function TradeModal({
     if (!validQty) {
       return whole ? t('trade.wholeShares') : t('trade.positiveQty');
     }
-    if (side === 'BUY' && totalCents > buyingPowerCents) return t('trade.notEnough');
+    if (side === 'BUY' && marginCents > buyingPowerCents) return t('trade.notEnough');
     if (side === 'SELL' && qty > held) {
       return held === 0
         ? t('trade.holdNone', { symbol: instrument.symbol })
@@ -179,28 +180,13 @@ export default function TradeModal({
           });
     }
     return null;
-    // `t` is in here because the messages it returns ARE the value: without it a
-  // language switch would leave the last validation message in the old language.
-}, [validQty, whole, side, totalCents, buyingPowerCents, qty, held, instrument.symbol, assetClass, t]);
+  }, [validQty, whole, side, marginCents, buyingPowerCents, qty, held, instrument.symbol, assetClass, t]);
 
-  /**
-   * What is missing, rounded UP to a whole dollar.
-   *
-   * Offering the exact shortfall to the cent would leave the account at exactly
-   * zero after the fill and the next tick of the price would put it short
-   * again. A dollar of headroom costs nothing in virtual capital.
-   */
   const shortfallCents =
-    side === 'BUY' && validQty && totalCents > buyingPowerCents
-      ? Math.ceil((totalCents - buyingPowerCents) / 100) * 100
+    side === 'BUY' && validQty && marginCents > buyingPowerCents
+      ? Math.ceil((marginCents - buyingPowerCents) / 100) * 100
       : 0;
 
-  /**
-   * Leave for the funding screen, carrying the order so it can be waiting on
-   * the way back. The ticket is closed first — `<dialog>` in the top layer
-   * outlives a route change, and a modal left open over the next page is the
-   * kind of thing that only shows up on the slowest connection.
-   */
   function goToDeposit() {
     const url = fundingUrl({
       path: location.pathname,
@@ -211,11 +197,11 @@ export default function TradeModal({
     navigate(url);
   }
 
-  /** The largest quantity this side can support, quantised to the step. */
+  /** The largest quantity this side can support with 2x leverage */
   function fillMax() {
     if (side === 'SELL') return setQuantity(String(fmtQty(held, assetClass)));
     if (!nanos) return;
-    const raw = buyingPowerCents / (nanos / NANOS_PER_CENT);
+    const raw = (buyingPowerCents * 2) / (nanos / NANOS_PER_CENT);
     setQuantity(whole ? String(Math.floor(raw)) : String(Math.floor(raw * 1e8) / 1e8));
   }
 
@@ -384,7 +370,10 @@ export default function TradeModal({
         {/* priceUsd, not money: a coin under a cent renders as "$0.01" through
             the cents formatter, which is not the price being agreed to. */}
         <Line label={t('trade.marketPrice')} value={priceUsd(nanos, priceDecimals)} />
-        <Line label={t('trade.estimatedTotal')} value={money(totalCents)} strong />
+        <Line label="Market Exposure (2x)" value={money(totalCents)} />
+        {side === 'BUY' && (
+          <Line label="Margin Required" value={money(marginCents)} strong />
+        )}
         <Line
           label={
             side === 'BUY'
@@ -397,7 +386,7 @@ export default function TradeModal({
           label={side === 'BUY' ? t('trade.remaining') : t('trade.afterSale')}
           value={
             side === 'BUY'
-              ? money(Math.max(0, buyingPowerCents - totalCents))
+              ? money(Math.max(0, buyingPowerCents - marginCents))
               : fmtQty(Math.max(0, held - (validQty ? qty : 0)), assetClass)
           }
         />

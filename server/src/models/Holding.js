@@ -68,6 +68,29 @@ const holdingSchema = new mongoose.Schema(
       min: 0,
       validate: { validator: Number.isInteger, message: 'costBasisCents must be an integer' },
     },
+
+    /**
+     * Leverage applied to this position. Fixed at 2x.
+     */
+    leverage: {
+      type: Number,
+      required: true,
+      default: 2,
+      min: 1,
+    },
+
+    /**
+     * User's actual capital (margin) committed to this position in cents.
+     * With 2x leverage, marginCents is costBasisCents / 2.
+     */
+    marginCents: {
+      type: Number,
+      min: 0,
+      validate: {
+        validator: (v) => v == null || Number.isInteger(v),
+        message: 'marginCents must be an integer',
+      },
+    },
   },
   { timestamps: true },
 );

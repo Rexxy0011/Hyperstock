@@ -238,24 +238,32 @@ export async function getPortfolio(userId, cashBalanceCents) {
       // NANOS, not cents — a coin quoting under a cent would value an entire
       // position at zero if this multiplied the rounded figure. `costCents`
       // rounds once, at the end, exactly as a fill does.
-      const rawMarketValueCents = costCents(h.shares, ref.priceUsdNanos);
+      const liveExposureCents = costCents(h.shares, ref.priceUsdNanos);
       const avgCost = avgCostCents(h.costBasisCents, h.shares);
 
-      const rawReturnPct =
-        h.costBasisCents > 0
-          ? ((rawMarketValueCents - h.costBasisCents) / h.costBasisCents) * 100
-          : 0;
+      const leverage = h.leverage || 2;
+      const marginCents =
+        h.marginCents != null
+          ? h.marginCents
+          : Math.round(h.costBasisCents / leverage);
 
-      const mult = env.MARKET_VOLATILITY_MULTIPLIER ?? 1;
-      const totalReturnPct = round2(rawReturnPct * mult);
-      const totalReturnCents =
-        h.costBasisCents > 0
-          ? Math.round((h.costBasisCents * totalReturnPct) / 100)
+      // Unrealized P&L = live exposure - initial cost basis exposure
+      const unrealizedPnLCents = liveExposureCents - h.costBasisCents;
+      // User's equity in the position = margin + P&L (floored at 0)
+      const marketValueCents = Math.max(0, marginCents + unrealizedPnLCents);
+
+      // Return % on the user's committed margin
+      const totalReturnPct =
+        marginCents > 0
+          ? round2((unrealizedPnLCents / marginCents) * 100)
           : 0;
-      const marketValueCents =
-        h.costBasisCents > 0
-          ? Math.max(0, h.costBasisCents + totalReturnCents)
-          : rawMarketValueCents;
+      const totalReturnCents = unrealizedPnLCents;
+
+      // Daily P&L: position exposure moves with real-time asset changePct
+      const rawAssetChangePct = ref.changePct ?? 0;
+      const dailyPnLCents = Math.round(
+        liveExposureCents * (rawAssetChangePct / 100)
+      );
 
       return {
         assetClass,
@@ -268,16 +276,20 @@ export async function getPortfolio(userId, cashBalanceCents) {
         shares: h.shares,
         avgCostCents: avgCost,
         costBasisCents: h.costBasisCents,
+        marginCents,
+        leverage,
         priceCents: ref.priceCents,
         priceUsdCents: ref.priceUsdCents,
         priceUsdNanos: ref.priceUsdNanos,
-        changePct: round2(ref.changePct),
+        changePct: round2(rawAssetChangePct),
         // False when the figures above are a last-known price or the cost
         // basis rather than a live quote — the screen labels it.
         resolved: ref.resolved !== false,
+        liveExposureCents,
         marketValueCents,
         totalReturnCents,
         totalReturnPct,
+        dailyPnLCents,
       };
     })
     .sort((a, b) => b.marketValueCents - a.marketValueCents);
@@ -288,65 +300,29 @@ export async function getPortfolio(userId, cashBalanceCents) {
   );
   const portfolioValueCents = cashBalanceCents + holdingsValueCents;
 
-  // Today's move: check yesterday's snapshot baseline (matching the leaderboard),
-  // falling back to value-weighted quote change across current positions.
-  const startOfToday = new Date();
-  startOfToday.setUTCHours(0, 0, 0, 0);
-  const yesterdaySnapshot = await PortfolioSnapshot.findOne({
-    userId,
-    date: { $lt: startOfToday },
-  })
-    .sort({ date: -1 })
-    .lean();
-
-  const previousValueCents = positions.reduce(
-    (sum, p) => sum + p.marketValueCents / (1 + p.changePct / 100),
+  const totalMarginCents = positions.reduce(
+    (sum, p) => sum + (p.marginCents || 0),
+    0
+  );
+  const todayPnLCents = positions.reduce(
+    (sum, p) => sum + (p.dailyPnLCents || 0),
     0
   );
 
+  // Today's daily % is driven solely by the actual P&L of the 2x leveraged positions
   const todayChangePct =
-    previousValueCents > 0
-      ? round2(
-          ((holdingsValueCents - previousValueCents) / previousValueCents) *
-            100
-        )
-      : yesterdaySnapshot?.portfolioValueCents > 0
-        ? round2(
-            ((portfolioValueCents - yesterdaySnapshot.portfolioValueCents) /
-              yesterdaySnapshot.portfolioValueCents) *
-              100
-          )
-        : 0;
+    totalMarginCents > 0
+      ? round2((todayPnLCents / totalMarginCents) * 100)
+      : 0;
 
-  /**
-   * RETURN IS MEASURED AGAINST WHAT WAS PUT IN, NOT AGAINST THE OPENING GRANT.
-   *
-   * This was `portfolioValueCents - SEED_CASH_CENTS`, which counts every
-   * deposit as profit: fund the account with $1,000 and the card beside Buying
-   * power reads "All-time return +$1,000 (+10%)" without a single trade having
-   * happened. Paying money in is not performance, and the one screen where that
-   * is unambiguous is the one that shows the deposit landing.
-   *
-   * So the base is the grant plus everything since contributed to it — which is
-   * exactly what the ledger already records, and the reason top-ups had to stop
-   * moving cash behind its back.
-   */
-  const holdingsCostBasisCents = positions.reduce(
-    (sum, p) => sum + (p.costBasisCents || 0),
-    0
-  );
-  const sumActiveHoldingsPct = positions.reduce(
-    (sum, p) => sum + (p.totalReturnPct || 0),
-    0
-  );
-  const holdingsReturnCents = holdingsValueCents - holdingsCostBasisCents;
-
+  const holdingsReturnCents = holdingsValueCents - totalMarginCents;
   const investedCents = await contributedCapitalCents(userId);
+
   const allTimeReturnPct =
     positions.length > 0
-      ? holdingsCostBasisCents > 0
-        ? round2((holdingsReturnCents / holdingsCostBasisCents) * 100)
-        : round2(sumActiveHoldingsPct)
+      ? totalMarginCents > 0
+        ? round2((holdingsReturnCents / totalMarginCents) * 100)
+        : 0
       : investedCents > 0
         ? round2(((portfolioValueCents - investedCents) / investedCents) * 100)
         : 0;
