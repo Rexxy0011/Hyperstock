@@ -82,6 +82,12 @@ export function AuthProvider({ children }) {
       const next = shape(data?.user);
       setUser(next);
       queryClient.clear();
+      try {
+        sessionStorage.removeItem("hs_auth_draft");
+        sessionStorage.removeItem("hs_legal_return_to");
+      } catch {
+        // ignore
+      }
       return next;
     },
     [queryClient]
@@ -210,6 +216,12 @@ export function AuthProvider({ children }) {
     await post("/auth/sign-out").catch(() => {});
     setUser(null);
     queryClient.clear();
+    try {
+      sessionStorage.removeItem("hs_auth_draft");
+      sessionStorage.removeItem("hs_legal_return_to");
+    } catch {
+      // ignore
+    }
   }, [queryClient]);
 
   /** Called after a fill so the nav's cash balance reflects the new total. */

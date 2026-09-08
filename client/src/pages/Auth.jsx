@@ -1074,6 +1074,7 @@ export default function Auth() {
     if (urlMode === "signin") return SIGNIN;
     const draft = loadAuthDraft();
     if (draft?.mode === SIGNUP) return SIGNUP;
+    if (draft?.mode === SIGNIN) return SIGNIN;
     return SIGNIN;
   });
 
@@ -1085,7 +1086,7 @@ export default function Auth() {
     const draftForm = draft?.form || {};
     return {
       username: draftForm.username ?? "",
-      email: params.get("email") ?? draftForm.email ?? "",
+      email: draftForm.email || params.get("email") || "",
       password: draftForm.password ?? "",
       country: draftForm.country ?? "",
     };
@@ -1367,7 +1368,11 @@ export default function Auth() {
 
         setError(err.message ?? "Something went wrong. Try again.");
       } else {
-        setError(t("errors.INVALID_EMAIL_OR_PASSWORD", { defaultValue: "Invalid email or password" }));
+        setError(
+          t("errors.INVALID_EMAIL_OR_PASSWORD", {
+            defaultValue: "Invalid email or password",
+          })
+        );
         setShowSignupPrompt(true);
       }
     } finally {
