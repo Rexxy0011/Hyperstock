@@ -616,7 +616,8 @@ function ChartCard({
           {t("portfolio.noPositions")}
         </div>
         <p className="mt-1 text-xs text-text-muted">
-          Pick an asset from the markets to view its live chart and place trades.
+          Pick an asset from the markets to view its live chart and place
+          trades.
         </p>
         <Link
           to="/markets"
