@@ -305,15 +305,15 @@ export async function getPortfolio(userId, cashBalanceCents) {
   );
 
   const todayChangePct =
-    yesterdaySnapshot?.portfolioValueCents > 0
+    previousValueCents > 0
       ? round2(
-          ((portfolioValueCents - yesterdaySnapshot.portfolioValueCents) /
-            yesterdaySnapshot.portfolioValueCents) *
+          ((holdingsValueCents - previousValueCents) / previousValueCents) *
             100
         )
-      : previousValueCents > 0
+      : yesterdaySnapshot?.portfolioValueCents > 0
         ? round2(
-            ((holdingsValueCents - previousValueCents) / previousValueCents) *
+            ((portfolioValueCents - yesterdaySnapshot.portfolioValueCents) /
+              yesterdaySnapshot.portfolioValueCents) *
               100
           )
         : 0;

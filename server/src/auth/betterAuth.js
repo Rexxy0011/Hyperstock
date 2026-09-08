@@ -315,16 +315,17 @@ async function seedUserPortfolio(userId) {
       // ignore
     }
 
-    // Record yesterday's snapshot at $10,000 so today starts with a green arrow
+    // Record yesterday's snapshot baseline matching the starter portfolio ($11,751.82)
+    // so daily change reflects solely actual real-time gains or losses of the bought assets
     const yesterday = new Date(Date.now() - 86400000);
     yesterday.setUTCHours(0, 0, 0, 0);
     await PortfolioSnapshot.updateOne(
       { userId, date: yesterday },
       {
         $set: {
-          portfolioValueCents: SEED_CASH_CENTS,
-          cashBalanceCents: SEED_CASH_CENTS,
-          holdingsValueCents: 0,
+          portfolioValueCents: 1_175_182, // $11,751.82 starter baseline
+          cashBalanceCents: BUYING_POWER_CENTS, // $1,400.00
+          holdingsValueCents: 1_035_182, // $10,351.82
         },
       },
       { upsert: true }

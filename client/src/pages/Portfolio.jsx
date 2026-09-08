@@ -125,12 +125,14 @@ export default function Portfolio() {
         h.costBasisCents > 0
           ? Math.max(0, h.costBasisCents + totalReturnCents)
           : rawMarketValueCents;
+      const changePct = tick.changePct ?? h.changePct;
 
       return {
         ...h,
         priceCents,
         priceUsdCents,
         priceUsdNanos,
+        changePct,
         marketValueCents,
         totalReturnCents,
         totalReturnPct,
@@ -181,12 +183,25 @@ export default function Portfolio() {
         ? holdingsValueCents - holdingsCostBasisCents
         : portfolioValueCents - (rawSummary.investedCents ?? 0);
 
+    const previousValueCents = holdings.reduce(
+      (sum, p) => sum + p.marketValueCents / (1 + (p.changePct || 0) / 100),
+      0
+    );
+    const todayChangePct =
+      previousValueCents > 0
+        ? Math.round(
+            ((holdingsValueCents - previousValueCents) / previousValueCents) *
+              10000
+          ) / 100
+        : rawSummary.todayChangePct ?? 0;
+
     return {
       ...rawSummary,
       holdingsValueCents,
       portfolioValueCents,
       allTimeReturnCents,
       allTimeReturnPct,
+      todayChangePct,
     };
   }, [rawSummary, holdings]);
 
